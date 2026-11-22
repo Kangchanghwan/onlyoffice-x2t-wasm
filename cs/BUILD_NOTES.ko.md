@@ -23,3 +23,7 @@
 ## 시도 5 (run 45026847930)
 - 실패: `SheetData.cpp:2306: error: use of undeclared identifier 'DBL_MAX'` (DocxFormatLib). 10.0 소스가 float.h 를 직접 include 하지 않는데 gcc 에서는 다른 헤더를 통해 들어오고 emscripten(libc++)에서는 안 들어온다.
 - 수정: embuild.sh 의 CFLAGS 에 `-include float.h` 를 넣어 모든 모듈에서 DBL_MAX 가 보이게 했다.
+
+## 시도 6 (run 45027840522)
+- DocxFormatLib 은 통과. 실패: `Common/Network` 에서 `localipc.cpp: fatal error: 'asio.hpp' file not found`. 10.0 에서 새로 생긴 local IPC 소스인데 asio 헤더가 필요하다.
+- 수정: x2t 에서 안 쓰는 모듈이라 network.pro 의 LOCAL IPC 블록을 주석 처리했다.
