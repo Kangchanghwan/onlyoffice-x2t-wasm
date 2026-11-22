@@ -27,3 +27,7 @@
 ## 시도 6 (run 45027840522)
 - DocxFormatLib 은 통과. 실패: `Common/Network` 에서 `localipc.cpp: fatal error: 'asio.hpp' file not found`. 10.0 에서 새로 생긴 local IPC 소스인데 asio 헤더가 필요하다.
 - 수정: x2t 에서 안 쓰는 모듈이라 network.pro 의 LOCAL IPC 블록을 주석 처리했다.
+
+## 시도 7 (run 45028654309)
+- Network 통과. 실패: doctrenderer 단계 `drawingfile.h:42: fatal error: '../../PdfFile/PdfFile.h' file not found`. 10.0 의 drawingfile.h 가 PdfFile, XpsFile, DjVuFile, DocxRenderer, OFDFile 헤더를 include 한다.
+- 수정: doctrenderer 단계에 그 모듈 디렉터리를 복사했다.

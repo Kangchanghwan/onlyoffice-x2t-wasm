@@ -506,6 +506,12 @@ COPY core/Common /core/Common
 COPY core/OfficeUtils /core/OfficeUtils
 COPY core/OOXML /core/OOXML
 COPY core/OdfFile /core/OdfFile
+# [cs] drawingfile.h (10.0) includes the headers of these modules
+COPY core/PdfFile /core/PdfFile
+COPY core/XpsFile /core/XpsFile
+COPY core/DjVuFile /core/DjVuFile
+COPY core/DocxRenderer /core/DocxRenderer
+COPY core/OFDFile /core/OFDFile
 COPY --from=openssl /core/Common/3dParty/openssl/ /core/Common/3dParty/openssl/
 WORKDIR /core
 RUN --mount=type=cache,sharing=locked,target=/emsdk/upstream/emscripten/cache/ \
