@@ -14,6 +14,8 @@ fi
 if command -v docker >/dev/null 2>&1
 then
   CMD=docker
+  # [cs] podman-only flags must not be passed to docker (podman is preinstalled on GitHub runners)
+  PARAMS=
 fi
 
 rm -rf results build
