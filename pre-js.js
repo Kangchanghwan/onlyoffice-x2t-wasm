@@ -5,7 +5,7 @@ Module.noExitRuntime = true;
 	if (typeof document != 'undefined') {
 		const myScript = document.currentScript;
 		const mySrc = myScript.getAttribute('src');
-		suffix = new URL(mySrc).search;
+		suffix = new URL(mySrc, document.baseURI).search;
 	} else {
 		suffix = '';
 	}

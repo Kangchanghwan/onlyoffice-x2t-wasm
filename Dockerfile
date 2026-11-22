@@ -816,6 +816,7 @@ RUN --mount=type=cache,sharing=locked,target=/emsdk/upstream/emscripten/cache/ \
     -l "-sEXPORTED_RUNTIME_METHODS=ccall,FS" \
     -l "-sEXPORTED_FUNCTIONS=_main1" \
     -l "-sALLOW_MEMORY_GROWTH" \
+    -c "-O1" \
     X2tConverter/build/Qt/X2tConverter.pro
 
 WORKDIR /core/build/bin/linux_64/

@@ -51,3 +51,9 @@
 - 시도 11 과 그다음 실행은 마지막 링크 단계에서 1시간 넘게 끝나지 않았다. 시도 9 에서 넣은 drawingfile.cpp 가 PDF/XPS/DjVu/OFD 렌더러 전체를 끌어와 바이너리가 커지고, EMULATE_FUNCTION_POINTER_CASTS 와 -Os 최적화가 겹쳐 wasm-opt 가 끝나지 않은 것으로 본다.
 - 수정: drawingfile.cpp 를 다시 빼고, 링크 오류의 원인이던 editors.cpp 의 `CDrawingFile::SetCMapFolder(...)` 한 줄만 `#ifndef __EMSCRIPTEN__` 으로 막았다. 이 함수는 서버에서 JS 엔진을 직접 돌릴 때만 쓰인다.
 - 결과물(output)을 먼저 빌드하고, 시험(test.js)은 30분 제한으로 따로 돌리도록 순서를 바꿨다.
+
+## 시도 13 (메인 세션)
+- 시도 12 는 성공했다(릴리스 cs-x2t-10.0.0-ed63e94). 빌드 2시간 36분, x2t.wasm 57.6MB(brotli 8.3MB).
+- 그런데 브라우저에서 열리지 않았다. 두 가지 문제가 있었다.
+  1. pre-js.js 의 `new URL(mySrc)` 가 상대 경로에서 오류를 낸다. `new URL(mySrc, document.baseURI)` 로 고쳤다.
+  2. `CompileError: size 14087016 > maximum function size 7654321`. 시작할 때 한 번 도는 `__wasm_call_ctors`(전역 초기화)에 -Os 링크 최적화가 모든 정적 초기화 함수를 인라인해 14MB 함수 하나가 됐다. 브라우저(V8)의 함수 크기 한도는 약 7.6MB다. 마지막 링크만 -O1 로 낮춰 인라인을 끈다(라이브러리는 그대로 -Os). 링크 시간이 오래 걸리던 것도 같은 원인으로 본다.
