@@ -40,3 +40,6 @@
 - 링크 단계 도달. 실패: `undefined symbol: CDrawingFile::m_sCMapFolder` (libdoctrenderer.a(editors.o)). drawingfile.cpp 가 주석 처리된 목록에 있어서 정적 멤버 정의가 빠졌다.
 - 수정: doctrenderer.pri 의 SOURCES 에 drawingfile.cpp 를 다시 넣었다.
 - 속도 개선: build 단계를 build-libs(라이브러리 복사까지)와 build(링크)로 나누고, 워크플로에서 build-libs 를 먼저 빌드해 gha 캐시에 올린다. 링크만 고칠 때 40분이 아니라 몇 분이면 되도록 했다.
+
+## 시도 10 (run 45038424631)
+- build-libs 를 gha 캐시로 올리는 단계가 68분이 넘도록 끝나지 않아 취소했다(캐시 내보내기가 전체 빌드보다 오래 걸림). gha 캐시 사용을 모두 빼고 build-libs/build 분리만 남겼다.
