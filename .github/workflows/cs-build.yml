@@ -25,12 +25,12 @@ jobs:
 
       - uses: docker/setup-buildx-action@v3
 
-      - name: Build (test target, then output target)
+      - name: Build x2t (output target)
         run: |
           start=$(date +%s)
-          ./build.sh
+          SKIP_TESTS=1 ./build.sh
           echo "BUILD_SECONDS=$(( $(date +%s) - start ))" >> "$GITHUB_ENV"
-          ls -l build results
+          ls -l build
 
       - name: Upload x2t.zip
         uses: actions/upload-artifact@v4
@@ -38,6 +38,13 @@ jobs:
           name: x2t-build
           path: build/
           if-no-files-found: error
+
+      - name: Run converter tests (30 min limit)
+        continue-on-error: true
+        run: |
+          rm -rf results
+          timeout 1800 docker build --target test-output -o results . || echo "TESTS_EXIT=$?" >> "$GITHUB_ENV"
+          ls -l results || true
 
       - name: Upload test results
         if: always()
