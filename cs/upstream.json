@@ -1,0 +1,7 @@
+{
+  "cryptpad_base": "17bd0351",
+  "core_commit": "ed63e94de814ff1d4ea28cddfaba6939bc9df9ed",
+  "documentserver_tag": "v10.0.0",
+  "build_tools": "v10.0.0.176",
+  "emsdk": "4.0.11"
+}
