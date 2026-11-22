@@ -46,3 +46,8 @@
 
 ## 시도 11 (run 45044913039)
 - 알려진 마지막 오류(drawingfile.cpp)를 고친 뒤 돌린 실행. 작성 시점에 아직 진행 중이며 로그가 17:18(UTC) 이후로 갱신되지 않았다. 결과는 Actions 에서 확인해야 한다.
+
+## 시도 12 (메인 세션)
+- 시도 11 과 그다음 실행은 마지막 링크 단계에서 1시간 넘게 끝나지 않았다. 시도 9 에서 넣은 drawingfile.cpp 가 PDF/XPS/DjVu/OFD 렌더러 전체를 끌어와 바이너리가 커지고, EMULATE_FUNCTION_POINTER_CASTS 와 -Os 최적화가 겹쳐 wasm-opt 가 끝나지 않은 것으로 본다.
+- 수정: drawingfile.cpp 를 다시 빼고, 링크 오류의 원인이던 editors.cpp 의 `CDrawingFile::SetCMapFolder(...)` 한 줄만 `#ifndef __EMSCRIPTEN__` 으로 막았다. 이 함수는 서버에서 JS 엔진을 직접 돌릴 때만 쓰인다.
+- 결과물(output)을 먼저 빌드하고, 시험(test.js)은 30분 제한으로 따로 돌리도록 순서를 바꿨다.
