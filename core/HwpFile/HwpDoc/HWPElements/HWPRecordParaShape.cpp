@@ -1,3 +1,38 @@
+/*
+ * Copyright (C) Ascensio System SIA, 2009-2026
+ *
+ * This program is a free software product. You can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License (AGPL)
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
+ * Section 5 of the GNU AGPL version 3.
+ *
+ * No trademark rights are granted under this License.
+ *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 #include "HWPRecordParaShape.h"
 
 #include "../Common/NodeNames.h"
@@ -160,8 +195,8 @@ CHWPRecordParaShape::CHWPRecordParaShape(CHWPDocInfo& oDocInfo, CXMLReader& oRea
       m_bConnect(false), m_bIgnoreMargin(false), m_bParaTailShape(false), m_nIndent(0), m_nMarginLeft(0),
       m_nMarginRight(0), m_nMarginPrev(0), m_nMarginNext(0)
 {
-	//In HWPX, in this node, data is written according to the type specified in the nodes
-	//In HWPML in this node, data is written according to the data type in the arguments
+	//In HWPX, node data is written not only in arguments but also in nested nodes.
+	//In HWPML, node data is written in arguments.
 	
 	if (EHanType::HWPX == eType)
 	{
@@ -211,7 +246,7 @@ CHWPRecordParaShape::CHWPRecordParaShape(CHWPDocInfo& oDocInfo, CXMLReader& oRea
 		}
 		else if ("BreakNonLatinWord" == sAttributeName)
 		{
-			//TODO:: check hwpx and hwpml matches
+			//TODO:: Verify hwpx and hwpml correspondence
 		}
 		else if ("Condense" == sAttributeName)
 			m_chCondense = (HWP_BYTE)oReader.GetInt();
@@ -220,7 +255,7 @@ CHWPRecordParaShape::CHWPRecordParaShape(CHWPDocInfo& oDocInfo, CXMLReader& oRea
 		else if ("KeepWithNext" == sAttributeName)
 			m_bKeepWithNext = oReader.GetBool();
 		else if ("KeepLines" == sAttributeName)
-		{ /*TODO:: check hwpx and hwpml matches*/ }
+		{ /*TODO:: verify correspondence between hwpx and hwpml*/ }
 		else if ("PageBreakBefore" == sAttributeName)
 			m_bPageBreakBefore = oReader.GetBool();
 		else if ("FontLineHeight" == sAttributeName)
@@ -304,7 +339,14 @@ CHWPRecordParaShape::CHWPRecordParaShape(CHWPDocInfo& oDocInfo, CXMLReader& oRea
 	END_WHILE
 }
 
-void CHWPRecordParaShape::RecursiveParaShape(CXMLReader& oReader)
+int CHWPRecordParaShape::ReadMarginValue(CXMLReader& oReader, bool bDoubled)
+{
+	const int nValue = oReader.GetAttributeInt("value");
+
+	return bDoubled ? nValue / 2 : nValue;
+}
+
+void CHWPRecordParaShape::RecursiveParaShape(CXMLReader& oReader, bool bDoubledMargins)
 {
 	WHILE_READ_NEXT_NODE_WITH_NAME(oReader)
 	{
@@ -427,19 +469,20 @@ void CHWPRecordParaShape::RecursiveParaShape(CXMLReader& oReader)
 			END_READ_ATTRIBUTES(oReader)
 		}
 		else if ("hc:intent" == sNodeName)
-			m_nIndent = oReader.GetAttributeInt("value");
+			m_nIndent = ReadMarginValue(oReader, bDoubledMargins);
 		else if ("hc:left" == sNodeName)
-			m_nMarginLeft = oReader.GetAttributeInt("value");
+			m_nMarginLeft = ReadMarginValue(oReader, bDoubledMargins);
 		else if ("hc:right" == sNodeName)
-			m_nMarginRight = oReader.GetAttributeInt("value");
+			m_nMarginRight = ReadMarginValue(oReader, bDoubledMargins);
 		else if ("hc:prev" == sNodeName)
-			m_nMarginPrev = oReader.GetAttributeInt("value");
+			m_nMarginPrev = ReadMarginValue(oReader, bDoubledMargins);
 		else if ("hc:next" == sNodeName)
-			m_nMarginNext = oReader.GetAttributeInt("value");
-		else if ("hh:margin"  == sNodeName ||
-		         "hp:switch"  == sNodeName ||
-		         "hp:default" == sNodeName)
-			RecursiveParaShape(oReader);
+			m_nMarginNext = ReadMarginValue(oReader, bDoubledMargins);
+		else if ("hh:margin" == sNodeName ||
+		         "hp:switch" == sNodeName)
+			RecursiveParaShape(oReader, bDoubledMargins);
+		else if ("hp:default" == sNodeName)
+			RecursiveParaShape(oReader, true);
 	}
 	END_WHILE
 }
@@ -467,6 +510,11 @@ HWP_BYTE CHWPRecordParaShape::GetHeadingLevel() const
 short CHWPRecordParaShape::GetHeadingIdRef() const
 {
 	return m_shHeadingIdRef;
+}
+
+short HWP::CHWPRecordParaShape::GetBorderFillIdRef() const
+{
+	return m_shBorderFill;
 }
 
 bool CHWPRecordParaShape::GetPageBreakBefore() const

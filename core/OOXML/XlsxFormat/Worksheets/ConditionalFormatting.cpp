@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "ConditionalFormatting.h"
 
@@ -780,7 +790,7 @@ void CColorScale::toXML2(NSStringUtils::CStringBuilder& writer, bool bExtendedWr
         std::wstring sValue;
 		writer.WriteString(L"<colorScale>");
 
-        for ( size_t i = 0; i < m_arrValues.size(); ++i)//TODO - check whether it is possible not to alternate, but to write as-is
+        for ( size_t i = 0; i < m_arrValues.size(); ++i)//todooo - check if we can write as is without alternating
         {
 			if ( m_arrValues[i].IsInit() )
             {
@@ -2495,10 +2505,13 @@ void CConditionalFormattingRule::toXML2(NSStringUtils::CStringBuilder& writer, b
 		{
 			if (false == m_oId.IsInit())
 			{
-				WritingStringAttrString(L"id", L"{" + XmlUtils::GenerateGuid() + L"}");
-			}
-			else
-				WritingStringNullableAttrString(L"id", m_oId, m_oId.get());
+                SimpleTypes::CGuid newGuid; newGuid.Generate();
+                WritingStringNullableAttrString(L"id", m_oId, newGuid.ToString());
+            }
+            else
+            {
+                WritingStringNullableAttrString(L"id", m_oId, m_oId->ToString());
+            }
 		}
 	writer.WriteString(L">");
 
@@ -2660,7 +2673,7 @@ XLS::BaseObjectPtr CConditionalFormattingRule::toBin(const  XLS::CellRef &cellRe
         extPtr->m_BrtCFRuleExt = XLS::BaseObjectPtr{beginExt};
         ptr->m_FRTCFRULE = XLS::BaseObjectPtr{extPtr};
 
-        beginExt->guid = m_oExtId.get();
+        beginExt->guid = m_oExtId->ToString();
         auto ruleBegin(new XLSB::FRTBegin);
         ruleBegin->productVersion.product = 0;
         ruleBegin->productVersion.version = 0;
@@ -2694,7 +2707,7 @@ void CConditionalFormattingRule::toBin(XLS::StreamCacheWriterPtr& writer, const 
         auto beginExt(new XLSB::CFRuleExt);
         ext.m_BrtCFRuleExt = XLS::BaseObjectPtr{beginExt};
 
-        beginExt->guid = m_oExtId.get();
+        beginExt->guid = m_oExtId->ToString();
         auto ruleBegin(new XLSB::FRTBegin);
         ext.m_BrtFRTBegin = XLS::BaseObjectPtr{ruleBegin};
         ext.write(writer, nullptr);
@@ -3207,7 +3220,7 @@ XLS::BaseObjectPtr CConditionalFormattingRule::WriteAttributes14(const  XLS::Cel
     if(m_oId.IsInit())
     {
         ptr->fGuid = true;
-        ptr->guid = m_oId.get();
+        ptr->guid = m_oId->ToString();
     }
     if(m_oText.IsInit())
         ptr->strParam = m_oText.get();
@@ -3518,7 +3531,10 @@ XLS::BaseObjectPtr CConditionalFormattingRule::toXLS(const  XLS::CellRef &cellRe
 	}
 	else if (m_oType == SimpleTypes::Spreadsheet::ECfType::aboveAverage)
 	{
-		ptr->icfTemplate = XLSB::CFTemp::CF_TEMPLATE_ABOVEAVERAGE;
+		if(m_oAboveAverage.IsInit() && !m_oAboveAverage->GetValue())
+			ptr->icfTemplate = XLSB::CFTemp::CF_TEMPLATE_BELOWAVERAGE;
+		else
+			ptr->icfTemplate = XLSB::CFTemp::CF_TEMPLATE_ABOVEAVERAGE;
 		if(m_oStdDev.IsInit())
 			ptr->rgbTemplateParms.data.averages.iParam =  m_oStdDev->GetValue();
 	}
@@ -3602,9 +3618,11 @@ XLS::BaseObjectPtr CConditionalFormattingRule::toXLS(const  XLS::CellRef &cellRe
 	if(m_oPriority.IsInit())
 		ptr->ipriority = m_oPriority->GetValue();
 	if(m_arrFormula.size() > 0)
-		ptr->rgce1.parseStringFormula(m_arrFormula[0].get().m_sText, L"");
+		ptr->rgce1.parseStringFormula(m_arrFormula[0].get().m_sText, L"CFParsedFormulaNoCCE");
+	else if(ptr->ct == 2)
+		ptr->rgce1.parseStringFormula(L"TRUE", L"CFParsedFormulaNoCCE");
 	if(m_arrFormula.size() > 1)
-		ptr->rgce2.parseStringFormula(m_arrFormula[1].get().m_sText, L"");
+		ptr->rgce2.parseStringFormula(m_arrFormula[1].get().m_sText, L"CFParsedFormulaNoCCE");
 	return XLS::BaseObjectPtr(ptr);
 }
 
@@ -4386,11 +4404,11 @@ void CConditionalFormatting::toXLS(XLS::BaseObjectPtr fmtsPtr)
 		ptr->mainCF.sqref.strValue = m_oSqRef.get();
 		formatingfirstCell = ptr->mainCF.sqref.getLocationFirstCell();
 	}
-	ptr->mainCF.ccf = m_arrItems.size();
 	for(auto i : m_arrItems)
 	{
 		UnionPtr->m_arCF12.push_back(i->toXLS(formatingfirstCell));
 	}
+	ptr->mainCF.ccf = UnionPtr->m_arCF12.size();
 
 	fmtsArray->m_arCONDFMT.push_back(XLS::BaseObjectPtr(UnionPtr));
 }

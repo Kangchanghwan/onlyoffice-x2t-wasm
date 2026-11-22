@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #ifndef _ASC_FONTCONVERTER_FONT_FILE_TYPE1_H
 #define _ASC_FONTCONVERTER_FONT_FILE_TYPE1_H
@@ -66,7 +76,7 @@ namespace NSFontConverter
 
     struct Type1TopDict
     {
-        // TO DO: supplement this structure
+        // TODO: extend this structure
         double arrdFontMatrix[6];
         double arrdFontBBox[4];
     };
@@ -79,10 +89,10 @@ namespace NSFontConverter
     const int c_nType1hlineto			= 0x0006; // 'hlineto'
     const int c_nType1vlineto			= 0x0007; // 'vlineto'
     const int c_nType1rrcurveto			= 0x0008; // 'rrcurveto'
-    const int c_nType1closepath			= 0x0009; // 'closepath' isn't used in Type2
+    const int c_nType1closepath			= 0x0009; // 'closepath' is not used in Type2
     const int c_nType1callsubr			= 0x000A; // 'callsubr
     const int c_nType1return			= 0x000B; // 'return'
-    const int c_nType1dotsection		= 0x000C; // 'dotsection' isn't used in Type2
+    const int c_nType1dotsection		= 0x000C; // 'dotsection' is not used in Type2
     const int c_nType1vstem3			= 0x010C; // 'vstem'
     const int c_nType1hstem3			= 0x020C; // 'hstem'
     const int c_nType1seac				= 0x060C; // 'seac' Type1 only
@@ -91,7 +101,7 @@ namespace NSFontConverter
     const int c_nType1div				= 0x0C0C; // 'div'
     const int c_nType1callothersubr		= 0x100C; // 'callothersubr'
     const int c_nType1pop				= 0x110C; // 'pop'
-    const int c_nType1setcurrentpoint	= 0x210C; // 'setcurrentpoint' isn't used in Type2
+    const int c_nType1setcurrentpoint	= 0x210C; // 'setcurrentpoint' is not used in Type2
     const int c_nType1hsbw				= 0x000D; // 'hsbw'
     const int c_nType1endchar			= 0x000E; // 'endchar'
     const int c_nType1rmoveto			= 0x0015; // 'rmoveto'
@@ -102,7 +112,7 @@ namespace NSFontConverter
     struct Type1CharstringItem
     {
         int  nValue;   // Value
-        bool bCommand; // TRUE: value - command number, FALSE: value - command parameter
+        bool bCommand; // TRUE: value is command number, FALSE: value is command parameter
 
         Type1CharstringItem(int nVal, bool bCom)
         {
@@ -140,9 +150,9 @@ namespace NSFontConverter
     struct Type1Glyph
     {
         std::wstring    sGlyph;    // Type1 glyph name
-        int             nUnicode;  // Unicode glyph value
+        int             nUnicode;  // Unicode value of the glyph
         Type1Charstring oData;
-        int             nReserved; // Use it for SID when converting Type1->Type2
+        int             nReserved; // Used for SID when converting Type1->Type2
 
         Type1Glyph(std::wstring& sGlyf, int nUni, Type1Charstring &oCharstring)
         {
@@ -328,7 +338,7 @@ namespace NSFontConverter
 
         double ReadDouble     (unsigned char *sString, int nMaxLen)
         {
-            // Move to the first space (after it comes the value)
+            // Move to first space (the value follows after it)
             int nPos = 0;
             while ( ' ' == sString[nPos] && nPos < nMaxLen )
                 nPos++;

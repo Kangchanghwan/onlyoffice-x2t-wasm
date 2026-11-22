@@ -1,8 +1,47 @@
+/*
+ * Copyright (C) Ascensio System SIA, 2009-2026
+ *
+ * This program is a free software product. You can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License (AGPL)
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
+ * Section 5 of the GNU AGPL version 3.
+ *
+ * No trademark rights are granted under this License.
+ *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 #include "NativeControlEmbed.h"
 #include "../server.h"
+#include "../../common/Path.h"
 
 JSSmart<CJSValue> CNativeControlEmbed::SetFilePath(JSSmart<CJSValue> path)
 {
+	if (CServerInstance::getInstance().IsEnable())
+		return NULL;
+
 	m_pInternal->SetFilePath(path->toStringW());
 	return NULL;
 }
@@ -30,8 +69,9 @@ JSSmart<CJSValue> CNativeControlEmbed::GetFileBinary(JSSmart<CJSValue> file)
 	if (CServerInstance::getInstance().IsEnable())
 	{
 		std::wstring sFileFolder = NSFile::GetDirectoryName(m_pInternal->GetFilePath());
-		if (0 == sFilePath.find(sFileFolder))
-			return CJSContext::createUint8Array(sFilePath);
+		std::wstring sShortPath = NSSystemPath::ShortenPath(sFilePath);
+		if (NSSystemPath::IsPathInDirectory(sFileFolder, sShortPath))
+			return CJSContext::createUint8Array(sShortPath);
 		return CJSContext::createNull();
 	}
 
@@ -41,14 +81,30 @@ JSSmart<CJSValue> CNativeControlEmbed::GetFileBinary(JSSmart<CJSValue> file)
 JSSmart<CJSValue> CNativeControlEmbed::GetFontBinary(JSSmart<CJSValue> file)
 {
 	// TODO:
-	// In theory, the files can have the same name, but be located in different directories.
-	// and therefore it would be necessary to write full paths in AllFonts.js.
-	// For now we will leave support for the old version too
+	// theoretically files can have the same name but be in different directories.
+	// so in AllFonts.js we should write full paths.
+	// for now keep support for the old version as well
 	std::wstring sFile = file->toStringW();
 	bool bIsFullFilePath = (std::wstring::npos != sFile.find('\\') || std::wstring::npos != sFile.find('/'));
 	if (bIsFullFilePath)
 	{
 		bIsFullFilePath = NSFile::CFileBinary::Exists(sFile);
+	}
+
+	if (bIsFullFilePath && CServerInstance::getInstance().IsEnable())
+	{
+		bool bIsKnownFont = false;
+		for (std::map<std::wstring, std::wstring>::const_iterator it = m_pInternal->m_map_fonts.begin();
+			 it != m_pInternal->m_map_fonts.end(); ++it)
+		{
+			if (NSSystemPath::IsPathInDirectory(it->second, sFile))
+			{
+				bIsKnownFont = true;
+				break;
+			}
+		}
+		if (!bIsKnownFont)
+			bIsFullFilePath = false;
 	}
 
 	if (!bIsFullFilePath)
@@ -162,7 +218,11 @@ JSSmart<CJSValue> CNativeControlEmbed::SaveChanges(JSSmart<CJSValue> sParam, JSS
 
 JSSmart<CJSValue> CNativeControlEmbed::ZipOpen(JSSmart<CJSValue> name)
 {
-	bool bIsOpen = m_pInternal->m_oZipWorker.Open(name->toStringW());
+	std::wstring sName = name->toStringW();
+	if (CServerInstance::getInstance().IsEnable() && !CServerInstance::getInstance().CheckTmpDirectory(sName))
+		return CJSContext::createNull();
+
+	bool bIsOpen = m_pInternal->m_oZipWorker.Open(sName);
 	if (!bIsOpen)
 		return CJSContext::createNull();
 
@@ -192,14 +252,23 @@ JSSmart<CJSValue> CNativeControlEmbed::ZipOpenBase64(JSSmart<CJSValue> name)
 	return obj->toValue();
 }
 
+static bool IsZipEntryName(const std::wstring& sName)
+{
+	return (std::wstring::npos == sName.find(L".."));
+}
+
 JSSmart<CJSValue> CNativeControlEmbed::ZipFileAsString(JSSmart<CJSValue> name)
 {
 	if (m_pInternal->m_oZipWorker.m_sTmpFolder.empty())
 		return CJSContext::createUndefined();
 
+	std::wstring sName = name->toStringW();
+	if (!IsZipEntryName(sName))
+		return CJSContext::createUndefined();
+
 	BYTE* pData = NULL;
 	DWORD len = 0;
-	m_pInternal->m_oZipWorker.GetFileData(name->toStringW(), pData, len);
+	m_pInternal->m_oZipWorker.GetFileData(sName, pData, len);
 	return  CJSContext::createString((char*)pData, len);
 }
 
@@ -208,7 +277,11 @@ JSSmart<CJSValue> CNativeControlEmbed::ZipFileAsBinary(JSSmart<CJSValue> name)
 	if (m_pInternal->m_oZipWorker.m_sTmpFolder.empty())
 		return CJSContext::createUndefined();
 
-	return CJSContext::createUint8Array(m_pInternal->m_oZipWorker.m_sTmpFolder + L"/" + name->toStringW());
+	std::wstring sName = name->toStringW();
+	if (!IsZipEntryName(sName))
+		return CJSContext::createUndefined();
+
+	return CJSContext::createUint8Array(m_pInternal->m_oZipWorker.m_sTmpFolder + L"/" + sName);
 }
 
 JSSmart<CJSValue> CNativeControlEmbed::ZipClose()
@@ -236,11 +309,17 @@ JSSmart<CJSValue> CNativeControlEmbed::GetImagesPath()
 
 #include "./../../graphics/MetafileToRenderer.h"
 #include "./../../raster/BgraFrame.h"
+#include "./../../raster/Metafile/MetaFileCommon.h"
 JSSmart<CJSValue> CNativeControlEmbed::GetImageOriginalSize(JSSmart<CJSValue> sUrl)
 {
+	std::wstring sName = sUrl->toStringW();
+
+	if (false/*TODO*/ && std::wstring::npos != sName.find(L".."))
+		return CJSContext::createUndefined();
+
 	IMetafileToRenderter oRenderer(NULL);
 	oRenderer.SetMediaDirectory(NSDirectory::GetFolderPath(m_pInternal->m_strImagesDirectory));
-	std::wstring sPath = oRenderer.GetImagePath(sUrl->toStringW());
+	std::wstring sPath = oRenderer.GetImagePath(sName);
 	CBgraFrame oFrame;
 	if (oFrame.OpenFile(sPath))
 	{
@@ -249,5 +328,22 @@ JSSmart<CJSValue> CNativeControlEmbed::GetImageOriginalSize(JSSmart<CJSValue> sU
 		ret->set("H", oFrame.get_Height());
 		return ret->toValue();
 	}
+
+#ifndef GRAPHICS_DISABLE_METAFILE
+	MetaFile::IMetaFile* pMetafile = MetaFile::Create(NULL);
+	int nWidth = 0, nHeight = 0;
+	const bool bHasSize = pMetafile->LoadFromFile(sPath.c_str()) &&
+					      MetaFile::GetRasterMaxSize(pMetafile, 1000, nWidth, nHeight);
+	pMetafile->Release();
+
+	if (bHasSize)
+	{
+		JSSmart<CJSObject> ret = CJSContext::createObject();
+		ret->set("W", nWidth);
+		ret->set("H", nHeight);
+		return ret->toValue();
+	}
+#endif
+
 	return CJSContext::createUndefined();
 }

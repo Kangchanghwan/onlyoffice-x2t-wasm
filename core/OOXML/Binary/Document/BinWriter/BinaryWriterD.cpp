@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "BinaryWriterD.h"
 
@@ -125,7 +135,7 @@ void BinaryCommonWriter::WriteItemEnd(int nStart)
 }
 int BinaryCommonWriter::WriteItemWithLengthStart()
 {
-//Remember the position so that at the end we can write the length there
+//Save position to write length at the end
 	int nStartPos = m_oStream.GetPosition();
 	m_oStream.Skip(4);
 	return nStartPos;
@@ -146,7 +156,7 @@ void BinaryCommonWriter::WriteBorder(const BYTE & type, const ComplexTypes::Word
 	WriteItemEnd(nCurPos);
 }
 void BinaryCommonWriter::WriteBorder(const ComplexTypes::Word::CBorder& border)
-{//TODO make all types of border
+{//todo implement all border types
 		
 	if (border.m_oColor.IsInit())
 		WriteColor(c_oSerBorderType::Color, border.m_oColor.get());
@@ -393,7 +403,7 @@ void BinaryCommonWriter::WriteFont(std::wstring sFontName, BYTE bType, DocWrappe
 {
 	if (!sFontName.empty())
 	{
-		//Font selection
+		//Font matching
 		sFontName = m_oFontProcessor.getFont(sFontName);
 		if (NULL != m_pEmbeddedFontsManager)
 			m_pEmbeddedFontsManager->CheckFont(sFontName, m_oFontProcessor.getFontManager());
@@ -927,6 +937,15 @@ void Binary_rPrWriter::Write_rPr(OOX::Logic::CRunProperty* rPr)
 		m_oBcw.m_oStream.WriteBYTE(c_oSerPropLenType::Long);
 		m_oBcw.m_oStream.WriteLONG(rPr->m_oKern.get().m_oVal.get().ToHps());
 	}
+	if (rPr->m_oEastAsianLayout.IsInit())
+	{
+		m_oBcw.m_oStream.WriteBYTE(c_oSerProp_rPrType::EastAsianLayout);
+		m_oBcw.m_oStream.WriteBYTE(c_oSerPropLenType::Variable);
+		int nCurPos = m_oBcw.WriteItemWithLengthStart();
+
+		m_oBcw.WriteEastAsianLayout(rPr->m_oEastAsianLayout.get());
+		m_oBcw.WriteItemWithLengthEnd(nCurPos);
+	}
 }
 void Binary_rPrWriter::Write_rPrChange(const OOX::Logic::CRPrChange& rPrChange)
 {
@@ -937,6 +956,43 @@ void Binary_rPrWriter::Write_rPrChange(const OOX::Logic::CRPrChange& rPrChange)
 		nCurPos = m_oBcw.WriteItemStart(c_oSerProp_RevisionType::rPrChange);
 		Write_rPr(rPrChange.m_pRunPr.GetPointer());
 		m_oBcw.WriteItemWithLengthEnd(nCurPos);
+	}
+}
+void BinaryCommonWriter::WriteEastAsianLayout(const ComplexTypes::Word::CEastAsianLayout& EastAsianLayout)
+{
+	int nCurPos = 0;
+	if (false != EastAsianLayout.m_oID.IsInit())
+	{
+		m_oStream.WriteBYTE(c_oSerProp_EastAsianLayoute::ID);
+		m_oStream.WriteBYTE(c_oSerPropLenType::Long);
+		m_oStream.WriteBOOL(EastAsianLayout.m_oID->GetValue());
+	}
+	if (false != EastAsianLayout.m_oCombine.IsInit())
+	{
+		bool val = SimpleTypes::onoffTrue == EastAsianLayout.m_oCombine->ToBool();
+		m_oStream.WriteBYTE(c_oSerProp_EastAsianLayoute::Combine);
+		m_oStream.WriteBYTE(c_oSerPropLenType::Byte);
+		m_oStream.WriteBOOL(val);
+	}
+	if (false != EastAsianLayout.m_oCombineBrackets.IsInit())
+	{
+		m_oStream.WriteBYTE(c_oSerProp_EastAsianLayoute::CombineBrackets);
+		m_oStream.WriteBYTE(c_oSerPropLenType::Byte);
+		m_oStream.WriteBYTE(EastAsianLayout.m_oCombineBrackets->GetValue());
+	}
+	if (false != EastAsianLayout.m_oVert.IsInit())
+	{
+		bool val = SimpleTypes::onoffTrue == EastAsianLayout.m_oVert->ToBool();
+		m_oStream.WriteBYTE(c_oSerProp_EastAsianLayoute::Vert);
+		m_oStream.WriteBYTE(c_oSerPropLenType::Byte);
+		m_oStream.WriteBOOL(val);
+	}
+	if (false != EastAsianLayout.m_oVertCompress.IsInit())
+	{
+		bool val = SimpleTypes::onoffTrue == EastAsianLayout.m_oVertCompress->ToBool();
+		m_oStream.WriteBYTE(c_oSerProp_EastAsianLayoute::VertCompress);
+		m_oStream.WriteBYTE(c_oSerPropLenType::Byte);
+		m_oStream.WriteBOOL(val);
 	}
 }
 
@@ -951,7 +1007,7 @@ Binary_pPrWriter::Binary_pPrWriter(ParamsWriter& oParamsWriter, BinaryHeaderFoot
 void Binary_pPrWriter::Write_pPr(const OOX::Logic::CParagraphProperty& pPr)
 {
 	int nCurPos = 0;
-	//Styles should be written first, because applying a style when opening will destroy the paragraph settings
+	//Styles must be written first, because applying style on open destroys paragraph settings
 
 	std::wstring sStyleId;
 	if (false != pPr.m_oPStyle.IsInit())
@@ -1014,8 +1070,8 @@ void Binary_pPrWriter::Write_pPr(const OOX::Logic::CParagraphProperty& pPr)
 		m_oBcw.m_oStream.WriteBYTE(c_oSerPropLenType::Byte);
 		m_oBcw.m_oStream.WriteBOOL(SimpleTypes::onoffTrue == pPr.m_oWidowControl.get().m_oVal.GetValue());
 	}
-	//Lists should be written after styles, because... When opened, styles are checked in the list adding methods
-	//Lists can be specified with styles. This must be taken into account.
+	//Lists must be written after styles, because list addition methods check styles when opening
+	//Lists can be defined in styles. This must be taken into account.
 //NumPr
 	if (pPr.m_oNumPr.IsInit() && (pPr.m_oNumPr->m_oNumID.IsInit() || pPr.m_oNumPr->m_oIlvl.IsInit()))
 	{
@@ -2436,7 +2492,7 @@ void Binary_tblPrWriter::WriteRowHeight(const ComplexTypes::Word::CHeight& rowHe
 	if (rowHeight.m_oVal.IsInit())
 	{
 		//HRule
-		//although according to the specification the absence of hRule should be interpreted as auto(17.4.81 trHeight (Table Row Height))
+		//although by spec absence of hRule should be treated as auto (17.4.81 trHeight (Table Row Height))
 		//word treats <w:trHeight w:val="542"/> as AtLeast
 		SimpleTypes::EHeightRule eHRule = SimpleTypes::heightruleAtLeast;
 		if (rowHeight.m_oHRule.IsInit())
@@ -3381,6 +3437,9 @@ BinaryDocumentTableWriter::BinaryDocumentTableWriter(ParamsWriter& oParamsWriter
 	pDocument		= NULL;
 	pJsaProject		= NULL;
 	m_bWriteSectPr	= false;
+
+	m_nContentParagraphStart		= -1;
+	m_nContentParagraphContentStart	= -1;
 }
 void BinaryDocumentTableWriter::Write(OOX::Logic::CDocPartPr* pDocPartPr)
 {
@@ -3499,6 +3558,104 @@ void BinaryDocumentTableWriter::Write(std::vector<OOX::WritingElement*> & aElems
 	int nStart = m_oBcw.WriteItemWithLengthStart();
 	WriteDocumentContent(aElems);
 	m_oBcw.WriteItemWithLengthEnd(nStart);
+}
+void BinaryDocumentTableWriter::Write(IDocumentContentProvider& oContentProvider)
+{
+	int nStart = m_oBcw.WriteItemWithLengthStart();
+
+	while (oContentProvider.WriteNextContent(*this))
+	{
+	}
+	WriteDocumentContentEnd();
+
+	m_oBcw.WriteItemWithLengthEnd(nStart);
+}
+std::vector<BYTE> BinaryDocumentTableWriter::CutStreamTail(int nStart)
+{
+	int nEnd = m_oBcw.m_oStream.GetPosition();
+	BYTE* pData = m_oBcw.m_oStream.GetBuffer();
+
+	std::vector<BYTE> arData(pData + nStart, pData + nEnd);
+	m_oBcw.m_oStream.SetPosition(nStart);
+
+	return arData;
+}
+int BinaryDocumentTableWriter::AddParagraphProperty(const OOX::Logic::CParagraphProperty& oPPr)
+{
+	// serialized once
+	int nStart = m_oBcw.m_oStream.GetPosition();
+	bpPrs.Write_pPr(oPPr);
+
+	m_arContentParagraphProperties.push_back(CutStreamTail(nStart));
+	return (int)m_arContentParagraphProperties.size() - 1;
+}
+int BinaryDocumentTableWriter::AddRunProperty(OOX::Logic::CRunProperty& oRPr)
+{
+	int nStart = m_oBcw.m_oStream.GetPosition();
+	brPrs.Write_rPr(&oRPr);
+
+	m_arContentRunProperties.push_back(CutStreamTail(nStart));
+	return (int)m_arContentRunProperties.size() - 1;
+}
+void BinaryDocumentTableWriter::StartParagraph(int nPPr)
+{
+	m_oBcw.m_oStream.WriteBYTE(c_oSerParType::Par);
+	m_nContentParagraphStart = m_oBcw.WriteItemWithLengthStart();
+
+	if (nPPr >= 0 && nPPr < (int)m_arContentParagraphProperties.size())
+	{
+		const std::vector<BYTE>& arPPr = m_arContentParagraphProperties[nPPr];
+
+		m_oBcw.m_oStream.WriteBYTE(c_oSerParType::pPr);
+		int nCurPos = m_oBcw.WriteItemWithLengthStart();
+		if (!arPPr.empty())
+			m_oBcw.m_oStream.WriteBYTEArray(arPPr.data(), arPPr.size());
+		m_oBcw.WriteItemWithLengthEnd(nCurPos);
+	}
+	m_oBcw.m_oStream.WriteBYTE(c_oSerParType::Content);
+	m_nContentParagraphContentStart = m_oBcw.WriteItemWithLengthStart();
+}
+void BinaryDocumentTableWriter::EndParagraph()
+{
+	if (m_nContentParagraphStart < 0) return;
+
+	m_oBcw.WriteItemWithLengthEnd(m_nContentParagraphContentStart);
+	m_oBcw.WriteItemWithLengthEnd(m_nContentParagraphStart);
+
+	m_nContentParagraphStart = m_nContentParagraphContentStart = -1;
+}
+void BinaryDocumentTableWriter::WriteContentRunProperty(int nRPr)
+{
+	if (nRPr >= 0 && nRPr < (int)m_arContentRunProperties.size())
+	{
+		const std::vector<BYTE>& arRPr = m_arContentRunProperties[nRPr];
+
+		int nCurPos = m_oBcw.WriteItemStart(c_oSerRunType::rPr);
+		if (!arRPr.empty())
+			m_oBcw.m_oStream.WriteBYTEArray(arRPr.data(), arRPr.size());
+		m_oBcw.WriteItemEnd(nCurPos);
+	}
+}
+void BinaryDocumentTableWriter::WriteRunText(int nRPr, const std::wstring& sText)
+{
+	int nRunPos = m_oBcw.WriteItemStart(c_oSerParType::Run);
+		WriteContentRunProperty(nRPr);
+
+		int nCurPos = m_oBcw.WriteItemStart(c_oSerRunType::Content);
+			WriteText(sText, c_oSerRunType::run);
+		m_oBcw.WriteItemWithLengthEnd(nCurPos);
+	m_oBcw.WriteItemWithLengthEnd(nRunPos);
+}
+void BinaryDocumentTableWriter::WriteRunTab(int nRPr)
+{
+	int nRunPos = m_oBcw.WriteItemStart(c_oSerParType::Run);
+		WriteContentRunProperty(nRPr);
+
+		int nCurPos = m_oBcw.WriteItemStart(c_oSerRunType::Content);
+			m_oBcw.m_oStream.WriteBYTE(c_oSerRunType::tab);
+			m_oBcw.m_oStream.WriteLONG(c_oSerPropLenType::Null);
+		m_oBcw.WriteItemWithLengthEnd(nCurPos);
+	m_oBcw.WriteItemWithLengthEnd(nRunPos);
 }
 void BinaryDocumentTableWriter::WriteDocumentContent(const std::vector<OOX::WritingElement*> & aElems)
 {
@@ -3637,6 +3794,11 @@ void BinaryDocumentTableWriter::WriteDocumentContent(const std::vector<OOX::Writ
 			break;
 		}
 	}
+	WriteDocumentContentEnd();
+}
+void BinaryDocumentTableWriter::WriteDocumentContentEnd()
+{
+	int nCurPos = 0;
 //SectPr  & Background
 	if (true == m_bWriteSectPr && (NULL != pSectPr || NULL != pBackground))
 	{
@@ -4356,7 +4518,7 @@ void BinaryDocumentTableWriter::WriteFldSimpleContent(OOX::Logic::CFldSimple* pF
 {
 	int nCurPos = 0;
 
-//the order of writing is important
+//write order is important
 
 	nCurPos = m_oBcw.WriteItemStart(c_oSer_FldSimpleType::Instr);
 		m_oBcw.m_oStream.WriteStringW3(*pFldSimple->m_sInstr);
@@ -4706,7 +4868,7 @@ void BinaryDocumentTableWriter::WriteRun(OOX::Logic::CRun* pRun, bool bHyperlink
 	else
 		nRecordType = c_oSerParType::Run;
 
-//Split the array by et_w_sym sign
+//Split array by et_w_sym sign
 	for (std::vector<OOX::WritingElement*>::iterator it = nIndexStart; it != nIndexEnd; ++it)
 	{
 		OOX::WritingElement* item = (*it);
@@ -4909,7 +5071,7 @@ void BinaryDocumentTableWriter::WriteMathArgNodes(const std::vector<OOX::Writing
 				nCurPos = m_oBcw.WriteItemStart(c_oSer_OMathContentType::Matrix);
 
 				LONG lCol = 0;
-				//TODO remove, because without m:mcs, the number of columns should be resolved dynamically in the script
+				//TODO remove, since without m:mcs, column count should be resolved dynamically in script
 				for (std::vector<OOX::WritingElement*>::iterator jt = pMatrix->m_arrItems.begin(); jt != pMatrix->m_arrItems.end(); jt++)
 				{
 					OOX::WritingElement* item = *jt;
@@ -5222,7 +5384,7 @@ void BinaryDocumentTableWriter::WriteMathRunContent(OOX::Logic::CMRun* pMRun)
 				OOX::Logic::CSym* oSym = static_cast<OOX::Logic::CSym*>(item);
 				wchar_t ch = 0x0FFF & oSym->m_oChar->GetValue();
 				std::wstring sText(&ch, 1);
-				WriteText(sText, c_oSerRunType::run);  // TODO determine what to write c_oSerRunType::run or c_oSerRunType::delText - 66333
+				WriteText(sText, c_oSerRunType::run);  // todooo determine what to write c_oSerRunType::run or c_oSerRunType::delText - 66333
 				
 			}break;
 			case OOX::et_w_delText:
@@ -6554,7 +6716,7 @@ void BinaryDocumentTableWriter::WritePreparedRun(OOX::Logic::CRun *pRun, bool bH
 	int							nCurPos		= 0;
 	OOX::Logic::CRunProperty*	oCur_rPr	= pRun->m_oRunProperty;
 
-//If the first element is a symbol, need to set the font in its settings
+//If first element is symbol, need to set font in its settings
 	if (start != pRun->m_arrItems.end() && OOX::et_w_sym == (*start)->getType())
 	{
 		OOX::Logic::CSym* oSym = static_cast<OOX::Logic::CSym*>(*start);
@@ -6583,7 +6745,7 @@ void BinaryDocumentTableWriter::WritePreparedRun(OOX::Logic::CRun *pRun, bool bH
 		m_oBcw.WriteItemEnd(nCurPos);
 	}
 
-	//Content is written starting from the nIndexStart index and ending with the preceding element for nIndexStop
+	//Content is written starting from nIndexStart and ending with preceding element for nIndexStop
 	nCurPos = m_oBcw.WriteItemStart(c_oSerRunType::Content);
 		WriteRunContent( start, end, bHyperlink);
 	m_oBcw.WriteItemWithLengthEnd(nCurPos);
@@ -6685,7 +6847,7 @@ void BinaryDocumentTableWriter::WriteRunContent(std::vector<OOX::WritingElement*
 				OOX::Logic::CSym* oSym = static_cast<OOX::Logic::CSym*>(item);
 				wchar_t ch = 0x0FFF & oSym->m_oChar->GetValue();
 				std::wstring sText(&ch, 1);
-				WriteText(sText, c_oSerRunType::run);  // TODO determine what to write c_oSerRunType::run or c_oSerRunType::delText - 66333
+				WriteText(sText, c_oSerRunType::run);  // todooo determine what to write c_oSerRunType::run or c_oSerRunType::delText - 66333
 				break;
 			}
 		case OOX::et_w_delText:
@@ -6864,7 +7026,7 @@ bool BinaryDocumentTableWriter::WriteDrawingPptx(OOX::WritingElement* item)
 	{
 		if ((pGraphic) && (pGraphic->contentPart.IsInit()))
 		{
-			//TODO sort by types of inserts
+			//todooo parse by insertion types
 			res = false;
 		}
 		else
@@ -7651,7 +7813,7 @@ void BinaryDocumentTableWriter::WriteDocTable(OOX::Logic::CTbl* tbl)
 }
 bool BinaryDocumentTableWriter::ValidateRow(const std::vector<OOX::WritingElement *> & arrItems)
 {
-//Check that not all cells in a row are vertically merged
+//Check that not all cells in row are vertically merged
 	bool bRes = true;
 
 	for(size_t i = 0; i < arrItems.size(); ++i)
@@ -8407,7 +8569,7 @@ void BinaryDocumentTableWriter::WriteSdtPrDate(const OOX::Logic::CDate& oDate)
 	if (oDate.m_oFullDate.IsInit())
 	{
 		nCurPos = m_oBcw.WriteItemStart(c_oSerSdt::FullDate);
-		m_oBcw.m_oStream.WriteStringW3(oDate.m_oFullDate->GetValue());
+		m_oBcw.m_oStream.WriteStringW3(oDate.m_oFullDate->ToString());
 		m_oBcw.WriteItemEnd(nCurPos);
 	}
 	if (oDate.m_oCalendar.IsInit())
@@ -8498,6 +8660,12 @@ void BinaryDocumentTableWriter::WriteSdtFormPr(const OOX::Logic::CFormPr& oFormP
 	{
 		nCurPos = m_oBcw.WriteItemStart(c_oSerSdt::FormPrRequired);
 		m_oBcw.m_oStream.WriteBOOL(oFormPr.m_oRequired.get());
+		m_oBcw.WriteItemEnd(nCurPos);
+	}
+	if (oFormPr.m_oSpellCheck.IsInit())
+	{
+		nCurPos = m_oBcw.WriteItemStart(c_oSerSdt::FormPrSpellCheck);
+		m_oBcw.m_oStream.WriteBOOL(oFormPr.m_oSpellCheck.get());
 		m_oBcw.WriteItemEnd(nCurPos);
 	}
 	if (oFormPr.m_oBorder.IsInit())
@@ -8694,7 +8862,7 @@ void BinaryCommentsTableWriter::WriteCommentsContent(OOX::CComments& oComments, 
 		}
 		aCommentsToWrite.push_back(pNewCommentWriteTemp);
 	}
-	//handling resolved and done status flags
+	//handle reply and done
 	if (NULL != pCommentsExt)
 	{
 		for(size_t i = 0, length = pCommentsExt->m_arrComments.size(); i < length; i++)
@@ -8756,7 +8924,7 @@ void BinaryCommentsTableWriter::WriteCommentsContent(OOX::CComments& oComments, 
 					CCommentWriteTemp* pCommentWriteTemp = pPair->second;
 					if (pCommentExtensible->m_oDateUtc.IsInit())
 					{
-						pCommentWriteTemp->sDateUtc = pCommentExtensible->m_oDateUtc->GetValue();
+						pCommentWriteTemp->sDateUtc = pCommentExtensible->m_oDateUtc->ToString();
 					}
 				}
 			}
@@ -9099,6 +9267,12 @@ void BinarySettingsTableWriter::WriteSettingsContent(OOX::CSettings& oSettings, 
 	{
 		nCurPos = m_oBcw.WriteItemStart(c_oSer_SettingsType::DisplayVerticalDrawingGridEvery);
 		m_oBcw.m_oStream.WriteLONG(*oSettings.m_oDisplayVerticalDrawingGridEvery->m_oVal);
+		m_oBcw.WriteItemEnd(nCurPos);
+	}
+	if (oSettings.m_oCharacterSpacingControl.IsInit())
+	{
+		nCurPos = m_oBcw.WriteItemStart(c_oSer_SettingsType::CharacterSpacingControl);
+		m_oBcw.m_oStream.WriteBYTE(oSettings.m_oCharacterSpacingControl->m_oVal.GetValue());
 		m_oBcw.WriteItemEnd(nCurPos);
 	}
 };
@@ -9790,20 +9964,21 @@ std::wstring BinaryFileWriter::WriteFileHeader(long nDataSize, int version)
 }
 void BinaryFileWriter::WriteMainTableStart(bool bSigTable)
 {
-	int nTableCount = 128;//Deliberately set a large number so as not to increase it when adding another table.
+	int nTableCount = 128;//Intentionally set large number to avoid increasing it when adding next table.
 	m_nRealTableCount = 0;
 	m_nMainTableStart = m_oBcw.m_oStream.GetPosition();
-	//calculate from what position tables can be written
+	//calculate from which position we can write tables
 	int nmtItemSize = 5;//5 byte
 	m_nLastFilePos = m_nMainTableStart + nTableCount * nmtItemSize;
 	//Write mtLen
 	m_oBcw.m_oStream.WriteBYTE(0);
 
+	//zero the reserved main-table region so unused directory slots are deterministic
+	memset(m_oBcw.m_oStream.GetBuffer() + m_oBcw.m_oStream.GetPosition(), 0, nTableCount * nmtItemSize);
+
 	if (bSigTable)
 	{
 		//BinarySigTableWriter
-		memset(m_oBcw.m_oStream.GetBuffer() + m_oBcw.m_oStream.GetPosition(), 0, 5 + nTableCount * nmtItemSize);
-		
 		int nCurPos = WriteTableStart(c_oSerTableTypes::Signature);		
 		
 		BinarySigTableWriter oBinarySigTableWriter(m_oParamsWriter);
@@ -9817,7 +9992,7 @@ void BinaryFileWriter::WriteMainTableEnd()
 	m_oBcw.m_oStream.SetPosition(m_nMainTableStart);
 	m_oBcw.m_oStream.WriteBYTE(m_nRealTableCount);
 
-	//Seek to the end
+	//Seek to end
 	m_oBcw.m_oStream.SetPosition(m_nLastFilePos);
 }
 int BinaryFileWriter::WriteTableStart(BYTE type, int nStartPos)
@@ -9831,15 +10006,15 @@ int BinaryFileWriter::WriteTableStart(BYTE type, int nStartPos)
 	m_oBcw.m_oStream.WriteLONG(m_nLastFilePos);
 
 	//Write table
-	//Remember the position in MainTable
+	//Remember position in MainTable
 	int nCurPos = m_oBcw.m_oStream.GetPosition();
-	//Seek to a free area
+	//Seek to free area
 	m_oBcw.m_oStream.SetPosition(m_nLastFilePos);
 	return nCurPos;
 }
 void BinaryFileWriter::WriteTableEnd(int nCurPos)
 {
-	//move the position to where the next table can go
+	//shift position where next table can be written
 	m_nLastFilePos = m_oBcw.m_oStream.GetPosition();
 	m_nRealTableCount++;
 	//Seek back to MainTable
@@ -10183,6 +10358,61 @@ void BinaryFileWriter::intoBindoc(const std::wstring& sSrcPath)
 
 	if (pDocx)		delete pDocx;		pDocx = NULL;
 	if (pDocxFlat)	delete pDocxFlat;	pDocxFlat = NULL;
+}
+void BinaryFileWriter::intoBindoc(IDocumentContentProvider& oContentProvider)
+{
+	NSBinPptxRW::CBinaryFileWriter& oBufferedStream = m_oBcw.m_oStream;
+
+	OOX::CDocument oDocument(NULL); // empty
+
+	this->WriteMainTableStart();
+
+	int nCurPos = 0;
+	{
+		OOX::CApp oApp(NULL);
+		oApp.SetDefaults();
+
+		nCurPos = this->WriteTableStart(BinDocxRW::c_oSerTableTypes::App);
+		oApp.toPPTY(&oBufferedStream);
+		this->WriteTableEnd(nCurPos);
+	}
+	{
+		OOX::CCore oCore(NULL);
+		oCore.SetCreator(L"");
+		oCore.SetLastModifiedBy(L"");
+
+		nCurPos = this->WriteTableStart(BinDocxRW::c_oSerTableTypes::Core);
+		oCore.toPPTY(&oBufferedStream);
+		this->WriteTableEnd(nCurPos);
+	}
+	{
+		ParamsDocumentWriter oParamsDocumentWriter(&oDocument);
+		m_oParamsWriter.m_pCurRels = oParamsDocumentWriter.m_pRels;
+
+		BinDocxRW::BinaryHeaderFooterTableWriter oBinaryHeaderFooterTableWriter(m_oParamsWriter, &oDocument, &m_oParamsWriter.m_mapIgnoreComments);
+		BinDocxRW::BinaryDocumentTableWriter oBinaryDocumentTableWriter(m_oParamsWriter, oParamsDocumentWriter, &m_oParamsWriter.m_mapIgnoreComments, &oBinaryHeaderFooterTableWriter);
+
+		m_oParamsWriter.m_pOfficeDrawingConverter->SetRelsPtr(oParamsDocumentWriter.m_pRels);
+		m_oParamsWriter.m_pOfficeDrawingConverter->Clear();
+
+		oBinaryDocumentTableWriter.pDocument = &oDocument;
+		oBinaryDocumentTableWriter.m_bWriteSectPr = true;
+
+		nCurPos = this->WriteTableStart(BinDocxRW::c_oSerTableTypes::Document);
+		oBinaryDocumentTableWriter.Write(oContentProvider);
+		this->WriteTableEnd(nCurPos);
+
+		nCurPos = this->WriteTableStart(BinDocxRW::c_oSerTableTypes::HdrFtr);
+		oBinaryHeaderFooterTableWriter.Write();
+		this->WriteTableEnd(nCurPos);
+	}
+	{
+		nCurPos = this->WriteTableStart(BinDocxRW::c_oSerTableTypes::Customs);
+			BinDocxRW::BinaryCustomsTableWriter oBinaryCustomsTableWriter(m_oParamsWriter);
+			oBinaryCustomsTableWriter.Write(&oDocument);
+		this->WriteTableEnd(nCurPos);
+	}
+	this->WriteMainTableEnd();
 }
 void BinaryFileWriter::ParagraphAddBreak(OOX::Logic::CParagraph* pParagraph)
 {

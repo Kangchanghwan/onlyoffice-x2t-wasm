@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "FontManager.h"
 #include "internal/ftobjs.h"
@@ -556,8 +566,8 @@ int CFontFile::IsUnicodeRangeAvailable(unsigned long ulBit, unsigned int un4Byte
 	case 5: if ( pOs2->ulCodePageRange2 & ulMult ) nResult = 1; break;
 	}
 
-	// Special branch for cases when charset can be specified not through values
-	// ulCodePageRange, but directly through the Cmap type.
+	// Special branch for cases when charset can be specified not through
+	// ulCodePageRange values, but directly through Cmap type.
 
 	//  Charset Name       Charset Value(hex)  Codepage number   Platform_ID   Encoding_ID   Description
 	//  -------------------------------------------------------------------------------------------------
@@ -628,38 +638,38 @@ void CFontFile::UpdateStyles(const INT& bBold, const INT& bItalic)
 	INT bSrcBold   = (-1 != sStyle.find("Bold"));
 	INT bSrcItalic = (-1 != sStyle.find("Italic"));
 
-	if (!bBold) // Need a non-bold font
+	if (!bBold) // We need a non-bold font
 	{
 		m_bNeedDoBold = false;
 	}
-	else if (bBold) // Make the font bold
+	else if (bBold) // We need to make the font bold
 	{
 		if (bSrcBold)
 		{
-			// The original font is already bold, so there is no need to do anything additional.
+			// Original font is already bold, no additional action needed
 			m_bNeedDoBold = false;
 		}
 		else
 		{
-			// The original font isn't bold, so synthesize bold
+			// Original font is not bold, so we apply boldness ourselves
 			m_bNeedDoBold = true;
 		}
 	}
 
-	if (!bItalic) // Need a non-italic font
+	if (!bItalic) // We need a non-italic font
 	{
 		SetItalic(false);
 	}
-	else if (bItalic) // Make the font italic
+	else if (bItalic) // We need to make the font italic
 	{
 		if (bSrcItalic)
 		{
-			// The original font is already italic, so no additional work is needed
+			// Original font is already italic, no additional action needed
 			SetItalic(false);
 		}
 		else
 		{
-			// The original font isn't italic, so synthesize italic
+			// Original font is not italic, so we apply italics ourselves
 			SetItalic(true);
 		}
 	}
@@ -826,14 +836,14 @@ TFontCacheSizes CFontFile::CacheGlyph(const int& code, const bool& isRaster, CVe
 
 		if (!m_bStringGID)
 		{
-			// trying to find the right font
+			// try to select the appropriate font
 			CFontFile* pPickFile = m_pFontManager->GetFontFileBySymbol(this, code);
 			if (!pPickFile)
 				return oSizes;
 
 			TFontCacheSizes oSizesCheck = pPickFile->CacheGlyph(code, isRaster, pWorker, true);
 
-			// the file is in the cache, so delete it here
+			// file is in cache, but needs to be deleted here
 			RELEASEINTERFACE(pPickFile);
 
 			if (oSizesCheck.eState == glyphstateNormal)
@@ -946,7 +956,7 @@ TFontCacheSizes CFontFile::CacheGlyph(const int& code, const bool& isRaster, CVe
 	else
 		pBitmap->pData = NULL;
 
-	// Everything in the cache is deleted (during flush or replacement)
+	// Everything is deleted in cache (during cleanup or replacement)
 	pBitmap->bFreeData = FALSE;
 
 	int nIndex2;
@@ -1366,10 +1376,10 @@ static int GlyphPathConicTo(const FT_Vector *pControlPoint, const FT_Vector *pEn
 	double dX3 = (double)pEndPoint->x / 64.0;
 	double dY3 = (double)pEndPoint->y / 64.0;
 
-	// Construct a quadratic Bezier curve using a cubic Bezier curve. If p0, pC, p3 -
-	// the start, control, and end points, respectively, for a second-order Bezier curve. Then
-	// for the same curve, considered as a third-order Bezier curve, the points p0, p1, p2, p3 will be
-	// starting point, two control points, end point. Where p1 and p2 are calculated using the following formulas:
+	// Build a quadratic Bezier curve using a cubic Bezier curve. If p0, pC, p3 are
+	// the start, control, and end points respectively for a quadratic Bezier curve, then
+	// for the same curve treated as a cubic Bezier curve, points p0, p1, p2, p3 will be
+	// the start, two control, and end points. Where p1 and p2 are calculated as follows:
 	//     p1 = (1/3) * (p0 + 2pC)
 	//     p2 = (1/3) * (2pC + p3)
 

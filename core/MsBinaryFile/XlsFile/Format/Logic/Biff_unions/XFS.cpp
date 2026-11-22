@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "XFS.h"
@@ -53,12 +63,12 @@ const bool XFS::loadContent(BinProcessor& proc)
 	int cellXfs_count		= 0;
 	
     XF xf(cell_xf_current_id, style_xf_current_id);
-    int count = proc.repeated(xf , 0, 0); // "Stock symbols comparison1.xls" (second FORMATTING)
+    int count = proc.repeated(xf , 0, 0); // "Stock symbols comparison1.xls" (second FORMATING)
 
 	int ind = 0;
 	while (count > 0 && elements_.size() > 0)
 	{
-		//separate style & complex
+		//split style & complex
 		XF* xfs = dynamic_cast<XF*>(elements_.front().get());
 
 		xfs->ind_xf = ind++;
@@ -104,27 +114,85 @@ const bool XFS::loadContent(BinProcessor& proc)
 	return true;
 }
 
+
+
 const bool XFS::saveContent(BinProcessor& proc)
 {
 	auto globInfo = proc.getGlobalWorkbookInfo();
-	for(auto i = 0; i < 16; i++)
+	auto calcChecksum = [](CFRecord record, _UINT32 &checksum)
+	{
+		auto beginData = record.getCurStaticData<BYTE>() - record.getRdPtr();
+		size_t len = record.getRdPtr();
+		for (size_t j = 0; j < len; j++)
+		{
+			checksum ^= ((_UINT32)beginData[j] << 24);
+
+			for (int i = 0; i < 8; i++)
+			{
+				if (checksum & 0x80000000)
+					checksum = ((checksum << 1) ^ 0x000000AFU) & 0xFFFFFFFFU;
+				else
+					checksum = (checksum << 1) & 0xFFFFFFFFU;
+			}
+		}
+	};
+	_UINT32 crc = 0;
+	for(auto i = 0; i < 15; i++)
 	{
 		size_t index = 0;
 		XF cellStyleMandatory(index, index);
 		cellStyleMandatory.fStyle = true;
+		cellStyleMandatory.ixfParent = 0xFFF;
+		if(!m_arXFext.empty())
+		{	CFRecord tempRec(224, proc.getGlobalWorkbookInfo());
+			cellStyleMandatory.writeFields(tempRec);
+			calcChecksum(tempRec, crc);
+		}
 		proc.mandatory(cellStyleMandatory);
 	}
+	{
+		size_t index = 0;
+		XF cellStyleMandatory(index, index);
+		cellStyleMandatory.fStyle = false;
+		cellStyleMandatory.ixfParent = 0;
+		if(!m_arXFext.empty())
+		{	CFRecord tempRec(224, proc.getGlobalWorkbookInfo());
+			cellStyleMandatory.writeFields(tempRec);
+			calcChecksum(tempRec, crc);
+		}
+		proc.mandatory(cellStyleMandatory);
+	}
+
 	for (auto i: m_arCellStyles)
 		if(i!= nullptr)
+		{
 			proc.mandatory(*i);
+			if(!m_arXFext.empty())
+			{	CFRecord tempRec(224, proc.getGlobalWorkbookInfo());
+				auto xf = static_cast<XF*>(i.get());
+				xf->writeFields(tempRec);
+				calcChecksum(tempRec, crc);
+			}
+		}
 	globInfo->cellStyleXfs_count = m_arCellStyles.size() + 16; // styles + 16 mandatory styles
 	for (auto i: m_arCellXFs)
         if(i!= nullptr)
+		{
             proc.mandatory(*i);
+			if(!m_arXFext.empty())
+			{	CFRecord tempRec(224, proc.getGlobalWorkbookInfo());
+				auto xf = static_cast<XF*>(i.get());
+				xf->writeFields(tempRec);
+				calcChecksum(tempRec, crc);
+			}
+		}
 	globInfo->cellXfs_count = m_arCellXFs.size();
-    if(m_XFCRC != nullptr )
+	if(!m_arXFext.empty())
     {
-        proc.mandatory(*m_XFCRC);
+		XLS::XFCRC XFcrc;
+		XFcrc.cxfs = globInfo->cellStyleXfs_count + globInfo->cellXfs_count;
+		XFcrc.crc = crc;
+		proc.mandatory(XFcrc);
         for(auto i : m_arXFext)
             proc.mandatory(*i);
     }
@@ -237,3 +305,4 @@ int XFS::serialize(std::wostream & stream)
 }
 
 } // namespace XLS
+

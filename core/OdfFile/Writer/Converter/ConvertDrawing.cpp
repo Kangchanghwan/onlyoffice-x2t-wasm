@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "XlsxConverter.h"
 #include "PptxConverter.h"
@@ -226,14 +236,17 @@ void OoxConverter::convert(PPTX::Logic::Xfrm *oox_xfrm)
 	if (oox_xfrm->extX.IsInit())	width	= Emu2Pt(*oox_xfrm->extX);
 	if (oox_xfrm->extY.IsInit())	height	= Emu2Pt(*oox_xfrm->extY);
 	
+	if (oox_xfrm->rot.IsInit())
+		odf_context()->drawing_context()->set_rotate(oox_xfrm->rot.get_value_or(0)/60000.);
+	
 	odf_context()->drawing_context()->set_size(	width, height);					
 	odf_context()->drawing_context()->set_position( x, y);
 	
 	if (oox_xfrm->flipH.get_value_or(false))	odf_context()->drawing_context()->set_flip_H(true);
 	if (oox_xfrm->flipV.get_value_or(false))	odf_context()->drawing_context()->set_flip_V(true);
 	
-	if (oox_xfrm->rot.IsInit())
-		odf_context()->drawing_context()->set_rotate(oox_xfrm->rot.get_value_or(0)/60000.);
+//	if (oox_xfrm->rot.IsInit())
+//		odf_context()->drawing_context()->set_rotate(oox_xfrm->rot.get_value_or(0)/60000.);
 }
 void OoxConverter::convert(PPTX::Logic::Xfrm *oox_txbx, PPTX::Logic::Xfrm *oox_xfrm)
 {
@@ -354,7 +367,7 @@ void OoxConverter::convert(PPTX::Logic::Pic *oox_picture)
 				if (pathMedia.empty() && ext.link_media.IsInit())
 				{
 					pathMedia = find_link_by_id(ext.link_media->get(), 3, bExternal);
-					//for example mp3 files
+					// for example mp3 files
 				}
 				if (ext.st.IsInit())	start	= *ext.st;
 				if (ext.end.IsInit())	end		= *ext.end;
@@ -422,7 +435,7 @@ void OoxConverter::convert(PPTX::Logic::Pic *oox_picture)
 	
 						if (!sIdImageFileCache.empty())
 						{
-							//looking for a physical file (rId relative to vml_drawing)
+							// searching for physical file (rId relative to vml_drawing)
 							smart_ptr<OOX::File> pFile = pVml->Find(sIdImageFileCache);
 
 							if (pFile.IsInit() && (OOX::FileTypes::Image == pFile->type()))
@@ -899,6 +912,8 @@ void OoxConverter::convert(PPTX::Logic::Shape *oox_shape)
 
 	convert(&oox_shape->nvSpPr);	
 
+	DocxConverter* docx_converter = dynamic_cast<DocxConverter*>(this);
+
 	if (oox_shape->txXfrm.IsInit() == false)
 	{
 		if (oox_shape->oTextBoxShape.IsInit()) //docx sdt
@@ -926,6 +941,34 @@ void OoxConverter::convert(PPTX::Logic::Shape *oox_shape)
 					odf_context()->drawing_context()->set_text( odf_context()->text_context());
 				
 				odf_context()->end_text_context();	
+			}
+		}
+		else if (oox_shape->strTextBoxShape.is_init() && docx_converter)//после конвертации старого шейпа (vml)
+		{
+			XmlUtils::CXmlLiteReader oReader;
+
+			std::wstring sBegin(_T("<root xmlns:w15=\"http://schemas.microsoft.com/office/word/2012/wordml\" xmlns:wpc=\"http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas\" xmlns:mc=\"http://schemas.openxmlformats.org/markup-compatibility/2006\" xmlns:o=\"urn:schemas-microsoft-com:office:office\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:m=\"http://schemas.openxmlformats.org/officeDocument/2006/math\" xmlns:v=\"urn:schemas-microsoft-com:vml\" xmlns:wp14=\"http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\" xmlns:w10=\"urn:schemas-microsoft-com:office:word\" xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:w14=\"http://schemas.microsoft.com/office/word/2010/wordml\" xmlns:wpg=\"http://schemas.microsoft.com/office/word/2010/wordprocessingGroup\" xmlns:wpi=\"http://schemas.microsoft.com/office/word/2010/wordprocessingInk\" xmlns:wne=\"http://schemas.microsoft.com/office/word/2006/wordml\" xmlns:wps=\"http://schemas.microsoft.com/office/word/2010/wordprocessingShape\">"));
+			std::wstring sEnd(_T("</root>"));
+			std::wstring bsTxContentTemp = sBegin + *oox_shape->strTextBoxShape + sEnd;
+
+			if (oReader.FromString(bsTxContentTemp))
+			{
+				oReader.ReadNextNode();//root
+				oReader.ReadNextNode();//v:textbox
+				std::wstring sRootName = XmlUtils::GetNameNoNS(oReader.GetName());
+				if (_T("textbox") == sRootName)
+					oReader.ReadNextNode();//w:txbxContent
+		
+				OOX::Logic::CSdtContent oSdtContent;
+				oSdtContent.fromXML(oReader);
+
+				odf_context()->start_text_context();
+
+				docx_converter->convert(&oSdtContent);
+				convert(oox_shape->oTextBoxBodyPr.GetPointer());
+				
+				odf_context()->drawing_context()->set_text(odf_context()->text_context());
+				odf_context()->end_text_context();
 			}
 		}
 		else
@@ -978,7 +1021,7 @@ void OoxConverter::convert(PPTX::Logic::SpPr *oox_spPr, PPTX::Logic::ShapeStyle*
 
 	bool bLine = odf_context()->drawing_context()->isLineShape();
 
-	if (custGeom && !custGeom->cxnLst.empty() && !odf_context()->drawing_context()->isCustomClosed())
+	if (custGeom && !custGeom->cxnLst.empty() && !odf_context()->drawing_context()->isCustomClosed() && !odf_context()->drawing_context()->isNonPrimitive())
 		bLine = true;
 
 	odf_context()->drawing_context()->start_area_properties();
@@ -1000,6 +1043,18 @@ void OoxConverter::convert(PPTX::Logic::SpPr *oox_spPr, PPTX::Logic::ShapeStyle*
 	odf_context()->drawing_context()->start_line_properties();
 	{
 		convert(oox_spPr->ln.GetPointer(), 0, oox_sp_style);
+		
+		if (oox_spPr->Geometry.hr.IsInit())
+		{
+			odf_context()->drawing_context()->set_horizontal_rule();
+
+			if (oox_spPr->Fill.is_init() && oox_spPr->Fill.getType() != OOX::et_a_noFill)
+				convert(&oox_spPr->Fill);
+
+			double default_hrule_margin = current_font_size.empty() ? 11 : current_font_size.back();
+			odf_context()->drawing_context()->set_margin_top(default_hrule_margin);
+			odf_context()->drawing_context()->set_margin_bottom(default_hrule_margin);
+		}
 	}
 	odf_context()->drawing_context()->end_line_properties();
 //-----------------------------------------------------------------------------------------------------------------------------
@@ -1010,6 +1065,7 @@ void OoxConverter::convert(PPTX::Logic::SpPr *oox_spPr, PPTX::Logic::ShapeStyle*
 
 	convert(oox_spPr->scene3d.GetPointer());
 	convert(oox_spPr->sp3d.GetPointer());
+
 
 //-----------------------------------------------------------------------------------------------------------------------------
 }
@@ -1401,7 +1457,7 @@ void OoxConverter::convert(PPTX::Logic::BlipFill *oox_bitmap_fill)
 				convert(oox_bitmap_fill->blip->Effects[i].Effect.GetPointer());
 			}
 		}
-		if (oox_bitmap_fill->srcRect.IsInit() && Width > 0  && Height > 0)//part of the image
+		if (oox_bitmap_fill->srcRect.IsInit() && Width > 0  && Height > 0)// part of image
 		{
 			odf_context()->drawing_context()->set_image_client_rect_inch(
 				(oox_bitmap_fill->srcRect->l.IsInit() ? XmlUtils::GetInteger(oox_bitmap_fill->srcRect->l.get()) : 0 ) / 100000. * Width,
@@ -1438,7 +1494,7 @@ void OoxConverter::convert(PPTX::Logic::BlipFill *oox_bitmap_fill)
 		if (oox_bitmap_fill->stretch.IsInit())
 		{
 			odf_context()->drawing_context()->set_image_style_repeat(1);
-			if (oox_bitmap_fill->stretch->fillRect.IsInit()){} //partial filling
+			if (oox_bitmap_fill->stretch->fillRect.IsInit()){} // filling incomplete volume
 		}
 	}
 	odf_context()->drawing_context()->end_area_properties();
@@ -1494,8 +1550,8 @@ void OoxConverter::convert(PPTX::Logic::GradFill *oox_grad_fill, DWORD nARGB)
 
 			odf_context()->drawing_context()->set_gradient_stop(hexColors.back(), oox_grad_fill->GsLst[i].pos);
 		}	
-		std::reverse(hexColors.begin(), hexColors.end());
-		std::reverse(opacities.begin(), opacities.end());
+		// std::reverse(hexColors.begin(), hexColors.end());
+		// std::reverse(opacities.begin(), opacities.end());
 
 		if (hexColors.size() > 0)
 			odf_context()->drawing_context()->set_gradient_start(hexColors[0], opacities[0]);
@@ -1674,7 +1730,7 @@ void OoxConverter::convert(PPTX::Logic::Ln *oox_line_prop, DWORD ARGB, PPTX::Log
 
 	//if (oox_line_prop->custDash.IsInit())
 	//{
-	//	//via setting the style and describing the geometry
+	//	// through style definition and geometry description
 	//}
 	if (oox_line_prop->prstDash.IsInit() && oox_line_prop->prstDash->val.IsInit())
 	{
@@ -1685,7 +1741,7 @@ void OoxConverter::convert(PPTX::Logic::Ln *oox_line_prop, DWORD ARGB, PPTX::Log
 	//nullable<SimpleTypes::CCompoundLine<>>            m_oCmpd;
 
 
-	//ELineJoinType m_eJoinType;   // Line connection type
+	//ELineJoinType                                     m_eJoinType;   // Line join type
 	//nullable<OOX::Drawing::CLineJoinBevel>            m_oBevel;
 	//nullable<OOX::Drawing::CLineJoinMiterProperties>  m_oMiter;
 	//nullable<OOX::Drawing::CLineJoinRound>            m_oRound;
@@ -1742,8 +1798,8 @@ void OoxConverter::convert(PPTX::Logic::BodyPr *oox_bodyPr)
 	switch(oox_bodyPr->Fit.type)
 	{
 		case  PPTX::Logic::TextFit::FitSpAuto:
-		{//resizable shape for text
-			odf_context()->drawing_context()->set_text_box_min_size(true);//already set to min
+		{// shape sizes adjustable to fit text
+			odf_context()->drawing_context()->set_text_box_min_size(true);// already set to min
 		}break;
 		case  PPTX::Logic::TextFit::FitNo:
 		{
@@ -1848,12 +1904,12 @@ void OoxConverter::convert(PPTX::Logic::NvPr *oox_nvPr)
 	
 
 
-//ph level higher
+// ph one level higher
 
 }
 
 void OoxConverter::convert_list_level(PPTX::Logic::TextParagraphPr	*oox_para_props, int level)
-{//one-dimensional lists only
+{// one-dimensional lists only
 	//if (!oox_list)return;
 
 	if (!oox_para_props) return;
@@ -2113,7 +2169,7 @@ void OoxConverter::convert(PPTX::Logic::Paragraph *oox_paragraph, PPTX::Logic::T
 		}
 		else
 			list_present = false;
-														//properties can be assigned not only to the paragraph, but also to the object itself
+														// properties can be assigned not only to paragraph, but also to the object itself
 		odf_writer::paragraph_format_properties* paragraph_properties = odf_context()->text_context()->get_paragraph_properties();
 		odf_writer::text_format_properties*	text_properties = odf_context()->text_context()->get_text_properties();
 		
@@ -2141,7 +2197,7 @@ void OoxConverter::convert(PPTX::Logic::Paragraph *oox_paragraph, PPTX::Logic::T
 	if (is_empty_run_elems(oox_paragraph->RunElems))
 		list_present = false;
 
-	//if (oox_paragraph->RunElems.empty() && list_present) list_present = false; // MS doesn't indicate the presence of the list, LibreOffice shows the icon
+	//if (oox_paragraph->RunElems.empty() && list_present) list_present = false; // ms doesn't indicate list presence, libra - shows icon
 	
 	while ((int)odf_context()->text_context()->list_state_.levels.size() > list_level)
 	{
@@ -2276,9 +2332,11 @@ void OoxConverter::convert(PPTX::Logic::TextParagraphPr *oox_paragraph_pr	, odf_
 		{
 			paragraph_properties->fo_text_indent_ = odf_types::length_or_percent(odf_types::length(oox_paragraph_pr->indent.get() / 12700., odf_types::length::pt));
 		}
-		if (oox_paragraph_pr->rtl.IsInit() && *oox_paragraph_pr->rtl)
+		if (oox_paragraph_pr->rtl.IsInit())
 		{
-			paragraph_properties->style_writing_mode_= odf_types::writing_mode(odf_types::writing_mode::RlTb);
+			paragraph_properties->style_writing_mode_ = *oox_paragraph_pr->rtl 
+				? odf_types::writing_mode(odf_types::writing_mode::RlTb)
+				: odf_types::writing_mode(odf_types::writing_mode::LrTb);
 		}	
 	}
 	//defTabSz;
@@ -2288,7 +2346,7 @@ void OoxConverter::convert(PPTX::Logic::TextParagraphPr *oox_paragraph_pr	, odf_
 	{
 		convert(oox_paragraph_pr->defRPr.GetPointer(), text_properties);
 
-		//Need to think about how to take the last one for family!!!
+		// need to think how to get the last one by family !!!
 		//convert(oox_paragraph_pr->m_oDefRunProperty.GetPointer());
 		//odf_context()->text_context()->set_parent_span_style(odf_context()->styles_context()->last_state().get_name());
 	}
@@ -2319,7 +2377,7 @@ void OoxConverter::convert(PPTX::Logic::RunProperties *oox_run_pr, odf_writer::t
 
 //------------------------------------------------------	
 	odf_writer::odf_drawing_context *drawing = odf_context()->drawing_context(); 
-	if (drawing)	//drawing from styles is impossible(  ... TODO ???
+	if (drawing)	//from styles drawing impossible(  ... todoooo ??? 
 	{	
 		//if ((oox_run_pr->Fill.is<PPTX::Logic::GradFill>()) ||
 		//	(oox_run_pr->ln.IsInit() /*&& (oox_run_pr->ln->Fill.is_init() && oox_run_pr->ln->Fill.getType() != OOX::et_a_noFill)*/))
@@ -2462,11 +2520,25 @@ void OoxConverter::convert(PPTX::Logic::RunProperties *oox_run_pr, odf_writer::t
             oox_country = oox_language.substr(res + 1);
             oox_language = oox_language.substr(0, res);
 		}
-		
-		text_properties->fo_language_ = oox_language;
-        if (!oox_country.empty())
-			text_properties->fo_country_ = oox_country;
-
+		if (current_bidi_set)
+		{
+			text_properties->style_language_complex_ = oox_language;
+		}
+		else
+		{
+			text_properties->fo_language_ = oox_language;
+		}
+		if (!oox_country.empty())
+		{
+			if (current_bidi_set)
+			{
+				text_properties->style_country_complex_ = oox_country;
+			}
+			else
+			{
+				text_properties->fo_country_ = oox_country;
+			}
+		}
 	}
 	if (oox_run_pr->spc.IsInit())
 	{
@@ -2842,7 +2914,7 @@ void OoxConverter::convert(PPTX::Logic::TxBody *oox_txBody, PPTX::Logic::ShapeSt
 
 	convert(oox_txBody->lstStyle.GetPointer());
 
-//single math - LibreOffice doesn't handle complex nesting
+// single math - libre doesn't handle complex nesting
 	bool bSingleMath = false;
 	if (odf_context()->drawing_context()->is_text_box() &&
 		oox_txBody->Paragrs.size() == 1 && 
@@ -2864,7 +2936,7 @@ void OoxConverter::convert(PPTX::Logic::TxBody *oox_txBody, PPTX::Logic::ShapeSt
 	{
 		convert(&oox_txBody->Paragrs[i], oox_txBody->lstStyle.GetPointer());
 	
-	//external settings for text
+	// external settings for text
 		convert(oox_txBody->bodyPr.GetPointer());			
 		
 		if (oox_style)
@@ -2948,7 +3020,7 @@ void OoxConverter::convert(PPTX::Logic::StyleRef *style_ref, int type)
 			opacity = ((nARGB >> 24) /255.) * 100.;
 		}
 		
-		if (type != 3) //?? TODO
+		if (type != 3) //?? todooo
 		{
 			odf_context()->drawing_context()->set_solid_fill(hexColor);
 		

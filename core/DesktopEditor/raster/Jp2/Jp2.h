@@ -1,4 +1,39 @@
-﻿#pragma once
+﻿/*
+ * Copyright (C) Ascensio System SIA, 2009-2026
+ *
+ * This program is a free software product. You can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License (AGPL)
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
+ * Section 5 of the GNU AGPL version 3.
+ *
+ * No trademark rights are granted under this License.
+ *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
+#pragma once
 //-------------------------------------------------------------------------------------------------------------------------------
 
 #include "Types.h"
@@ -8,7 +43,7 @@
 namespace Jpeg2000
 {
 	//-------------------------------------------------------------------------------------------------------------------------------
-	// Auxiliary functions
+	// Helper functions
 	//-------------------------------------------------------------------------------------------------------------------------------
 	static bool Jp2_ReadBoxHeader(PCommon pCodecInfo, CReader *pStream, Jp2Box *pBox)
 	{
@@ -111,7 +146,7 @@ namespace Jpeg2000
 		pStream->Write(pJp2->nWidth, 4); // WIDTH
 		pStream->Write(pJp2->nComponentsCount, 2); // NC
 		pStream->Write(pJp2->nBPC, 1); // BPC
-		pStream->Write(pJp2->nCompressionType, 1); // C (this value is always 7)
+		pStream->Write(pJp2->nCompressionType, 1); // C ( this value is always 7 )
 		pStream->Write(pJp2->nColorSpaceUnk, 1); // UnkC, colorspace unknown
 		pStream->Write(pJp2->nIPR, 1); // IPR
 
@@ -364,8 +399,8 @@ namespace Jpeg2000
 		{
 			// return false;
 
-			// According to the specification, this Box is necessary, but we still
-			// Try to read the image with standard parameters.
+			// By spec this Box is required, but we will still
+			// try to read the image with standard parameters.
 
 			pStream->Seek(nCurPos);
 			pJp2->nApprox = 0;
@@ -597,14 +632,14 @@ namespace Jpeg2000
 
 		PCommon pCodecInfo = pJp2->pCodecInfo;
 
-		// Decoding JP2
+		// Decode JP2
 		if (!Jp2_ReadStruct(pJp2, pStream))
 		{
 			Event_Message(EVT_ERROR, "Failed to decode jp2 structure\n");
 			return NULL;
 		}
 
-		// Decoding J2K
+		// Decode J2K
 		Image *pImage = J2k_Decode(pJp2->pJ2k, pStream);
 		if (!pImage)
 		{

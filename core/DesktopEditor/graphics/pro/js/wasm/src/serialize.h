@@ -1,3 +1,38 @@
+/*
+ * Copyright (C) Ascensio System SIA, 2009-2026
+ *
+ * This program is a free software product. You can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License (AGPL)
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
+ * Section 5 of the GNU AGPL version 3.
+ *
+ * No trademark rights are granted under this License.
+ *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 #ifndef _WASM_SERIALIZE_H
 #define _WASM_SERIALIZE_H
 
@@ -168,7 +203,7 @@ namespace NSWasm
 		}
 		void AddDouble(double value)
 		{
-			// such precision is enough
+			// this precision is sufficient
 			int nV = value * 100;
 			AddInt(nV);
 		}
@@ -341,9 +376,9 @@ namespace NSWasm
 
 	struct CHChar
 	{
-		int unicode; // Unicode value
-		double x; // shift by baseline
-		double width; // character width (shift to next letter)
+		int unicode; // unicode value
+		double x; // offset along baseline
+		double width; // character width (offset to next letter)
 
 		CHChar() : unicode(0), x(0), width(0) {}
 		CHChar(const CHChar& oSrc) { *this = oSrc; }
@@ -381,7 +416,7 @@ namespace NSWasm
 		bool m_bIsConstX;
 
 		// symbols
-		// don't change to lists. continuous creation and deletion of objects
+		// do not change to lists. constant object creation and deletion -
 		// negatively affects performance
 		CHChar* m_pChars;
 		LONG m_lSizeChars;
@@ -424,8 +459,14 @@ namespace NSWasm
 			m_dX = oLine.m_dX;
 			m_dY = oLine.m_dY;
 
+			m_dEndX = oLine.m_dEndX;
+			m_dEndY = oLine.m_dEndY;
+
 			m_dK = oLine.m_dK;
 			m_dB = oLine.m_dB;
+			m_ex = oLine.m_ex;
+			m_ey = oLine.m_ey;
+			m_bIsConstX = oLine.m_bIsConstX;
 
 			m_lSizeChars = oLine.m_lSizeChars;
 			m_lCharsTail = oLine.m_lCharsTail;

@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "logging.h"
@@ -39,6 +49,7 @@
 #include "odf_conversion_context.h"
 
 #include "ods_table_state.h"//???
+#include "../../Common/odf_date_time_utils.h"
 
 #include "office_chart.h"
 
@@ -49,6 +60,7 @@
 #include "style_paragraph_properties.h"
 #include "style_graphic_properties.h"
 #include "style_chart_properties.h"
+#include "table.h"
 
 namespace cpdoccore 
 {
@@ -59,7 +71,7 @@ namespace odf_writer
 	static const std::wstring default_MS_series_colors[] = 
 	{
         L"#355a86", L"#883533", L"#6e963c", L"#594573", L"#327a8d", L"#3d679a", L"#9d3e3b", L"#7e9945", L"#674f84", L"#398ba2", L"#cb7934",
-        //TODO - continue .... while a copy of the first
+        // todooo - continue.... for now copy of first ones
         L"#355a86", L"#883533", L"#6e963c", L"#594573", L"#327a8d", L"#3d679a", L"#9d3e3b", L"#7e9945", L"#674f84", L"#398ba2", L"#cb7934",
         L"#355a86", L"#883533", L"#6e963c", L"#594573", L"#327a8d", L"#3d679a", L"#9d3e3b", L"#7e9945", L"#674f84", L"#398ba2", L"#cb7934",
         L"#355a86", L"#883533", L"#6e963c", L"#594573", L"#327a8d", L"#3d679a", L"#9d3e3b", L"#7e9945", L"#674f84", L"#398ba2", L"#cb7934",
@@ -73,6 +85,8 @@ namespace odf_writer
 		int					dimension;//1 -x, 2, -y, 3 -z
 		std::wstring		name;
 		office_element_ptr	elm;
+		office_element_ptr	style_elm;
+		bool				date_axis;
 	};
 	struct 	odf_cash_state
 	{
@@ -138,6 +152,7 @@ public:
 		styles_context_			= NULL;
 		current_series_count_	= 0;
 		local_table_reset_ref_	= false;
+		layout_target_inner_	= false;
 
 		if (odf_context_->type == SpreadsheetDocument)
 		{
@@ -165,6 +180,8 @@ public:
 	_CP_OPT(int)							bar_overlap;
 	_CP_OPT(int)							bar_gap_width;
 
+	bool									layout_target_inner_;
+
 	struct _range
 	{
 		_range(const std::wstring &r, const std::wstring &fmt_code, bool l, chart_series *s)
@@ -185,9 +202,10 @@ public:
 	std::vector<odf_cash_state>			cash_;
 	bool								local_table_enabled_;
 	bool								local_table_reset_ref_;
+	bool								local_table_created_ = false;	//create embedded workbook
 
-	std::vector<odf_chart_level_state>	current_level_;	//constantly changing list of inheritance levels
-	std::vector<odf_chart_state>		chart_list_;		//all elements .. for convenience, divided into "tops"
+	std::vector<odf_chart_level_state>	current_level_;	// constantly changing list of inheritance levels
+	std::vector<odf_chart_state>		chart_list_;		// all elements.. for convenience separated by "tops"
 ////////
 	void set_default_series_color();
 	void clear_current();
@@ -222,7 +240,7 @@ std::wstring odf_chart_context::Impl::convert_formula(std::wstring oox_ref)
 		//remove table name
 		if (!refs.empty())
 		{		
-			size_t pos = refs[0].rfind(L"!");//the table name may contain...
+			size_t pos = refs[0].rfind(L"!");// may be in table name...
 			if (std::wstring::npos != pos)
 			{
 				refs[0] = L"local-table!" + refs[0].substr(pos + 1, refs[0].size() - pos);
@@ -248,7 +266,7 @@ std::wstring odf_chart_context::Impl::convert_formula(std::wstring oox_ref)
 	else
 	{
 		//open office dont support defined names in chart formula 
-		// 7501214.xlsx - partial filling of local-table
+		// 7501214.xlsx  - partial filling of local-table
 		int col = -1, row = -1;
 		utils::parsing_ref( refs[0], col, row);
 		
@@ -319,6 +337,7 @@ void odf_chart_context::Impl::clear_current()
 
 	current_series_count_	= 0;
 	local_table_reset_ref_	= false;
+	local_table_created_	= false;
 	
 	if (odf_context_->type == SpreadsheetDocument)
 	{
@@ -437,7 +456,7 @@ void odf_chart_context::set_chart_bar_type(int type)
 	}
 	if (type == -1)
 	{
-		//need to pull out the property from a higher level.
+		// need to get property from higher level.
 		size_t sz = impl_->current_level_.size();
 		if (sz > 1)
 			impl_->current_level_.back().chart_properties->solid_type_ = 
@@ -544,11 +563,8 @@ void odf_chart_context::set_chart_3D(bool val)
 	if (!impl_->current_level_.back().chart_properties) return;
 	impl_->current_level_.back().chart_properties->three_dimensional_ = val;
 
-	impl_->current_level_.back().chart_properties->treat_empty_cells_ = boost::none;
 	//impl_->current_level_.back().chart_properties->series_source_ = chart_series_source(chart_series_source::rows);
 
-	//impl_->current_level_.back().chart_properties->
-	//chart:treat-empty-cells="leave-gap" 
 	//chart:series-source="rows"
 		  //impl_->current_level_.back().chart_properties->deep_ = true;
 	//if (!plot_area)return;
@@ -558,8 +574,8 @@ void odf_chart_context::set_chart_3D(bool val)
 
 	if (val && plot_area)
 	{
-		plot_area->chart_plot_area_attlist_.common_dr3d_attlist_.vpn_ = odf_types::vector3D(0, 0, 0);
-		plot_area->chart_plot_area_attlist_.common_dr3d_attlist_.vup_ = odf_types::vector3D(0, 0, 0); 
+		plot_area->chart_plot_area_attlist_.common_dr3d_attlist_.vpn_ = odf_types::vector3D(0, 0, 1);
+		plot_area->chart_plot_area_attlist_.common_dr3d_attlist_.vup_ = odf_types::vector3D(0, 1, 0); 
 		plot_area->chart_plot_area_attlist_.common_dr3d_attlist_.projection_ = L"parallel";
 		plot_area->chart_plot_area_attlist_.common_dr3d_attlist_.distance_ = odf_types::length(4.2, odf_types::length::cm);
 		plot_area->chart_plot_area_attlist_.common_dr3d_attlist_.focal_length_ = odf_types::length(8, odf_types::length::cm);
@@ -571,72 +587,79 @@ void odf_chart_context::set_chart_3D(bool val)
 		//plot_area->chart_plot_area_attlist_.common_dr3d_attlist_.vpn_ = odf_types::vector3D(0.416199821709347,0.173649045905254,0.892537795986984);
 		//plot_area->chart_plot_area_attlist_.common_dr3d_attlist_.vup_ = odf_types::vector3D(-0.0733876362771618,0.984807599917971,-0.157379306090273); 
 
-		plot_area->chart_plot_area_attlist_.common_dr3d_attlist_.vrp_ = odf_types::vector3D(17634.6218373783, 10271.4823817647, 24594.8639082739); 
+		plot_area->chart_plot_area_attlist_.common_dr3d_attlist_.vrp_ = odf_types::vector3D(0, 0, 31959.1963012123); 
 	}
+}
+void odf_chart_context::set_treat_empty_cells(const std::wstring & val)
+{
+	if (!impl_->current_level_.back().chart_properties) return;
+	impl_->current_level_.back().chart_properties->treat_empty_cells_ = val;
 }
 void odf_chart_context::set_view3D(int rotX, int rotY, int depthPercent, int perspective, int hPercent, bool angAx)
 {
 	odf_types::chart_class::type chart_class = impl_->get_current_chart_class();
 
-	if (chart_class == chart_class::circle ||
-		chart_class == chart_class::radar ||
-		chart_class == chart_class::filled_radar ||
-		chart_class == chart_class::ring)
+	set_chart_3D(true);
+
+	if (chart_class == chart_class::circle)
 	{
-		rotX += 90;
+		rotX -= 90;
+		rotY = 0;
 	}
-	if (rotX < 0) rotX += 360;
-	if (rotY < 0) rotY += 360;
 
-	int rotZ = 0;
-  
-	const double DEG2RAD = 3.1415926 / 180;
-    double sx, sy, sz, cx, cy, cz, theta;
+	const double DEG2RAD = 3.14159265358979323846 / 180.;
 
-    // rotation angle about X-axis (pitch)
-    theta = -rotX * DEG2RAD;
-    sx = sin(theta);
-    cx = cos(theta);
+	double sx = sin(rotX * DEG2RAD),  cx = cos(rotX * DEG2RAD);
+	double sy = sin(-rotY * DEG2RAD), cy = cos(-rotY * DEG2RAD);
 
-    // rotation angle about Y-axis (yaw)
-    theta = rotY * DEG2RAD;
-    sy = sin(theta);
-    cy = cos(theta);
+	double m[3][3];
 
-    // rotation angle about Z-axis (roll)
-    theta = rotZ * DEG2RAD;
-    sz = sin(theta);
-    cz = cos(theta);
-
-    // determine left axis
-	double left_x = cy*cz;
-    double left_y = sx*sy*cz + cx*sz;
-    double left_z = -cx*sy*cz + sx*sz;
-
-    // determine up axis
-    double up_x = -cy*sz;
-    double up_y = -sx*sy*sz + cx*cz;
-    double up_z = cx*sy*sz + sx*cz;
-
-    // determine forward axis
-    double forward_x = sy;
-    double forward_y = -sx*cy;
-    double forward_z = cx*cy;
+	if (angAx)
+	{//R = Ry(-rotY) * Rx(rotX)
+		m[0][0] = cy;		m[0][1] = sy * sx;	m[0][2] = sy * cx;
+		m[1][0] = 0.;		m[1][1] = cx;		m[1][2] = -sx;
+		m[2][0] = -sy;		m[2][1] = cy * sx;	m[2][2] = cy * cx;
+	}
+	else
+	{//R = Rx(rotX) * Ry(-rotY)
+		m[0][0] = cy;		m[0][1] = 0.;		m[0][2] = sy;
+		m[1][0] = sx * sy;	m[1][1] = cx;		m[1][2] = -sx * cy;
+		m[2][0] = -cx * sy;	m[2][1] = sx;		m[2][2] = cx * cy;
+	}
 
 	std::wstringstream sTransform;
 
-	sTransform << L"matrix(" << left_x << L" " << up_x << L" " << forward_x << L" " << left_y << L" " << up_y << L" " << forward_y << L" " << left_z << L" " << up_z << L" " << forward_z << L" 0cm 0cm 0cm)";
+	sTransform << L"matrix(";
+
+	for (int col = 0; col < 3; col++)
+	{
+		for (int row = 0; row < 3; row++)
+		{
+			sTransform << m[row][col] << L" ";
+		}
+	}
+	sTransform << L"0cm 0cm 0cm)";
 
 	chart_plot_area *plot_area = dynamic_cast<chart_plot_area*>(impl_->plot_area_.get());
 	if (plot_area)
 	{
 		plot_area->chart_plot_area_attlist_.common_dr3d_attlist_.transform_ = sTransform.str();
 
+		//perspective [0..100] to camera distance [7500..200000] 
+		const double min_distance = 7500., max_distance = 200000.;
+
+		double a = 100. * max_distance * min_distance / (max_distance - min_distance);
+		double b = -a / max_distance;
+
+		double distance = a / ((std::max)(0., (std::min)(perspective / 2., 100.)) - b);
+
+		plot_area->chart_plot_area_attlist_.common_dr3d_attlist_.vrp_ = odf_types::vector3D(0, 0, distance);
+
 		if (impl_->current_level_.back().chart_properties)
 		{
 			impl_->current_level_.back().chart_properties->right_angled_axes_ = angAx;
 
-			if (!angAx)
+			if (!angAx && perspective > 0)
 			{
 				plot_area->chart_plot_area_attlist_.common_dr3d_attlist_.projection_ = L"perspective";
 			}
@@ -751,7 +774,7 @@ void odf_chart_context::start_series(odf_types::chart_class::type type)
 	impl_->series_.push_back(elm);
 	impl_->group_series_.push_back(elm);
 
-	//can store the general chart class separately??
+	// maybe store common chart class separately??
 	if (type == chart_class::radar || (impl_->get_current_chart_class() == chart_class::stock && type == chart_class::line))
 	{
 		series->chart_series_attlist_.chart_class_ = impl_->get_current_chart_class();
@@ -785,7 +808,7 @@ void odf_chart_context::set_label_show_leader_line(bool val)
 void odf_chart_context::set_label_show_legend_key(bool val)
 {
 }
-void odf_chart_context::set_label_formula(const std::wstring & oox_ref) //not supported in odf
+void odf_chart_context::set_label_formula(const std::wstring & oox_ref) // not supported in odf
 {
 	std::wstring odf_ref = impl_->convert_formula(oox_ref);
 	
@@ -814,7 +837,7 @@ void odf_chart_context::add_axis_group_series(unsigned int id)
 void odf_chart_context::end_group_series()
 {
 	if (impl_->axis_.empty() && false == impl_->categories_.empty())
-	{//without axes, MS Office doesn't understand!!! - and the axes for MS must necessarily come before the series
+	{// MS Office doesn't understand anything without axes!!! - also axes for MS must go before series
 		start_axis();
 			set_axis_dimension(1);
 		end_element();
@@ -857,7 +880,7 @@ void odf_chart_context::end_group_series()
 		{
 			if (impl_->axis_[j].oox_id == impl_->axis_group_series_[i] && impl_->axis_[j].dimension ==2)
 			{
-				axis_name = impl_->axis_[j].name;//Y axis binding
+				axis_name = impl_->axis_[j].name;// Y axis binding
 				break;
 			}
 		}
@@ -896,7 +919,7 @@ void odf_chart_context::add_domain(const std::wstring & odf_ref)
 	impl_->current_chart_state_.elements_.push_back(state);
 }
 
-void odf_chart_context::add_categories(const std::wstring & odf_ref, const std::wstring & format_code, office_element_ptr & axis_elm)
+void odf_chart_context::add_categories(const std::wstring & odf_ref, const std::wstring & format_code, office_element_ptr & axis_elm, office_element_ptr & axis_style_elm, bool date_axis)
 {
 	size_t level = impl_->current_level_.size();
 
@@ -906,7 +929,19 @@ void odf_chart_context::add_categories(const std::wstring & odf_ref, const std::
 		std::wstring::npos != format_code.find(L"yy") &&
 		std::wstring::npos != format_code.find(L"d"))
 			bDataScale = true;
-	
+
+	if (bDataScale && axis_style_elm)
+	{
+		style *style_ = dynamic_cast<style*>(axis_style_elm.get());
+		if ((style_) && (!style_->style_data_style_name_))
+		{
+			number_format_state & number_state = impl_->styles_context_->numbers_styles().add_or_find(-1, format_code);
+			if (false == number_state.style_name.empty())
+				style_->style_data_style_name_ = number_state.style_name;
+		}
+	}
+	if (bDataScale && false == date_axis) bDataScale = false;
+
 	if (bDataScale && axis_elm)
 	{
 		office_element_ptr date_elm;
@@ -1009,7 +1044,7 @@ void odf_chart_context::start_axis()
 	}
 	start_element(elm, style_elm, style_name);
 
-	odf_axis_state axis_state = {0, 0, L"", elm};
+	odf_axis_state axis_state = {0, 0, L"", elm, style_elm, false};
 	impl_->axis_.push_back(axis_state);
 /////////////////////defaults
 	impl_->current_level_.back().chart_properties->reverse_direction_ = false;
@@ -1104,7 +1139,7 @@ void odf_chart_context::start_plot_area()
 	}
 	start_element(impl_->plot_area_, style_elm, style_name);
 	
-	impl_->current_level_.back().chart_properties->treat_empty_cells_ = true;
+	impl_->current_level_.back().chart_properties->treat_empty_cells_ = L"leave-gap";	//default
 }
 void odf_chart_context::end_plot_area()
 {
@@ -1116,7 +1151,7 @@ void odf_chart_context::end_plot_area()
 		{
 			cell_range = cell_range + impl_->data_cell_ranges_[i].ref + L" ";
 		}
-		//plot_area->chart_plot_area_attlist_.table_cell_range_address_ = cell_range; - this is definitely unnecessary for local diagrams!!!
+		//plot_area->chart_plot_area_attlist_.table_cell_range_address_ = cell_range; - definitely unnecessary for local chart!!!
 	}
 	end_element();
 }
@@ -1193,11 +1228,11 @@ void odf_chart_context::set_textarea_vertical_align(int align)
 void odf_chart_context::set_textarea_rotation(double val)
 {
 	if (!impl_->current_level_.back().chart_properties)return;
-	if (val < 0.001 && val > -0.001) return;
 	if (val < -360 || val > 360) return;
 
 	if (val < 0) val += 360;
-	val = 360 - val;
+	if (val > 0) val = 360 - val;//0 must stay 0 - it is the horizontal orientation,
+								 //ms office rotates the value axis title by default
 
 	impl_->current_level_.back().chart_properties->common_rotation_angle_attlist_.style_rotation_angle_ = (unsigned int)val;
 }
@@ -1427,6 +1462,23 @@ void odf_chart_context::set_legend_position(int val)
 		case 4:	legend->chart_legend_attlist_.chart_legend_position_ = L"top";		break;//st_legendposT
 	}
 }
+//odf splits what ooxml calls the layout of the plot area in two: chart:plot-area
+//holds the area including the axis labels, chart:coordinate-region - the plot only
+//(that is what c:layoutTarget val="inner" means)
+static chart_coordinate_region *get_coordinate_region(chart_plot_area *plot_area, bool bInner, odf_conversion_context *odf_context)
+{
+	if (!plot_area || !bInner) return NULL;
+
+	if (!plot_area->coordinate_region_)
+	{
+		create_element(L"chart", L"coordinate-region", plot_area->coordinate_region_, odf_context);
+	}
+	return dynamic_cast<chart_coordinate_region*>(plot_area->coordinate_region_.get());
+}
+void odf_chart_context::set_layout_target_inner(bool bInner)
+{
+	impl_->layout_target_inner_ = bInner;
+}
 void odf_chart_context::set_layout_x(double val, int mode)//edge, factor
 {
 	if (mode == 0) val = impl_->current_chart_state_.chart_width_pt * (val);
@@ -1437,7 +1489,9 @@ void odf_chart_context::set_layout_x(double val, int mode)//edge, factor
 	if (legend)legend->chart_legend_attlist_.common_draw_position_attlist_.svg_x_ = x_cm;
 
 	chart_plot_area *plot_area = dynamic_cast<chart_plot_area*>(impl_->current_level_.back().elm.get());
-	if (plot_area)plot_area->chart_plot_area_attlist_.common_draw_position_attlist_.svg_x_ = x_cm;
+	if (chart_coordinate_region *region = get_coordinate_region(plot_area, impl_->layout_target_inner_, impl_->odf_context_))
+									region->common_draw_position_attlist_.svg_x_ = x_cm;
+	else if (plot_area)				plot_area->chart_plot_area_attlist_.common_draw_position_attlist_.svg_x_ = x_cm;
 	
 	chart_title *title = dynamic_cast<chart_title*>(impl_->current_level_.back().elm.get());
 	if (title)title->chart_title_attlist_.common_draw_position_attlist_.svg_x_ = x_cm;
@@ -1520,6 +1574,11 @@ void odf_chart_context::set_axis_id(unsigned int id)
 {
 	if (impl_->axis_.size()>0)impl_->axis_.back().oox_id = id;
 }
+void odf_chart_context::set_axis_date_scale(bool val)
+{
+	if (impl_->axis_.empty()) return;
+	impl_->axis_.back().date_axis = val;
+}
 void odf_chart_context::set_axis_visible(bool val)
 {
 	if (!impl_->current_level_.back().chart_properties)return;
@@ -1583,7 +1642,9 @@ void odf_chart_context::set_layout_y(double val,int mode)
 	if (legend)legend->chart_legend_attlist_.common_draw_position_attlist_.svg_y_ = y_cm;
 
 	chart_plot_area *plot_area = dynamic_cast<chart_plot_area *>(impl_->current_level_.back().elm.get());
-	if (plot_area)plot_area->chart_plot_area_attlist_.common_draw_position_attlist_.svg_y_ = y_cm;
+	if (chart_coordinate_region *region = get_coordinate_region(plot_area, impl_->layout_target_inner_, impl_->odf_context_))
+									region->common_draw_position_attlist_.svg_y_ = y_cm;
+	else if (plot_area)				plot_area->chart_plot_area_attlist_.common_draw_position_attlist_.svg_y_ = y_cm;
 	
 	chart_title *title = dynamic_cast<chart_title*>(impl_->current_level_.back().elm.get());
 	if (title)title->chart_title_attlist_.common_draw_position_attlist_.svg_y_ = y_cm;
@@ -1598,7 +1659,9 @@ void odf_chart_context::set_layout_w(double val,int mode)
 	if (legend)legend->chart_legend_attlist_.chartooo_width_ = width_cm;
 
 	chart_plot_area *plot_area = dynamic_cast<chart_plot_area *>(impl_->current_level_.back().elm.get());
-	if (plot_area)plot_area->chart_plot_area_attlist_.common_draw_size_attlist_.svg_width_ = width_cm;
+	if (chart_coordinate_region *region = get_coordinate_region(plot_area, impl_->layout_target_inner_, impl_->odf_context_))
+									region->common_draw_size_attlist_.svg_width_ = width_cm;
+	else if (plot_area)				plot_area->chart_plot_area_attlist_.common_draw_size_attlist_.svg_width_ = width_cm;
 }
 void odf_chart_context::set_layout_h(double val, int mode)
 {
@@ -1610,7 +1673,9 @@ void odf_chart_context::set_layout_h(double val, int mode)
 	if (legend)legend->chart_legend_attlist_.chartooo_height_ = height_cm;
 
 	chart_plot_area *plot_area = dynamic_cast<chart_plot_area *>(impl_->current_level_.back().elm.get());
-	if (plot_area)plot_area->chart_plot_area_attlist_.common_draw_size_attlist_.svg_height_ = height_cm;
+	if (chart_coordinate_region *region = get_coordinate_region(plot_area, impl_->layout_target_inner_, impl_->odf_context_))
+									region->common_draw_size_attlist_.svg_height_ = height_cm;
+	else if (plot_area)				plot_area->chart_plot_area_attlist_.common_draw_size_attlist_.svg_height_ = height_cm;
 }
 
 void odf_chart_context::start_element(office_element_ptr & elm, office_element_ptr & style_elm, const std::wstring & style_name)
@@ -1618,7 +1683,7 @@ void odf_chart_context::start_element(office_element_ptr & elm, office_element_p
 	size_t level = impl_->current_level_.size();
 	
 	drawing_context()->start_element(elm, style_elm);
-	//if (!impl_->current_level_.empty()) impl_->current_level_.back()->add_child_element(elm); no need...inheritance via start_element in drawing
+	//if (!impl_->current_level_.empty()) impl_->current_level_.back()->add_child_element(elm); not needed...inheritance through start_element in drawing
 	
 	odf_element_state state = {elm, style_name, style_elm, level, 0};	
 	impl_->current_chart_state_.elements_.push_back(state);
@@ -1680,7 +1745,8 @@ void odf_chart_context::end_chart()
 			{
 				if (impl_->categories_[cat].type == 1) 
 				{
-					add_categories(impl_->categories_[cat].ref, impl_->categories_[cat].format_code, impl_->axis_[i].elm);
+					add_categories(impl_->categories_[cat].ref, impl_->categories_[cat].format_code, impl_->axis_[i].elm,
+									impl_->axis_[i].style_elm, impl_->axis_[i].date_axis);
 				}
 				else
 				{
@@ -1744,7 +1810,7 @@ void odf_chart_context::set_category_axis_formula(const std::wstring & oox_ref, 
 	impl_->categories_.push_back(category_state);
 }
 
-void odf_chart_context::set_series_pie_explosion(int val)//or series point
+void odf_chart_context::set_series_pie_explosion(int val)// or series point
 {
 	if (!impl_->current_level_.back().chart_properties)return;
 
@@ -1839,20 +1905,22 @@ void odf_chart_context::set_cash(std::wstring format_code, std::vector<std::wstr
 			for (int i = 0 ; i < count_cash_values; i++)
 				data_str.push_back(L"non");
 		}
+		count_cash_values = (int)data_str.size();
+
 		std::wstring ref1, ref2;
 
 		ref1 = std::wstring(L"local-table.") + utils::getColAddress(start_col) + boost::lexical_cast<std::wstring>(start_row);
 		//
 		if (by_row)
-			ref2 = std::wstring(L"local-table.") + utils::getColAddress(start_col) + std::to_wstring(start_row + count_cash_values);
+			ref2 = std::wstring(L"local-table.") + utils::getColAddress(start_col) + std::to_wstring(start_row + count_cash_values - 1);
 		else
-			ref2 = std::wstring(L"local-table.") + utils::getColAddress(start_col + count_cash_values) + std::to_wstring(start_row);
+			ref2 = std::wstring(L"local-table.") + utils::getColAddress(start_col + count_cash_values - 1) + std::to_wstring(start_row);
 	
 		ref = ref1 + L":" + ref2;
 	}
 	if(ref.empty() && !data_str.empty())
 	{
-		// the most trivial generation A1... Ahhh
+		// simplest A1 ... Axxx generation
 
 		ref = std::wstring(L"local-table.A1:") + std::wstring(L".A") + boost::lexical_cast<std::wstring>(data_str.size());
 	}
@@ -1886,9 +1954,162 @@ void odf_chart_context::set_cash(std::wstring format_code, std::vector<std::wstr
 		}
 	}
 }
+
+static void convert_local_table_dates(office_element_ptr & cell_elm, odf_conversion_context * odf_context)
+{
+	table_table_cell *cell = dynamic_cast<table_table_cell*>(cell_elm.get());
+	if (!cell) return;
+	if (!cell->attlist_.common_value_and_type_attlist_) return;
+
+	common_value_and_type_attlist & value_attlist = *cell->attlist_.common_value_and_type_attlist_;
+	if (!value_attlist.office_value_type_) return;
+
+	office_value_type::type type = value_attlist.office_value_type_->get_type();
+
+	if (type != office_value_type::Date && type != office_value_type::Time && type != office_value_type::DateTime) return;
+
+	double value = 0;
+	bool result = value_attlist.office_date_value_ ? odf_datetime::parse_date_value(*value_attlist.office_date_value_, value) :
+				 (value_attlist.office_time_value_ ? odf_datetime::parse_time_value(*value_attlist.office_time_value_, value) : false);
+	if (!result) return;
+
+	std::wstring str_value = boost::lexical_cast<std::wstring>(value);
+
+	value_attlist.office_value_type_	= office_value_type(office_value_type::Float);
+	value_attlist.office_value_		= str_value;
+	value_attlist.office_date_value_	= boost::none;
+	value_attlist.office_time_value_	= boost::none;
+
+	if (false == cell->content_.empty()) return;
+
+	office_element_ptr paragr_elm;
+	create_element(L"text", L"p", paragr_elm, odf_context);
+
+	text_p *p = dynamic_cast<text_p*>(paragr_elm.get());
+	if (!p) return;
+
+	p->add_text(str_value);
+	cell->add_child_element(paragr_elm);
+}
+
+static void split_chart_local_table(office_element_ptr & table_elm, odf_conversion_context * odf_context)
+{
+	table_table *table = dynamic_cast<table_table*>(table_elm.get());
+	if (!table) return;
+
+	office_element_ptr_array & rows = table->table_rows_and_groups_.content_;
+	if (rows.size() < 2) return;
+
+	table_table_row *first_row = dynamic_cast<table_table_row*>(rows[0].get());
+	if (!first_row) return;
+	if (first_row->attlist_.table_number_rows_repeated_ != 1) return;
+
+	unsigned int count_columns = 0;
+	for (size_t i = 0; i < first_row->content_.size(); i++)
+	{
+		table_table_cell *cell = dynamic_cast<table_table_cell*>(first_row->content_[i].get());
+		if (cell)
+		{
+			count_columns += cell->attlist_.table_number_columns_repeated_;
+			continue;
+		}
+		table_covered_table_cell *covered = dynamic_cast<table_covered_table_cell*>(first_row->content_[i].get());
+		if (covered) count_columns += covered->attlist_.table_number_columns_repeated_;
+	}
+	if (count_columns < 2) return;
+
+	office_element_ptr_array & columns = table->table_columns_and_groups_.content_;
+	{
+		office_element_ptr_array old_columns;
+		for (size_t i = 0; i < columns.size(); i++)
+		{
+			if (columns[i] && columns[i]->get_type() == typeTableTableColumn)
+				old_columns.push_back(columns[i]);
+			else
+				return; //groups, headers ... - already structured
+		}
+		office_element_ptr header_columns_elm, columns_elm;
+		create_element(L"table", L"table-header-columns", header_columns_elm, odf_context);
+		create_element(L"table", L"table-columns", columns_elm, odf_context);
+
+		if (!header_columns_elm || !columns_elm) return;
+
+		unsigned int passed = 0;
+		for (size_t i = 0; i < old_columns.size() && passed < count_columns; i++)
+		{
+			table_table_column *column = dynamic_cast<table_table_column*>(old_columns[i].get());
+			if (!column) continue;
+
+			unsigned int repeated = column->attlist_.table_number_columns_repeated_;
+
+			if (passed == 0)
+			{
+				if (repeated > 1)
+				{
+					office_element_ptr header_column_elm;
+					create_element(L"table", L"table-column", header_column_elm, odf_context);
+
+					table_table_column *header_column = dynamic_cast<table_table_column*>(header_column_elm.get());
+					if (header_column)
+					{
+						header_column->attlist_ = column->attlist_;
+						header_column->attlist_.table_number_columns_repeated_ = 1;
+						header_columns_elm->add_child_element(header_column_elm);
+					}
+					column->attlist_.table_number_columns_repeated_ = repeated - 1;
+					columns_elm->add_child_element(old_columns[i]);
+				}
+				else
+					header_columns_elm->add_child_element(old_columns[i]);
+			}
+			else
+				columns_elm->add_child_element(old_columns[i]);
+
+			passed += repeated;
+		}
+		for (; passed < count_columns; passed++)
+		{
+			office_element_ptr column_elm;
+			create_element(L"table", L"table-column", column_elm, odf_context);
+			if (!column_elm) break;
+
+			if (passed == 0)	header_columns_elm->add_child_element(column_elm);
+			else				columns_elm->add_child_element(column_elm);
+		}
+		columns.clear();
+		columns.push_back(header_columns_elm);
+		columns.push_back(columns_elm);
+	}
+	{
+		office_element_ptr header_rows_elm, rows_elm;
+		create_element(L"table", L"table-header-rows", header_rows_elm, odf_context);
+		create_element(L"table", L"table-rows", rows_elm, odf_context);
+
+		if (!header_rows_elm || !rows_elm) return;
+
+		header_rows_elm->add_child_element(rows[0]);
+		for (size_t i = 1; i < rows.size(); i++)
+		{
+			table_table_row *row = dynamic_cast<table_table_row*>(rows[i].get());
+			if (row)
+			{
+				for (size_t j = 0; j < row->content_.size(); j++)
+				{
+					convert_local_table_dates(row->content_[j], odf_context);
+				}
+			}
+			rows_elm->add_child_element(rows[i]);
+		}
+		rows.clear();
+		rows.push_back(header_rows_elm);
+		rows.push_back(rows_elm);
+	}
+}
 void odf_chart_context::set_local_table(office_element_ptr & table_elm)
 {
 	if (!table_elm) return;
+
+	split_chart_local_table(table_elm, impl_->odf_context_);
 
 	impl_->current_level_[0].elm->add_child_element(table_elm);
 	size_t level = impl_->current_level_.size();
@@ -1898,6 +2119,7 @@ void odf_chart_context::set_local_table(office_element_ptr & table_elm)
 
 	impl_->local_table_enabled_ = false;
 	impl_->local_table_reset_ref_ = false;
+	impl_->local_table_created_ = true;
 }
 void odf_chart_context::set_local_table (bool Val, bool use_cash_only)
 {
@@ -1973,7 +2195,17 @@ int odf_chart_context::Impl::create_local_table_rows(int curr_row, ods_table_sta
 
 void odf_chart_context::Impl::create_local_table()
 {
-	if (local_table_enabled_ == false) return;
+	if (local_table_enabled_ == false)
+	{
+		if (local_table_created_) return;
+
+		for (size_t i = 0; i < cash_.size(); )
+		{
+			if (0 == cash_[i].ref.find(L"local-table."))	i++;
+			else										cash_.erase(cash_.begin() + i);
+		}
+		if (cash_.empty()) return;
+	}
 
 	std::vector<_cell_cash> cells_cash;
 	std::vector<_cell_cash> cells_cash_label;
@@ -1987,7 +2219,7 @@ void odf_chart_context::Impl::create_local_table()
 	int min_col = 0xffff;
 	int min_row = 0xffff;
 	
-	//Throw out duplicate refs
+	// remove duplicate refs
 	for (size_t i = 0; i < cash_.size(); i++)
 	{
 		for (size_t j = i + 1; j < cash_.size(); j++)
@@ -2008,7 +2240,7 @@ void odf_chart_context::Impl::create_local_table()
 
 		if (refs.size() < 1) continue;
 		
-		size_t r = refs[0].rfind(L".");//the name of the sign may contain a dot
+		size_t r = refs[0].rfind(L".");// there may be a dot in table name
 		if (std::wstring::npos != r)
 		{
 			table_name = refs[0].substr (0, r);

@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "PieceTable.h"
@@ -29,6 +39,9 @@ namespace DocFileFormat
 {
 	PieceTable::PieceTable (FileInformationBlock *fib, POLE::Stream *tableStream, POLE::Stream* wordStream)
 	{
+		m_bExtCharWord95 = (fib->m_nWordVersion > 0) && fib->m_FibBase.fExtChar;
+		m_iterCharSize = Pieces.end();
+
 		if (fib->m_FibWord97.lcbClx < 1/* || !fib->m_FibBase.fComplex*/) return;
 
 		int streamSize = wordStream->size();
@@ -43,6 +56,8 @@ namespace DocFileFormat
 		}
 
 		Pieces = std::list<PieceDescriptor>();
+		m_iterCharSize = Pieces.end();
+
 		FileCharacterPositions	= new std::map<int, int>();
 		CharacterPositions		= new std::map<int, int>();
 
@@ -190,7 +205,7 @@ namespace DocFileFormat
 			stream->seek(pcd.fc);
 			stream->read(bytes, cb);
 
-			FormatUtils::GetSTLCollectionFromBytes(piecePairs, bytes, cb, pcd.code_page);
+			GetCharsFromBytes(piecePairs, bytes, cb, pcd.code_page);
 
 			RELEASEARRAYOBJECTS(bytes);
 		}
@@ -236,7 +251,7 @@ namespace DocFileFormat
 				wordStream->read( bytes, cb);
 
 				//get the chars
-				FormatUtils::GetSTLCollectionFromBytes( encodingChars, bytes, cb, pcd.code_page );
+				GetCharsFromBytes(encodingChars, bytes, cb, pcd.code_page);
 
 				RELEASEARRAYOBJECTS( bytes );
 			}
@@ -255,7 +270,7 @@ namespace DocFileFormat
 				wordStream->read( bytes, cb);
 
 				//get the chars
-				FormatUtils::GetSTLCollectionFromBytes( encodingChars, bytes, cb, pcd.code_page );
+				GetCharsFromBytes(encodingChars, bytes, cb, pcd.code_page);
 
 				RELEASEARRAYOBJECTS( bytes );
 			}
@@ -274,7 +289,7 @@ namespace DocFileFormat
 				wordStream->read( bytes, cb);
 
 				//get the chars
-				FormatUtils::GetSTLCollectionFromBytes(encodingChars, bytes, cb, pcd.code_page);
+				GetCharsFromBytes(encodingChars, bytes, cb, pcd.code_page);
 
 				RELEASEARRAYOBJECTS(bytes);
 
@@ -297,7 +312,7 @@ namespace DocFileFormat
 				wordStream->read( bytes, cb );
 
 				//get the chars
-				FormatUtils::GetSTLCollectionFromBytes( encodingChars, bytes, cb, pcd.code_page );
+				GetCharsFromBytes(encodingChars, bytes, cb, pcd.code_page);
 
 				RELEASEARRAYOBJECTS( bytes );
 
@@ -395,14 +410,7 @@ namespace DocFileFormat
 				//read from pcd.fc to fcEnd
 
 				int cb = fcEnd - (int)pcd.fc;
-				if (cb == 0) //ralph_scovile.doc
-				{
-					if (pcd.cpEnd - pcd.cpStart < 2) // com2010_0624pl01.doc
-						cb = pcdFcEnd - (int)pcd.fc; 
-					if (cb <= 0)
-						break;
-				}
-				else if (cb < 0)
+				if (cb <= 0)
 					break;
 
 				if (!ReadSymbolsBuffer((int)pcd.fc, cb, pcd.code_page, word, encodingChars))
@@ -439,7 +447,7 @@ namespace DocFileFormat
 			}
 			else if (fcEnd < (int)pcd.fc)		//	this piece is beyond the requested range
 			{	
-				// there may be a jump in the stream, so we adjust the starting position
+				// there is a stream jump, so we adjust the start position
 
 				//size_t count = encodingChars->size();
 				//if (count && fcSize > 0)
@@ -486,10 +494,49 @@ namespace DocFileFormat
 		word->read(bytes, size);
 
 
-        FormatUtils::GetSTLCollectionFromBytes(encodingChars, bytes, size, coding);
+		GetCharsFromBytes(encodingChars, bytes, size, coding);
 
         RELEASEARRAYOBJECTS(bytes);
 
 		return true;
+	}
+	int PieceTable::GetCharSize(int cp)
+	{
+		if ((m_iterCharSize != Pieces.end()) && (cp >= m_iterCharSize->cpStart) && (cp < m_iterCharSize->cpEnd))
+		{
+			return (m_iterCharSize->code_page == ENCODING_UTF16) ? 2 : 1;
+		}
+
+		for (std::list<PieceDescriptor>::iterator iter = Pieces.begin(); iter != Pieces.end(); ++iter)
+		{
+			if ((cp >= iter->cpStart) && (cp < iter->cpEnd))
+			{
+				m_iterCharSize = iter;
+				return (iter->code_page == ENCODING_UTF16) ? 2 : 1;
+			}
+		}
+		return 1;
+	}
+	void PieceTable::GetCharsFromBytes(std::vector<wchar_t>* encodingChars, unsigned char* bytes, int size, int coding)
+	{
+		if (!m_bExtCharWord95 || coding != ENCODING_UTF16)
+		{
+			FormatUtils::GetSTLCollectionFromBytes(encodingChars, bytes, size, coding);
+			return;
+		}
+		//Word 95 symbol = (charset << 8 | code) - not Unicode !!
+		for (int i = 0; i < size; i += 2)
+		{
+			unsigned short symbol = FormatUtils::BytesToUInt16(bytes, i, size);
+
+			if ((symbol & 0xFF00) && (symbol & 0xFF00) < 0x8100)
+			{
+				encodingChars->push_back(FormatUtils::MapByteToWChar((unsigned char)(symbol & 0x00FF)));
+			}
+			else
+			{
+				encodingChars->push_back((wchar_t)symbol);
+			}
+		}
 	}
 }

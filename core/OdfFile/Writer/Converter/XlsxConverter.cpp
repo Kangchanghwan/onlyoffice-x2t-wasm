@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "XlsxConverter.h"
 #include "../../../OOXML/XlsxFormat/Xlsx.h"
@@ -29,6 +39,7 @@
 #include "../../../OOXML/XlsxFormat/Drawing/Pos.h"
 #include "../../../OOXML/XlsxFormat/Worksheets/Worksheet.h"
 #include "../../../OOXML/XlsxFormat/Comments/Comments.h"
+#include "../../../OOXML/XlsxFormat/Comments/ThreadedComments.h"
 #include "../../../OOXML/XlsxFormat/SharedStrings/SharedStrings.h"
 #include "../../../OOXML/XlsxFormat/Styles/Styles.h"
 #include "../../../OOXML/XlsxFormat/Styles/NumFmts.h"
@@ -50,6 +61,8 @@
 #include "../../../OOXML/DocxFormat/VmlDrawing.h"
 #include "../../../OOXML/DocxFormat/Media/ActiveX.h"
 #include "../../../OOXML/DocxFormat/Drawing/DrawingExt.h"
+
+#include "../../../OOXML/Common/SimpleTypes_Shared.h"
 
 #include "../Format/ods_conversion_context.h"
 
@@ -159,6 +172,9 @@ bool XlsxConverter::convertDocument()
     if (!ods_context)       return false;
    
 	if (!xlsx_document && !xlsx_flat_document) return false;
+
+	if (xlsx_document && xlsx_document->m_pWorkbook && xlsx_document->m_pWorkbook->m_pPersonList)
+		xlsx_mapPersons = xlsx_document->m_pWorkbook->m_pPersonList->GetPersonList();
 
 	ods_context->start_document();
 
@@ -334,7 +350,7 @@ void XlsxConverter::convert(OOX::Spreadsheet::CWorksheet *oox_sheet)
 	convert(oox_sheet->m_oSheetPr.GetPointer());
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Preprocessing
-	//hyperlinks
+	//hyperlinks 
 	for (size_t hyp = 0; oox_sheet->m_oHyperlinks.IsInit() && hyp < oox_sheet->m_oHyperlinks->m_arrItems.size(); hyp++)
 	{
 		convert(oox_sheet->m_oHyperlinks->m_arrItems[hyp],oox_sheet);
@@ -346,7 +362,7 @@ void XlsxConverter::convert(OOX::Spreadsheet::CWorksheet *oox_sheet)
 		convert(pos->second);
 		pos++;
 	}
-	//TODO for optimization - move merges to the beginning
+	//todooo for optimization - move merges to the beginning
 
 	if (oox_sheet->m_oTableParts.IsInit())
 	{
@@ -1072,8 +1088,28 @@ void XlsxConverter::convert(OOX::Spreadsheet::CCommentItem * oox_comment)
 	int row = oox_comment->m_nRow.IsInit() ? oox_comment->m_nRow.get()+1 : -1;
 
 	std::wstring author = oox_comment->m_sAuthor.IsInit() ? oox_comment->m_sAuthor.get() : L"";
+	std::wstring date_time;
 
-	ods_context->start_comment(col, row, author);	
+	if (oox_comment->m_pThreadedComment)
+	{
+		if ((oox_comment->m_pThreadedComment)->personId.IsInit() && xlsx_mapPersons.IsInit())
+		{			
+			std::unordered_map<std::wstring, OOX::Spreadsheet::CPerson*>::iterator pFind = xlsx_mapPersons->find(oox_comment->m_pThreadedComment->personId->ToString());
+			if (pFind != xlsx_mapPersons->end())
+			{
+				if ((pFind->second) && (pFind->second->displayName.IsInit()))
+				{
+					author = *pFind->second->displayName;
+				}
+			}
+		}
+		if (oox_comment->m_pThreadedComment->dT.IsInit())
+		{
+			date_time = oox_comment->m_pThreadedComment->dT->ToString();
+		}
+	}
+
+	ods_context->start_comment(col, row, author, date_time);
 	if (oox_comment->m_dLeftMM.IsInit() &&  oox_comment->m_dTopMM.IsInit() && oox_comment->m_dWidthMM.IsInit() && oox_comment->m_dHeightMM.IsInit())
 	{
 		ods_context->set_comment_rect(oox_comment->m_dLeftMM.get(), oox_comment->m_dTopMM.get(), oox_comment->m_dWidthMM.get(), oox_comment->m_dHeightMM.get());
@@ -1090,7 +1126,50 @@ void XlsxConverter::convert(OOX::Spreadsheet::CCommentItem * oox_comment)
 	{
 		ods_context->set_comment_color(L"CCFFFF"); //default ms
 	}
-	if (oox_comment->m_oText.IsInit())
+	if (oox_comment->m_pThreadedComment)
+	{
+		convert(oox_comment->m_pThreadedComment->m_oText.GetPointer());
+		ods_context->text_context()->end_paragraph();
+
+		for (auto reply : oox_comment->m_pThreadedComment->m_arrReplies)
+		{
+			ods_context->text_context()->start_paragraph();
+
+			if (reply->personId.IsInit() && xlsx_mapPersons.IsInit())
+			{
+				std::wstring sTextReply;
+
+				std::unordered_map<std::wstring, OOX::Spreadsheet::CPerson*>::iterator pFind = xlsx_mapPersons->find(reply->personId->ToString());
+				if (pFind != xlsx_mapPersons->end())
+				{
+					if ((pFind->second) && (pFind->second->displayName.IsInit()))
+					{
+						sTextReply += *pFind->second->displayName;
+					}
+					if (reply->dT.IsInit())
+					{
+						std::wstring sDate = reply->dT->ToString();
+
+						if (sDate.empty() == false)
+						{
+							size_t pos = sDate.find(L"T"); 
+							if (pos != std::wstring::npos) sDate[pos] = L' ';
+							sTextReply += L" (" + sDate + L")";
+						}
+					}
+				}
+				sTextReply += L": ";
+				if (reply->m_oText.IsInit())
+				{
+					sTextReply += reply->m_oText->m_sText;
+				}
+				ods_context->add_text_content(sTextReply);
+			}
+
+			ods_context->text_context()->end_paragraph();
+		}
+	}
+	else if (oox_comment->m_oText.IsInit())
 	{
 		for(size_t i = 0; i < oox_comment->m_oText->m_arrItems.size(); ++i)
 		{
@@ -1408,11 +1487,11 @@ void XlsxConverter::convert(OOX::Spreadsheet::CExternalLink *oox_external_link)
 				ods_context->add_external_reference(filePath);
 			}
 		}
-		//TODO
+		//todooo
 	}
 	if (oox_external_link->m_oFileKey.IsInit() || oox_external_link->m_oInstanceId.IsInit())
 	{
-		//TODO
+		//todooo
 
 	}
 	xlsx_current_container = old_container;
@@ -1680,7 +1759,7 @@ void XlsxConverter::convert(OOX::Spreadsheet::CCol *oox_column)
 	}
 	else
 	{
-		//need to add a default style for the cells of THIS sheet
+		//need to add default style for cells of THIS sheet
 		//???
 		style_cell_name= ods_context->styles_context()->find_odf_style_name_default(odf_types::style_family::TableCell);
 	}
@@ -1782,8 +1861,10 @@ void XlsxConverter::convert(OOX::Spreadsheet::CSheetViews *oox_sheet_views)
 
 		ods_context->start_table_view( view_id );
 		
-		if (sheet_view->m_oRightToLeft.IsInit() && sheet_view->m_oRightToLeft->GetValue()==1)
+		if (sheet_view->m_oRightToLeft.IsInit() && sheet_view->m_oRightToLeft->ToBool())
+		{
 			ods_context->current_table()->set_table_rtl(true);
+		}
 
 		if (sheet_view->m_oShowGridLines.IsInit() && sheet_view->m_oShowGridLines->GetValue()==0)
 		{
@@ -1854,9 +1935,9 @@ void XlsxConverter::convert(OOX::Spreadsheet::CSheetViews *oox_sheet_views)
 			if (selection->m_oSqref.IsInit())
 			{
 				//D6:D9 I9:I12 M16:M21 C20:I24
-				//this isn't available in OpenOffice
+				//OpenOffice doesn't have this
 			}
-			break; // OpenOffice doesn't have multiple select
+			break; // OpenOffice doesn't have multiple selection 
 		}
 		if (sheet_view->m_oPane.IsInit())
 		{			
@@ -2112,7 +2193,7 @@ void XlsxConverter::convert(OOX::Spreadsheet::CSheetFormatPr *oox_sheet_format_p
 				//nullable<SimpleTypes::COnOff<>>					m_oThickTop;
 				//nullable<SimpleTypes::COnOff<>>					m_oZeroHeight;
 //Cell default////////////////////////////
-	////still ugly :( and most importantly WRONG; unclear why the first item becomes default - not sure what to do :(
+	////not pretty yet :(  and most importantly WRONG - why is the first one the default ???? - NO WAY - no idea what to do :(
 	//odf_writer::odf_style_state_ptr default_cell_style;
 	//ods_context->styles_context()->find_odf_style_state(0,odf_types::style_family::TableCell, default_cell_style, true);
 	//if (default_cell_style)	ods_context->styles_context()->add_default(default_cell_style);
@@ -2129,7 +2210,7 @@ void XlsxConverter::convert(OOX::Spreadsheet::CSheetFormatPr *oox_sheet_format_p
 		double defaut_column_width_sym_ = 9.08984375;
 		bool padding = false;
 
-		//in xlsx it isn't necessary to set the width (of columns) - it is the default for the application. in oo - required
+		//in xlsx column width is optional - default by application. in oo - required
 		odf_writer::style* style = dynamic_cast<odf_writer::style*>(ods_context->styles_context()->last_state()->get_office_element().get());
 		if (style)
 		{
@@ -2177,7 +2258,7 @@ void XlsxConverter::convert(OOX::Spreadsheet::CSheetFormatPr *oox_sheet_format_p
 					ods_context->current_table()->defaut_row_height_ = height;//pt
 					row_properties->style_table_row_properties_attlist_.style_row_height_ = odf_types::length(odf_types::length(height,odf_types::length::pt).get_value_unit(odf_types::length::cm),odf_types::length::cm);
 				}
-				//row_properties->style_table_row_properties_attlist_.style_use_optimal_row_height_ = true; - UTF-8''Отчет о развертывании-1.xlsx
+				//row_properties->style_table_row_properties_attlist_.style_use_optimal_row_height_ = true; - UTF-8''Deployment-Report-1.xlsx
 				row_properties->style_table_row_properties_attlist_.common_break_attlist_.fo_break_before_ = odf_types::fo_break(odf_types::fo_break::Auto);
 			}
 		}
@@ -2198,7 +2279,7 @@ void XlsxConverter::convert_styles()
 	if (xlsx_flat_document) xlsx_styles = xlsx_flat_document->m_pStyles.GetPointer();
 	
 	if (!xlsx_styles)return;
-//TODO?? Is it worth paying attention to the Count parameter??
+//todooo ?? should we pay attention to the Count parameter ??
 ////////////data formats
 	for (size_t i = 0; xlsx_styles->m_oNumFmts.IsInit() && i < xlsx_styles->m_oNumFmts->m_arrItems.size(); i++)
 	{
@@ -2207,23 +2288,23 @@ void XlsxConverter::convert_styles()
 /////////////cell styles
 	for (size_t i = 0; xlsx_styles->m_oCellStyleXfs.IsInit() && i < xlsx_styles->m_oCellStyleXfs->m_arrItems.size(); i++)
 	{
-		//automatic, root - noname - they are only for named
+		//automatical, root - noname - they are only for named
 		convert(xlsx_styles->m_oCellStyleXfs->m_arrItems[i] , i, true, true);
 	}
 	for (size_t i = 0; xlsx_styles->m_oCellStyles.IsInit() && i < xlsx_styles->m_oCellStyles->m_arrItems.size(); i++)//styles.xml
 	{
-		//non automatic, root - named
+		//non automatical, root - named 
 		convert(xlsx_styles->m_oCellStyles->m_arrItems[i]); 
 	}	
 
 	//custom cell styles
 	for (size_t i = 0; xlsx_styles->m_oCellXfs.IsInit() && i < xlsx_styles->m_oCellXfs->m_arrItems.size(); i++)
 	{
-		//automatic, non root
+		//automatical, non root
 		convert(xlsx_styles->m_oCellXfs->m_arrItems[i], i, true, false);
 	}	
 
-////////////conditional formatting styles
+////////////conditional formatting styles 
 	for (size_t i = 0; xlsx_styles->m_oDxfs.IsInit() && i < xlsx_styles->m_oDxfs->m_arrItems.size(); i++)
 	{
 		convert(xlsx_styles->m_oDxfs->m_arrItems[i], i); 
@@ -2323,12 +2404,14 @@ void XlsxConverter::convert(OOX::Spreadsheet::CFont *font, odf_writer::text_form
 		text_properties->style_text_line_through_type_ = odf_types::line_type(odf_types::line_type::Single);
 
 	ods_context->add_font(font_name);
-	ods_context->calculate_font_metrix(font_name, font_size, font_italic, font_bold);
+
+	if (font->m_oRFont.IsInit() && font->m_oSz.IsInit())
+		ods_context->calculate_font_metrix(font_name, font_size, font_italic, font_bold);
 }
 
 void XlsxConverter::convert(double oox_size,  _CP_OPT(odf_types::length) & odf_size)
 {
-	//need to do type conversions oox_size
+	//need to convert oox_size types
 	//???
 	odf_size = odf_types::length(oox_size, odf_types::length::pt);
 }
@@ -2378,7 +2461,7 @@ void XlsxConverter::convert(OOX::Spreadsheet::CFill * fill, odf_writer::style_ta
 				case SimpleTypes::Spreadsheet::patterntypeLightUp:
 				case SimpleTypes::Spreadsheet::patterntypeLightVertical:
 				case SimpleTypes::Spreadsheet::patterntypeMediumGray:
-					// TODO
+					// todooo
 					break;
 			}
 		}
@@ -2437,7 +2520,10 @@ void XlsxConverter::convert(OOX::Spreadsheet::CAligment *aligment, odf_writer::p
 	{
 		if (*aligment->m_oTextRotation <= 180 && *aligment->m_oTextRotation >= 0 )
 		{
-			cell_properties->content_.common_rotation_angle_attlist_.style_rotation_angle_ = *aligment->m_oTextRotation;
+			int angle = *aligment->m_oTextRotation;
+			if (angle > 90) angle = 450 - angle;
+
+			cell_properties->content_.common_rotation_angle_attlist_.style_rotation_angle_ = angle;
 			cell_properties->content_.style_rotation_align_= odf_types::rotation_align(odf_types::rotation_align::Bottom);
 		}
 		else if (*aligment->m_oTextRotation == 0xff)//vertical text
@@ -2447,7 +2533,7 @@ void XlsxConverter::convert(OOX::Spreadsheet::CAligment *aligment, odf_writer::p
 	_CP_OPT(odf_types::length) indent;
 	if (aligment->m_oIndent.IsInit())
 	{
-		indent = odf_types::length(ods_context->convert_symbol_width(*aligment->m_oIndent, true), odf_types::length::pt);
+		indent = odf_types::length(ods_context->convert_symbol_indent(*aligment->m_oIndent), odf_types::length::pt);
 	}
 	if(aligment->m_oHorizontal.IsInit())
 	{
@@ -2623,7 +2709,7 @@ void XlsxConverter::convert(OOX::Spreadsheet::CBorderProp *borderProp, std::wstr
 	
 	odf_border_prop = border_style + border_color;
 }
-void XlsxConverter::convert(OOX::Spreadsheet::CColor *color, _CP_OPT(odf_types::color) & odf_color)//Is it worth dragging odf_writer type here???
+void XlsxConverter::convert(OOX::Spreadsheet::CColor *color, _CP_OPT(odf_types::color) & odf_color)//should we drag odf_writer type here???
 {
 	odf_color = boost::none;
 
@@ -2722,8 +2808,8 @@ void XlsxConverter::convert(OOX::Spreadsheet::CCellStyle * cell_style)
 	//if (parent_id >=0) 
 	//	ods_context->styles_context()->last_state()->set_parent_style_name(ods_context->styles_context()->find_odf_style_name(parent_id, odf_types::style_family::TableCell,true, true));
 	
-	//LibreOffice and OO feature - they Don't READ automatic styles for styles
-	//all the properties have to be copied .. delete the automatic styles (don't save to a file)
+	//quirk of LibreOffice and OO - they DON'T READ automatic styles for styles
+	//will have to copy all properties .. they remove automatic styles (don't save to file)
 
 	odf_writer::odf_style_state_ptr parent_style_state;
 	if (ods_context->styles_context()->find_odf_style_state(parent_id, odf_types::style_family::TableCell, parent_style_state, true, true) && parent_style_state)
@@ -2849,7 +2935,7 @@ void XlsxConverter::convert(OOX::Spreadsheet::CXfs * xfc_style, int oox_id, bool
 		odf_writer::odf_style_state_ptr parent_style_state;
 	
 		if (ods_context->styles_context()->find_odf_style_state(id_parent, odf_types::style_family::TableCell,parent_style_state, true, false) 
-			 && parent_style_state) // first in named
+			 && parent_style_state) // first in named ones
 		{
 			ods_context->styles_context()->last_state()->set_parent_style_name(parent_style_state->get_name());
 
@@ -2957,10 +3043,10 @@ void XlsxConverter::convert(OOX::Spreadsheet::CDrawing *oox_drawing, OOX::Spread
 
 		if (oox_sheet->m_oOleObjects.IsInit() && oox_anchor->m_nId.IsInit())
 		{
-            boost::unordered_map<unsigned int, OOX::Spreadsheet::COleObject*>::const_iterator pFind = oox_sheet->m_oOleObjects->m_mapOleObjects.find(oox_anchor->m_nId.get());
+            std::map<unsigned int, OOX::Spreadsheet::COleObject*>::const_iterator pFind = oox_sheet->m_oOleObjects->m_mapOleObjects.find(oox_anchor->m_nId.get());
 			if (pFind != oox_sheet->m_oOleObjects->m_mapOleObjects.end())
 			{
-				//??? transfer binding data
+				//??? transfer binding data 
 				oox_anchor->m_bShapeOle = true;
 				continue;
 			}
@@ -2970,7 +3056,7 @@ void XlsxConverter::convert(OOX::Spreadsheet::CDrawing *oox_drawing, OOX::Spread
             std::map<unsigned int, nullable<OOX::Spreadsheet::CControl>>::const_iterator pFind = oox_sheet->m_oControls->m_mapControls.find(oox_anchor->m_nId.get());
 			if (pFind != oox_sheet->m_oControls->m_mapControls.end())
 			{
-				//??? transfer binding data
+				//??? transfer binding data 
 				oox_anchor->m_bShapeControl = true;
 				continue;
 			}
@@ -2985,7 +3071,7 @@ void XlsxConverter::convert(OOX::Spreadsheet::COleObjects *oox_objects, OOX::Spr
 {
 	if (!oox_objects) return;
 
-    for (boost::unordered_map<unsigned int, OOX::Spreadsheet::COleObject*>::const_iterator it = oox_objects->m_mapOleObjects.begin(); it != oox_objects->m_mapOleObjects.end(); ++it)
+    for (std::map<unsigned int, OOX::Spreadsheet::COleObject*>::const_iterator it = oox_objects->m_mapOleObjects.begin(); it != oox_objects->m_mapOleObjects.end(); ++it)
 	{
 		OOX::Spreadsheet::COleObject* object = it->second;
 
@@ -3071,7 +3157,7 @@ void XlsxConverter::convert(OOX::Spreadsheet::COleObjects *oox_objects, OOX::Spr
 														
 					if (!sIdImageFileCache.empty())
 					{
-						//looking for a physical file (rId relative to vml_drawing)
+						//looking for physical file (rId relative to vml_drawing)									
 						smart_ptr<OOX::CVmlDrawing>	oVmlDrawing = oox_sheet->Find(oox_sheet->m_oLegacyDrawing->m_oId->GetValue()).smart_dynamic_cast<OOX::CVmlDrawing>();
 						smart_ptr<OOX::File> pFile = oVmlDrawing->Find(sIdImageFileCache);
 						
@@ -3151,7 +3237,7 @@ void XlsxConverter::convert(OOX::Spreadsheet::CControls *oox_controls, OOX::Spre
 
 					if (pImage)
 					{
-						//TODO
+						//todooo
 					}
 					continue;
 				}
@@ -3414,7 +3500,7 @@ void XlsxConverter::convert(OOX::Spreadsheet::CSparklineGroup* sparklineGroup)
 {
 	if (!sparklineGroup) return;
 
-	if (sparklineGroup->m_oUId.IsInit()) ods_context->current_table()->set_sparkline_id(*sparklineGroup->m_oUId);
+	if (sparklineGroup->m_oUId.IsInit()) ods_context->current_table()->set_sparkline_id(sparklineGroup->m_oUId->ToString());
 	if (sparklineGroup->m_oManualMax.IsInit()) ods_context->current_table()->set_sparkline_manual_max(sparklineGroup->m_oManualMax->GetValue());
 	if (sparklineGroup->m_oManualMin.IsInit()) ods_context->current_table()->set_sparkline_manual_min(sparklineGroup->m_oManualMin->GetValue());
 	if (sparklineGroup->m_oLineWeight.IsInit()) ods_context->current_table()->set_sparkline_line_weight(sparklineGroup->m_oLineWeight->GetValue());
@@ -3469,7 +3555,7 @@ void XlsxConverter::convert(OOX::Spreadsheet::CAltTextTable *alt_text)
 }
 
 void XlsxConverter::convert(OOX::Spreadsheet::CConditionalFormatting *oox_cond_fmt, 
-							std::map<std::wstring, OOX::Spreadsheet::CConditionalFormattingRule*>& mapCFRuleEx, bool isExt)
+							std::unordered_map<std::wstring, OOX::Spreadsheet::CConditionalFormattingRule*>& mapCFRuleEx, bool isExt)
 {
 	if (!oox_cond_fmt)return;
 
@@ -3494,14 +3580,14 @@ void XlsxConverter::convert(OOX::Spreadsheet::CConditionalFormatting *oox_cond_f
 	}
 }
 void XlsxConverter::convert(OOX::Spreadsheet::CConditionalFormattingRule *oox_cond_rule,
-							std::map<std::wstring, OOX::Spreadsheet::CConditionalFormattingRule*>& mapCFRuleEx, bool isExt)
+							std::unordered_map<std::wstring, OOX::Spreadsheet::CConditionalFormattingRule*>& mapCFRuleEx, bool isExt)
 {
 	if (!oox_cond_rule) return;
 
-	std::map<std::wstring, OOX::Spreadsheet::CConditionalFormattingRule*>::iterator pFind;
+	std::unordered_map<std::wstring, OOX::Spreadsheet::CConditionalFormattingRule*>::iterator pFind;
 	if (oox_cond_rule->m_oExtId.IsInit())
 	{
-		pFind = mapCFRuleEx.find(*oox_cond_rule->m_oExtId);
+		pFind = mapCFRuleEx.find(oox_cond_rule->m_oExtId->ToString());
 
 		if (pFind != mapCFRuleEx.end())
 		{
@@ -3684,7 +3770,7 @@ void XlsxConverter::convert(OOX::Spreadsheet::CAutofilter *oox_filter)
 	}
 	ods_context->add_autofilter(ref);//target
 	
-	//for (size_t i=0; i < oox_filter->m_arrItems.size(); i++)//set items TODO
+	//for (size_t i=0; i < oox_filter->m_arrItems.size(); i++)//set items todooo
 	//{
 	//}
 }

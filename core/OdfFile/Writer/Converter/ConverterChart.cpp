@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "Converter.h"
@@ -63,7 +73,7 @@ void OoxConverter::convert_chart_text(PPTX::Logic::TxBody *oox_txBody, bool only
 	{
 		convert(&oox_txBody->Paragrs[i], oox_txBody->lstStyle.GetPointer());
 	
-	//external settings for text
+	//external text settings
 		convert_chart_text(oox_txBody->bodyPr.GetPointer());			
 	}
 
@@ -97,11 +107,51 @@ void OoxConverter::convert_chart_text(PPTX::Logic::BodyPr *oox_bodyPr)
 	if ((oox_bodyPr->numCol.IsInit()) && (oox_bodyPr->numCol.get() > 1))
 	{
 		//+ style section
-		//+element text:section which contains paragraphs
+		//+element text:section containing paragraphs
 	}
 	if (oox_bodyPr->rot.IsInit())
 	{
 		odf_context()->chart_context()->set_textarea_rotation(oox_bodyPr->rot.get() / 60000);
+	}
+}
+
+template<typename T>
+static void append_chart_series(const std::vector<T*> & from, std::vector<OOX::Spreadsheet::CBaseSer*> & to, bool only_first = false)
+{
+	for (size_t i = 0; i < from.size(); i++)
+	{
+		if (from[i] && from[i]->m_tx && from[i]->m_tx->m_strRef)
+			to.push_back(from[i]);
+
+		if (only_first) break;
+	}
+}
+static void get_chart_named_series(OOX::Spreadsheet::CT_PlotArea *ct_plotArea, std::vector<OOX::Spreadsheet::CBaseSer*> & series)
+{
+	if (ct_plotArea == NULL) return;
+
+	for (size_t i = 0; i < ct_plotArea->m_Items.size(); i++)
+	{
+		if (!ct_plotArea->m_ItemsElementName0[i]) continue;
+		switch (*ct_plotArea->m_ItemsElementName0[i])
+		{
+		case OOX::Spreadsheet::itemschoicetype5AREA3DCHART:		append_chart_series(((OOX::Spreadsheet::CT_Area3DChart*)ct_plotArea->m_Items[i])->m_ser, series); break;
+		case OOX::Spreadsheet::itemschoicetype5AREACHART:		append_chart_series(((OOX::Spreadsheet::CT_AreaChart*)ct_plotArea->m_Items[i])->m_ser, series); break;
+		case OOX::Spreadsheet::itemschoicetype5BAR3DCHART:		append_chart_series(((OOX::Spreadsheet::CT_Bar3DChart*)ct_plotArea->m_Items[i])->m_ser, series); break;
+		case OOX::Spreadsheet::itemschoicetype5BARCHART:		append_chart_series(((OOX::Spreadsheet::CT_BarChart*)ct_plotArea->m_Items[i])->m_ser, series); break;
+		case OOX::Spreadsheet::itemschoicetype5BUBBLECHART:		append_chart_series(((OOX::Spreadsheet::CT_BubbleChart*)ct_plotArea->m_Items[i])->m_ser, series); break;
+		case OOX::Spreadsheet::itemschoicetype5DOUGHNUTCHART:	append_chart_series(((OOX::Spreadsheet::CT_DoughnutChart*)ct_plotArea->m_Items[i])->m_ser, series); break;
+		case OOX::Spreadsheet::itemschoicetype5LINE3DCHART:		append_chart_series(((OOX::Spreadsheet::CT_Line3DChart*)ct_plotArea->m_Items[i])->m_ser, series); break;
+		case OOX::Spreadsheet::itemschoicetype5LINECHART:		append_chart_series(((OOX::Spreadsheet::CT_LineChart*)ct_plotArea->m_Items[i])->m_ser, series); break;
+		case OOX::Spreadsheet::itemschoicetype5OFPIECHART:		append_chart_series(((OOX::Spreadsheet::CT_OfPieChart*)ct_plotArea->m_Items[i])->m_ser, series, true); break;
+		case OOX::Spreadsheet::itemschoicetype5PIE3DCHART:		append_chart_series(((OOX::Spreadsheet::CT_Pie3DChart*)ct_plotArea->m_Items[i])->m_ser, series, true); break;
+		case OOX::Spreadsheet::itemschoicetype5PIECHART:		append_chart_series(((OOX::Spreadsheet::CT_PieChart*)ct_plotArea->m_Items[i])->m_ser, series, true); break;
+		case OOX::Spreadsheet::itemschoicetype5RADARCHART:		append_chart_series(((OOX::Spreadsheet::CT_RadarChart*)ct_plotArea->m_Items[i])->m_ser, series); break;
+		case OOX::Spreadsheet::itemschoicetype5SCATTERCHART:	append_chart_series(((OOX::Spreadsheet::CT_ScatterChart*)ct_plotArea->m_Items[i])->m_ser, series); break;
+		case OOX::Spreadsheet::itemschoicetype5STOCKCHART:		append_chart_series(((OOX::Spreadsheet::CT_StockChart*)ct_plotArea->m_Items[i])->m_ser, series); break;
+		case OOX::Spreadsheet::itemschoicetype5SURFACE3DCHART:	append_chart_series(((OOX::Spreadsheet::CT_Surface3DChart*)ct_plotArea->m_Items[i])->m_ser, series); break;
+		case OOX::Spreadsheet::itemschoicetype5SURFACECHART:	append_chart_series(((OOX::Spreadsheet::CT_SurfaceChart*)ct_plotArea->m_Items[i])->m_ser, series); break;
+		}
 	}
 }
 
@@ -112,7 +162,20 @@ void OoxConverter::convert(OOX::Spreadsheet::CT_ChartSpace  *oox_chart)
 	convert(oox_chart->m_spPr.GetPointer());	
 	convert_chart_text(oox_chart->m_txPr.GetPointer(), true);
 
-	convert(oox_chart->m_chart->m_title);
+	bool bAutoTitle = !(oox_chart->m_chart->m_autoTitleDeleted.IsInit() ? *oox_chart->m_chart->m_autoTitleDeleted : false);
+	bool bTitleHasText = oox_chart->m_chart->m_title && oox_chart->m_chart->m_title->m_tx;
+
+	OOX::Spreadsheet::CT_SerTx *reserve_title_tx = NULL;
+	if (bAutoTitle && !bTitleHasText)
+	{
+		std::vector<OOX::Spreadsheet::CBaseSer*> series;
+		get_chart_named_series(oox_chart->m_chart->m_plotArea, series);
+
+		if (series.size() == 1)
+			reserve_title_tx = series[0]->m_tx;
+	}
+
+	convert(oox_chart->m_chart->m_title, reserve_title_tx);
 	convert(oox_chart->m_chart->m_legend);
 
 	odf_context()->chart_context()->start_plot_area();
@@ -122,11 +185,41 @@ void OoxConverter::convert(OOX::Spreadsheet::CT_ChartSpace  *oox_chart)
 		bool chart3D = (oox_chart->m_chart->m_view3D) ? true : false;
 		
 		convert(oox_chart->m_chart->m_floor, 1, chart3D);
-		convert(oox_chart->m_chart->m_backWall, 2, chart3D);
+
+		PPTX::Logic::SpPr *plot_area_spPr = oox_chart->m_chart->m_plotArea ?
+					oox_chart->m_chart->m_plotArea->m_spPr.GetPointer() : NULL;
+
+		if (oox_chart->m_chart->m_backWall)
+		{
+			convert(oox_chart->m_chart->m_backWall, 2, chart3D);
+			convert(plot_area_spPr);
+		}
+		else
+		{
+			odf_context()->chart_context()->start_wall();
+			{
+				if (plot_area_spPr)	convert(plot_area_spPr);
+				else				odf_context()->chart_context()->set_no_fill(true);
+			}
+			odf_context()->chart_context()->end_element();
+		}
 		
 		convert(oox_chart->m_chart->m_view3D);
 
 		//convert(oox_chart->m_chart->m_sizeWall, 3, chart3D);		
+
+		if (oox_chart->m_chart->m_dispBlanksAs.IsInit())
+		{
+			std::wstring treat_empty_cells = L"leave-gap";
+			switch (oox_chart->m_chart->m_dispBlanksAs->GetValue())
+			{
+			case OOX::Spreadsheet::st_dispblanksasZERO:	treat_empty_cells = L"use-zero";	break;
+			case OOX::Spreadsheet::st_dispblanksasSPAN:	treat_empty_cells = L"ignore";		break;
+			case OOX::Spreadsheet::st_dispblanksasGAP:
+			default:									treat_empty_cells = L"leave-gap";	break;
+			}
+			odf_context()->chart_context()->set_treat_empty_cells(treat_empty_cells);
+		}
 	}
 	odf_context()->chart_context()->end_plot_area();
 	
@@ -199,6 +292,9 @@ void OoxConverter::convert(OOX::Spreadsheet::CT_Layout* ct_layout)
 
 	int m_xMode=0, m_yMode=0, m_wMode=0,m_hMode=0;
 
+	odf_context()->chart_context()->set_layout_target_inner(ct_layout->m_manualLayout->m_layoutTarget.IsInit() &&
+		ct_layout->m_manualLayout->m_layoutTarget->GetValue() == OOX::Spreadsheet::st_layouttargetINNER);
+
 	if (ct_layout->m_manualLayout->m_xMode.IsInit()) m_xMode = ct_layout->m_manualLayout->m_xMode->GetValue();
 	if (ct_layout->m_manualLayout->m_yMode.IsInit()) m_yMode = ct_layout->m_manualLayout->m_yMode->GetValue();
 	if (ct_layout->m_manualLayout->m_hMode.IsInit()) m_hMode = ct_layout->m_manualLayout->m_hMode->GetValue();
@@ -210,16 +306,28 @@ void OoxConverter::convert(OOX::Spreadsheet::CT_Layout* ct_layout)
 	if (ct_layout->m_manualLayout->m_h.IsInit())	odf_context()->chart_context()->set_layout_h(*ct_layout->m_manualLayout->m_h, m_hMode);
 }
 
-void OoxConverter::convert(OOX::Spreadsheet::CT_Title* ct_title)
+void OoxConverter::convert(OOX::Spreadsheet::CT_Title* ct_title, OOX::Spreadsheet::CT_SerTx* reserve_tx)
 {
-	if (ct_title == NULL)return;
+	if (ct_title == NULL && reserve_tx == NULL) return;
 
 	odf_context()->chart_context()->start_title();
-		convert(ct_title->m_spPr.GetPointer());
-		convert(ct_title->m_layout);
-		convert_chart_text(ct_title->m_txPr.GetPointer(), true);
+		if (ct_title)
+		{
+			convert(ct_title->m_spPr.GetPointer());
+			convert(ct_title->m_layout);
+			convert_chart_text(ct_title->m_txPr.GetPointer(), true);
+		}
 	///////////////////////////////
-		convert(ct_title->m_tx);
+		if (ct_title && ct_title->m_tx)
+			convert(ct_title->m_tx);
+		else if (reserve_tx && reserve_tx->m_strRef)
+		{
+			if ((reserve_tx->m_strRef->m_strCache) && (false == reserve_tx->m_strRef->m_strCache->m_pt.empty())
+					&& (reserve_tx->m_strRef->m_strCache->m_pt[0]) && (reserve_tx->m_strRef->m_strCache->m_pt[0]->m_v.IsInit()))
+			{
+				odf_context()->chart_context()->add_text(*reserve_tx->m_strRef->m_strCache->m_pt[0]->m_v);
+			}
+		}
 	odf_context()->chart_context()->end_element();
 }
 void OoxConverter::convert(OOX::Spreadsheet::CT_Legend* ct_legend)
@@ -235,7 +343,7 @@ void OoxConverter::convert(OOX::Spreadsheet::CT_Legend* ct_legend)
 		convert_chart_text(ct_legend->m_txPr.GetPointer(), true);
 		if (ct_legend->m_legendEntry.size() > 0)
 		{
-			convert(ct_legend->m_legendEntry[0]); // in odf_writer there is no multiplicity of styles in the legend
+			convert(ct_legend->m_legendEntry[0]); // odf_writer doesn't have multiple styles in legend
 		}
 	//////////////////////
 	odf_context()->chart_context()->end_element();
@@ -300,8 +408,6 @@ void OoxConverter::convert(OOX::Spreadsheet::CT_PlotArea* ct_plotArea)
 		}
 	}
 	convert(ct_plotArea->m_dTable);
-
-	convert(ct_plotArea->m_spPr.GetPointer());
 }
 void OoxConverter::convert(OOX::Spreadsheet::CT_DTable *dTable)
 {
@@ -382,6 +488,7 @@ void OoxConverter::convert(OOX::Spreadsheet::CT_DateAx* axis)
 
 	odf_context()->chart_context()->start_axis();
 		odf_context()->chart_context()->set_axis_dimension(1);
+		odf_context()->chart_context()->set_axis_date_scale(true);
 		if (axis->m_axId.IsInit())
 			odf_context()->chart_context()->set_axis_id(*axis->m_axId);
 		
@@ -544,7 +651,7 @@ void OoxConverter::convert(OOX::Spreadsheet::CT_ChartLines *line, int type)
 			convert(line->m_spPr.GetPointer());	
 		odf_context()->chart_context()->end_element();
 	}
-	if (type == 3)//drop line - not available in open office format
+	if (type == 3)//drop line - not in OpenOffice format
 	{
 		odf_context()->chart_context()->start_stock_range_line();
 			convert(line->m_spPr.GetPointer());
@@ -966,7 +1073,7 @@ void OoxConverter::convert(OOX::Spreadsheet::CBaseSer* ser)
 {
 	if (ser == NULL) return;
 	
-	convert(ser->m_extLst.GetPointer()); // ref forward cache
+	convert(ser->m_extLst.GetPointer()); // ref before cache
 	
 	convert(ser->m_tx); 
 	convert(ser->m_spPr.GetPointer());
@@ -1008,7 +1115,7 @@ void OoxConverter::convert(OOX::Spreadsheet::CT_PieSer* ser)
 		convert(ser->m_cat, 1);
 		convert(ser->m_val);
 		
-		if (!ser->m_dPt.empty()) //?? Do we need default ones?
+		if (!ser->m_dPt.empty()) //?? are defaults needed?
 		{
 			convert(NULL, ser->m_dPt);
 		}
@@ -1137,7 +1244,7 @@ void OoxConverter::convert(OOX::Spreadsheet::CT_Marker* marker, std::vector<OOX:
 		}
 		odf_context()->chart_context()->start_data_point_series(1);
 			convert(dPt[i]->m_spPr.GetPointer());
-			convert(dPt[i]->m_marker, !dPt[i]->m_spPr.IsInit()); // take the marker colors if there is no dot color
+			convert(dPt[i]->m_marker, !dPt[i]->m_spPr.IsInit()); // take marker colors if no point color
 			
 			if (dPt[i]->m_explosion.IsInit())
 					odf_context()->chart_context()->set_series_pie_explosion(*dPt[i]->m_explosion);
@@ -1165,7 +1272,7 @@ void OoxConverter::convert(OOX::Spreadsheet::CT_Marker* marker, bool bFill)
 			odf_context()->chart_context()->set_marker_type(marker->m_symbol->GetValue());
 	if (marker->m_size.IsInit())
 			odf_context()->chart_context()->set_marker_size(*marker->m_size);
-	//in OO there is no separate concept of marker color and data point
+	//in OO there's no separate concept for marker and data point color
 	if (bFill)
 	{
 		convert(marker->m_spPr.GetPointer());
@@ -1336,7 +1443,7 @@ void OoxConverter::convert(OOX::Spreadsheet::CT_Surface* ct_surface, int type, b
 void OoxConverter::convert(OOX::Spreadsheet::CT_ExternalData *external_data)
 {
 	if (external_data == NULL)return;
-	//data for the chart is internal!!!
+	//internal chart data !!!
 
 	if (false == external_data->m_id.IsInit()) return;
 
@@ -1372,7 +1479,7 @@ void OoxConverter::convert(OOX::Spreadsheet::CT_ExternalData *external_data)
 	
 	if (!bConvertLocal)
 	{
-		odf_context()->chart_context()->set_local_table(true);//while we are using the cache...
+		odf_context()->chart_context()->set_local_table(true);//for now using cache ....
 	}
 }
 void OoxConverter::convert(OOX::Spreadsheet::CT_NumData	*num_data, bool categories, bool label)

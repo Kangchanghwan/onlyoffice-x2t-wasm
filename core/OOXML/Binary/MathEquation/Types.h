@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #pragma once
 
@@ -42,13 +52,13 @@ namespace MathEquation
 	enum MBRACKETSTYPE
 	{
 		bracketsAngle            = 0x00, // < > Angle brackets
-		bracketsRound            = 0x01, // ( ) Parentheses
-		bracketsCurve            = 0x02, // { } Curly braces
+		bracketsRound            = 0x01, // ( ) Round brackets
+		bracketsCurve            = 0x02, // { } Curly brackets
 		bracketsSquare           = 0x03, // [ ] Square brackets
-		bracketsLine             = 0x04, // Vertical bar brackets (absolute value)
-		bracketsDLine            = 0x05, // || ||Double line brackets
-		bracketsFloor            = 0x06, // Brackets with corner at bottom
-		bracketsCeil             = 0x07, // Brackets with corner at top
+		bracketsLine             = 0x04, // | | Line brackets
+		bracketsDLine            = 0x05, // || || Double line brackets
+		bracketsFloor            = 0x06, // Floor brackets (angle at bottom)
+		bracketsCeil             = 0x07, // Ceiling brackets (angle at top)
 		bracketsSquareOpenOpen   = 0x08, // [ [
 		bracketsSquareCloseClose = 0x09, // ] ]
 		bracketsSquareCloseOpen  = 0x0a, // ] [
@@ -59,8 +69,8 @@ namespace MathEquation
 
 	enum MFRACTIONTYPES
 	{
-		fractionRegular = 0, // Common fraction
-		fractionSlanted = 1  // Slant fraction
+		fractionRegular = 0, // Regular fraction
+		fractionSlanted = 1  // Slanted fraction
 	};
 
 	enum MSCRIPTALIGN
@@ -88,75 +98,75 @@ namespace MathEquation
 
 	enum MINTEGRALTYPE
 	{
-		integraltypeSingle             = 0, // Ordinary single integral without subscripts
+		integraltypeSingle             = 0, // Regular single integral without indices
 		integraltypeSingleRSub         = 1, // Single integral with right subscript
-		integraltypeSingleRSubSup      = 2, // Single integral with right upper and lower indices
+		integraltypeSingleRSubSup      = 2, // Single integral with right subscript and superscript
 		integraltypeSingleOriented     = 3, // Single oriented integral
 		integraltypeSingleOrientedRSub = 4, // Single oriented integral with right subscript
 
-		integraltypeDouble             = 5,  // Double integral without subscripts
+		integraltypeDouble             = 5,  // Double integral without indices
 		integraltypeDoubleRSub         = 6,  // Double integral with right subscript
 		integraltypeDoubleOriented     = 7,  // Double oriented integral
 		integraltypeDoubleOrientedRSub = 8,  // Double oriented integral with right subscript
 
-		integraltypeTriple             = 9,  // Triple integral without subscripts
+		integraltypeTriple             = 9,  // Triple integral without indices
 		integraltypeTripleRSub         = 10, // Triple integral with right subscript
 		integraltypeTripleOriented     = 11, // Triple oriented integral
 		integraltypeTripleOrientedRSub = 12, // Triple oriented integral with right subscript
 
-		integraltypeSingleCSubSup      = 13, // Single integral with central superscript and subscript
-		integraltypeSingleCSub         = 14, // Single integral with central subscript
-		integraltypeSingleOrientedCSub = 15, // Single oriented integral with central subscript
+		integraltypeSingleCSubSup      = 13, // Single integral with center subscript and superscript
+		integraltypeSingleCSub         = 14, // Single integral with center subscript
+		integraltypeSingleOrientedCSub = 15, // Single oriented integral with center subscript
 
-		integraltypeDoubleOrientedCSub = 16, // Double oriented integral with central subscript
-		integraltypeDoubleCSub         = 17, // Double integral with central subscript
+		integraltypeDoubleOrientedCSub = 16, // Double oriented integral with center subscript
+		integraltypeDoubleCSub         = 17, // Double integral with center subscript
 
-		integraltypeTripleOrientedCSub = 18, // Triple oriented integral with central subscript
-		integraltypeTripleCSub         = 19  // Triple integral with central subscript
+		integraltypeTripleOrientedCSub = 18, // Triple oriented integral with center subscript
+		integraltypeTripleCSub         = 19  // Triple integral with center subscript
 	};
 
 	enum MNARRAYTYPE
 	{
-		narySumCSub          = 0,  // Sum sign with central subscript
-		narySumCSubSup       = 1,  // Sum sign with central subscript and superscript
-		narySum              = 2,  // Sum sign without subscripts
+		narySumCSub          = 0,  // Summation sign with center subscript
+		narySumCSubSup       = 1,  // Summation sign with center subscript and superscript
+		narySum              = 2,  // Summation sign without indices
 
-		narySumRSub          = 3,  // Sum sign with right subscript
-		narySumRSubSup       = 4,  // Sum sign with right lower and upper indices
+		narySumRSub          = 3,  // Summation sign with right subscript
+		narySumRSubSup       = 4,  // Summation sign with right subscript and superscript
 
-		naryProdCSub         = 5,  // Product sign with central subscript
-		naryProdCSubSup      = 6,  // Product sign with central subscript and superscript
-		naryProd             = 7,  // Product sign without subscripts
+		naryProdCSub         = 5,  // Product sign with center subscript
+		naryProdCSubSup      = 6,  // Product sign with center subscript and superscript
+		naryProd             = 7,  // Product sign without indices
 
 		naryProdRSub         = 8,  // Product sign with right subscript
-		naryProdRSubSup      = 9,  // Product sign with right lower and upper indices
+		naryProdRSubSup      = 9,  // Product sign with right subscript and superscript
 
-		naryCoProdCSub       = 10, // Coproduct sign with central subscript
-		naryCoProdCSubSup    = 11, // Coproduct sign with central subscript and superscript
-		naryCoProd           = 12, // Coproduct sign without subscripts
+		naryCoProdCSub       = 10, // Coproduct sign with center subscript
+		naryCoProdCSubSup    = 11, // Coproduct sign with center subscript and superscript
+		naryCoProd           = 12, // Coproduct sign without indices
 
 		naryCoProdRSub       = 13, // Coproduct sign with right subscript
-		naryCoProdRSubSup    = 14, // Coproduct sign with right lower and upper indices
+		naryCoProdRSubSup    = 14, // Coproduct sign with right subscript and superscript
 
-		naryUnionCSub        = 15, // Union sign with central subscript
-		naryUnionCSubSup     = 16, // Union sign with central subscript and superscript
-		naryUnion            = 17, // Union sign without subscripts
+		naryUnionCSub        = 15, // Union sign with center subscript
+		naryUnionCSubSup     = 16, // Union sign with center subscript and superscript
+		naryUnion            = 17, // Union sign without indices
 
 		naryUnionRSub        = 18, // Union sign with right subscript
 		naryUnionRSubSup     = 19, // Union sign with right subscript and superscript
 
-		naryIntersectCSub    = 20, // Intersection sign with upper and lower limits
-		naryIntersectCSubSup = 21, // Intersection sign with upper and lower limits and superscript
-		naryIntersect        = 22, // Intersection sign without indexes
+		naryIntersectCSub    = 20, // Intersection sign with center subscript
+		naryIntersectCSubSup = 21, // Intersection sign with center subscript and superscript
+		naryIntersect        = 22, // Intersection sign without indices
 
 		naryIntersectRSub    = 23, // Intersection sign with right subscript
-		naryIntersectRSubSup = 24  // Intersection sign with right lower and upper indices
+		naryIntersectRSubSup = 24  // Intersection sign with right subscript and superscript
 	};
 
 	enum MLONGDIVISION
 	{
-		longdivisionWithResult = 0, // Division sign without quotient
-		longdivisionRegular    = 1  // Division sign with quotient
+		longdivisionWithResult = 0, // Long division sign without quotient
+		longdivisionRegular    = 1  // Long division sign with quotient
 	};
 
 	enum MANGLEBRACKETSWITHSEPARATORTYPE
@@ -168,25 +178,25 @@ namespace MathEquation
 
 	enum MEMBELTYPE
 	{
-		embelDot         = 0x02, // point .
-		embelDDot        = 0x03, // two points..
-		embelDDDot       = 0x04, // three dots...
-		embelPrime       = 0x05, // stroke'
-		embelDPrime      = 0x06, // two strokes"
-		embelLPrime      = 0x07, // left stroke '
-		embelTilde       = 0x08, // wave ~
-		embelHat         = 0x09, // cap (hat) ^
-		embelSlash       = 0x0a, // slash /
-		embelRArrow      = 0x0b, // right arrow ->
-		embelLArrow      = 0x0c, // left arrow <-
-		embelDArrow      = 0x0d, // arrow in both directions <->
-		embelRHarpoon    = 0x0e, // harpoon right
-		embelLHarpoon    = 0x0f, // harpoon left
-		embelStrikeout   = 0x10, // strikethrough
-		embelBar         = 0x11, // line
-		embelTPrime      = 0x12, // three strokes '''
-		embelFrown       = 0x13, // arc up
-		embelSmile       = 0x14, // arc down
+		embelDot         = 0x02, // dot            .
+		embelDDot        = 0x03, // two dots       ..  
+		embelDDDot       = 0x04, // three dots     ...
+		embelPrime       = 0x05, // prime          '
+		embelDPrime      = 0x06, // double prime   "
+		embelLPrime      = 0x07, // left prime     '
+		embelTilde       = 0x08, // tilde          ~
+		embelHat         = 0x09, // hat (caret)    ^
+		embelSlash       = 0x0a, // slash          /
+		embelRArrow      = 0x0b, // right arrow    ->
+		embelLArrow      = 0x0c, // left arrow     <-
+		embelDArrow      = 0x0d, // double arrow   <->
+		embelRHarpoon    = 0x0e, // right harpoon
+		embelLHarpoon    = 0x0f, // left harpoon
+		embelStrikeout   = 0x10, // strikeout
+		embelBar         = 0x11, // bar
+		embelTPrime      = 0x12, // triple prime   '''
+		embelFrown       = 0x13, // arc up (frown)
+		embelSmile       = 0x14, // arc down (smile)
 
 		embelMin         = 0x02,
 		embelMax         = 0x14
@@ -202,11 +212,11 @@ namespace MathEquation
 
 	enum MMATRIXHORALIGN
 	{
-		matrixhoralignLeft      = 0x00, // fit to the left edge
-		matrixhoralignCenter    = 0x01, // center fit
-		matrixhoralignRight     = 0x02, // fit to the right edge
-		matrixhoralignEqualSign = 0x03, // Approaches sign =
-		matrixhoralignCommaSign = 0x04  // sign fit,
+		matrixhoralignLeft      = 0x00, // left alignment
+		matrixhoralignCenter    = 0x01, // center alignment
+		matrixhoralignRight     = 0x02, // right alignment
+		matrixhoralignEqualSign = 0x03, // alignment by = sign
+		matrixhoralignCommaSign = 0x04  // alignment by , sign
 	};
 
 	enum MMATRIXVERALIGN

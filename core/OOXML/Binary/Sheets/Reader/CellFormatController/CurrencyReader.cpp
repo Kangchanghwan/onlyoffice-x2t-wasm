@@ -1,26 +1,36 @@
 /*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "CurrencyReader.h"
@@ -30,68 +40,68 @@
 const std::wstring CurrencyFormatTemplate = L"#,##0.00";
 
 const std::set<std::wstring> CurrencySymbols = {
-    L"\u0024",    // US dollar
+    L"\u0024",    // US Dollar
     L"\u20AC",    // Euro
-    L"\u00A5",    // Japanese yen
-    L"\u00A3",    // Great Britain pound
-    L"\u0024\u0061",   // Australian dollar
-    L"\u0024\u0063",   // Canadian dollar
-    L"\u0046\u0072\u002E",  // Swiss franc
-    L"\u20BD",    // Russian ruble
-    L"\u20B8",    // Kazakh tenge
-    L"\u5143",   // CNY
+    L"\u00A5",    // Japanese Yen
+    L"\u00A3",    // British Pound Sterling
+    L"\u0024\u0061",   // Australian Dollar
+    L"\u0024\u0063",   // Canadian Dollar
+    L"\u0046\u0072\u002E",  // Swiss Franc
+    L"\u20BD",    // Russian Ruble
+    L"\u20B8",    // Kazakh Tenge
+    L"\u5143",   // Chinese Yuan
     L"\u20B1", // Philippine Peso
     L"\u20B9", // Indian Rupee
-    L"\u20AA", // Israeli new shekel
-    L"\u20A7", // Spanish peseta
-    L"\u0631.\u0633.", //Saudi Riyal
+    L"\u20AA", // Israeli New Shekel
+    L"\u20A7", // Spanish Peseta
+    L"\u0631.\u0633.", // Saudi Riyal
     L"kr.",
     L"Ft",
-    L"\u20A9", // Korean won
-    L"\u007a\u0142",// Polish zloty
+    L"\u20A9", // Korean Won
+    L"\u007a\u0142",// Polish Zloty
     L"R\u0024",
     L"kr",
-    L"\u20BA", //Turkish lira
-    L"\u20B4",//Ukrainian hryvnia
-    L"\u20AB", //Vietnamese dong
-    L"\u20BC", //Azerbaijani manat
-    L"\u20AE", //Mongolian tugrik
-    L"\u043B\u0432.", //Bulgarian Lev
+    L"\u20BA", // Turkish Lira
+    L"\u20B4",// Ukrainian Hryvnia
+    L"\u20AB", // Vietnamese Dong
+    L"\u20BC", // Azerbaijani Manat
+    L"\u20AE", // Mongolian Tugrik
+    L"\u043B\u0432.", // Bulgarian Lev
     L"NT\u0024",
-    L"\u004B\u010D", //Czech crown
+    L"\u004B\u010D", // Czech Koruna
     L"Rp",
-    L"\u062F.\u0639.‏", //Iraqi Dinar
+    L"\u062F.\u0639.‏", // Iraqi Dinar
     L"L",
-    L"\u062C.\u0645.‏", // Egyptian pound
+    L"\u062C.\u0645.‏", // Egyptian Pound
     L"HK\u0024",
-    L"\u062F.\u0644.‏", // Libyan dinar
+    L"\u062F.\u0644.‏", // Libyan Dinar
     L"Q",
     L"KM",
-    L"\u062F.\u062C.‏", // Algerian dinar
-    L"\u20A1", //Colon of El Salvador and Costa Rica
+    L"\u062F.\u062C.‏", // Algerian Dinar
+    L"\u20A1", // El Salvadoran and Costa Rican Colon
     L"B/.",
-    L"\u062F.\u062A.‏", //Tunisian dinar
+    L"\u062F.\u062A.‏", // Tunisian Dinar
     L"R",
     L"EC\u0024",
-    L"\u0631.\u0639.‏", //Omani rial
+    L"\u0631.\u0639.‏", // Omani Rial
     L"Bs.S",
-    L"\u0631.\u064A.‏", //Yemeni rial
+    L"\u0631.\u064A.‏", // Yemeni Rial
     L"FC",
     L"RSD",
-    L"\u0434\u0438\u043D.", //Syrian pound
-    L"\u062F.\u0627.‏", //UAE dirham
+    L"\u0434\u0438\u043D.", // Syrian Dinar
+    L"\u062F.\u0627.‏", // UAE Dirham
     L"FCFA",
-    L"\u0644.\u0644.‏", //Lebanese pound
+    L"\u0644.\u0644.‏", // Lebanese Pound
     L"US\u0024",
     L"CFA",
-    L"\u062F.\u0643.‏", //Kuwaiti dinar
+    L"\u062F.\u0643.‏", // Kuwaiti Dinar
     L"\u20B1", // Philippine Peso
-    L"\u062F.\u0625.‏", //Jordanian dinar
+    L"\u062F.\u0625.‏", // Jordanian Dinar
     L"DH",
-    L"\u062F.\u0628.‏", //Bahraini Dinar
-    L"\u20B2", //Paraguayan Guarani
+    L"\u062F.\u0628.‏", // Bahraini Dinar
+    L"\u20B2", // Paraguayan Guarani
     L"G",
-    L"\u0631.\u0648.‏", //Qatari rial
+    L"\u0631.\u0648.‏", // Qatari Riyal
     L"Bs",
     L"RM",
     L"C\u0024",

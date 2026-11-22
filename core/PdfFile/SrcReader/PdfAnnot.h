@@ -1,26 +1,36 @@
 /*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #ifndef _PDF_READER_ANNOT_H
 #define _PDF_READER_ANNOT_H
@@ -36,6 +46,7 @@
 #include "../../DesktopEditor/graphics/pro/js/wasm/src/serialize.h"
 
 #include "RendererOutputDev.h"
+#include "PdfFont.h"
 
 namespace PdfReader
 {
@@ -197,9 +208,9 @@ private:
 	std::pair<BYTE, double> m_pBE; // Border effects
 	std::string m_sContents; // Display text
 	std::string m_sNM; // Unique name
-	std::string m_sM; // Last modified date
+	std::string m_sM; // Date of last modification
 	std::string m_sOUserID; // OO User ID
-	std::string m_sOMetadata; // OpenOffice form metadata
+	std::string m_sOMetadata; // OO form metadata
 	CBorderType* m_pBorder; // Border
 };
 
@@ -233,7 +244,7 @@ protected:
 	unsigned int m_unFieldFlag; // Flag - Ff
 
 private:
-	unsigned int m_unR; // Rotate annotation relative to page - R
+	unsigned int m_unR; // Annotation rotation relative to page - R
 	unsigned int m_unRefNumParent; // Parent object reference number
 	unsigned int m_unFontStyle; // Font style - from DA
 	unsigned int m_unMEOptions; // MEOptions
@@ -243,15 +254,15 @@ private:
 	std::vector<double> m_arrBG; // Background color - BG
 	std::vector<CAction*> m_arrAction; // Actions - A&AA
 	BYTE m_nQ; // Text alignment - Q
-	BYTE m_nH; // Selection Mode - H
-	std::string m_sTU; // Alternative field name, used in tooltip and error messages - TU
-	std::string m_sDS; // Default style string is DS
-	std::string m_sDV; // The default value is DV
+	BYTE m_nH; // Highlight mode - H
+	std::string m_sTU; // Alternate field name, used in tooltips and error messages - TU
+	std::string m_sDS; // Default style string - DS
+	std::string m_sDV; // Default value - DV
 	std::string m_sT; // Partial field name - T
 	std::string m_sFontKey; // Unique font identifier
 	std::string m_sFullName; // Full field name
 	std::string m_sFontName; // Font name - from DA
-	std::string m_sActualFontName; // Replaced font name
+	std::string m_sActualFontName; // Substituted font name
 	std::string m_sButtonFontName; // Button font name
 };
 
@@ -343,10 +354,31 @@ public:
 	void ToWASM(NSWasm::CData& oRes) override;
 
 private:
-	BYTE m_nH; // Selection Mode - H
+	BYTE m_nH; // Highlight mode - H
+	double m_pRD[4]{}; // Rect and RD differences
 	std::vector<double> m_arrQuadPoints; // Coordinates - QuadPoints
 	CAction* m_pAction; // Action - A&Dest
 	CAction* m_pPA; // URI action - PA
+};
+
+//------------------------------------------------------------------------
+// PdfReader::CScreenAnnot
+//------------------------------------------------------------------------
+
+class CAnnotScreen final : public CAnnot
+{
+public:
+	CAnnotScreen(PDFDoc* pdfDoc, Object* oAnnotRef, int nPageIndex, int nStartRefID);
+	virtual ~CAnnotScreen();
+
+	void ToWASM(NSWasm::CData& oRes) override;
+
+private:
+	unsigned int m_unR; // Поворот аннотации относительно страницы - R
+	std::string m_sT; // Title
+	std::vector<double> m_arrBC; // Цвет границ - BC
+	std::vector<double> m_arrBG; // Цвет фона - BG
+	std::vector<CAction*> m_arrAction; // Действия - A&AA
 };
 
 //------------------------------------------------------------------------
@@ -356,25 +388,7 @@ private:
 class CAnnotMarkup : public CAnnot
 {
 public:
-	struct CFontData final
-	{
-		bool bFind;
-		BYTE nAlign;
-		unsigned int unFontFlags; // 0 Bold, 1 Italic, 3 strikethrough, 4 underlined, 5 vertical-align, 6 actual font, 7 RTL
-		double dFontSise;
-		double dVAlign;
-		double dColor[3];
-		std::string sFontFamily;
-		std::string sActualFont;
-		std::string sText;
-
-		CFontData() : bFind(false), nAlign(0), unFontFlags(4), dFontSise(10), dVAlign(0), dColor{0, 0, 0} {}
-		CFontData(const CFontData& oFont) : bFind(oFont.bFind), nAlign(oFont.nAlign), unFontFlags(oFont.unFontFlags), dFontSise(oFont.dFontSise), dVAlign(oFont.dVAlign),
-			dColor{oFont.dColor[0], oFont.dColor[1], oFont.dColor[2]}, sFontFamily(oFont.sFontFamily), sActualFont(oFont.sActualFont), sText(oFont.sText) {}
-	};
-
 	void SetFont(PDFDoc* pdfDoc, Object* oAnnotRef, NSFonts::IFontManager* pFontManager, CPdfFontList *pFontList);
-	static std::vector<CAnnotMarkup::CFontData*> ReadRC(const std::string& sRC);
 
 protected:
 	CAnnotMarkup(PDFDoc* pdfDoc, Object* oAnnotRef, int nPageIndex, int nStartRefID);
@@ -382,12 +396,12 @@ protected:
 
 	virtual void ToWASM(NSWasm::CData& oRes) override;
 
-	std::vector<CFontData*> m_arrRC; // Rich text
+	std::vector<CFontData*> m_arrRC; // Formatted text
 
 private:
-	BYTE m_nRT; // Answer-annotation type
-	unsigned int m_unRefNumPopup; // Popup Annotation Reference Number
-	unsigned int m_unRefNumIRT; // Answer annotation reference number
+	BYTE m_nRT; // Reply annotation type
+	unsigned int m_unRefNumPopup; // Popup annotation reference number
+	unsigned int m_unRefNumIRT; // Reply annotation reference number
 	double m_dCA; // Opacity value
 	std::string m_sT; // Text label, user who added the annotation
 	std::string m_sCreationDate; // Creation date
@@ -406,8 +420,8 @@ public:
 	void ToWASM(NSWasm::CData& oRes) override;
 private:
 	BYTE m_nName; // Icon
-	BYTE m_nState; // Condition
-	BYTE m_nStateModel; // State Model
+	BYTE m_nState; // State
+	BYTE m_nStateModel; // State model
 };
 
 //------------------------------------------------------------------------
@@ -437,16 +451,16 @@ public:
 	void ToWASM(NSWasm::CData& oRes) override;
 
 private:
-	BYTE m_nIT; // Purpose of annotation
-	BYTE m_nCP; // Annotation title location
+	BYTE m_nIT; // Annotation intent
+	BYTE m_nCP; // Annotation caption position
 	double m_dLL; // Leader line length
-	double m_dLLE; // Extending leader lines
-	double m_dLLO; // Leader offset length
+	double m_dLLE; // Leader line extension
+	double m_dLLO; // Leader line offset
 	BYTE m_nLE[2]; // Line ending styles
 	double m_pL[4]{}; // Line coordinates
-	double m_pCO[2]; // Signature text offset
+	double m_pCO[2]; // Caption text offset
 	std::vector<double> m_arrIC; // Line ending color
-	// TODO Measure Scale indicators, units of measurement
+	// TODO Measure scale indicators, measurement units
 };
 
 //------------------------------------------------------------------------
@@ -478,7 +492,7 @@ public:
 
 private:
 	BYTE m_nSubtype; // Square or Circle annotation subtype
-	double m_pRD[4]{}; // Differences between Rect and Actual Size
+	double m_pRD[4]{}; // Differences between Rect and actual size
 	std::vector<double> m_arrIC; // Fill color
 };
 
@@ -494,12 +508,12 @@ public:
 	void ToWASM(NSWasm::CData& oRes) override;
 
 private:
-	BYTE m_nIT; // Purpose of annotation
+	BYTE m_nIT; // Annotation intent
 	BYTE m_nSubtype; // Polygon or Polyline annotation subtype
 	BYTE m_nLE[2]; // Line ending styles
 	std::vector<double> m_arrIC; // Fill color
 	std::vector<double> m_arrVertices; // Vertex coordinates
-	// TODO Measure Scale indicators, units of measurement
+	// TODO Measure scale indicators, measurement units
 };
 
 //------------------------------------------------------------------------
@@ -515,13 +529,13 @@ public:
 
 private:
 	BYTE m_nQ; // Text alignment - Q
-	BYTE m_nIT; // Purpose of annotation
+	BYTE m_nIT; // Annotation intent
 	BYTE m_nLE; // Line ending style
 	int m_nRotate;
-	std::string m_sDS; // Default style string is DS
-	double m_pRD[4]{}; // Differences between Rect and Actual Size
+	std::string m_sDS; // Default style string - DS
+	double m_pRD[4]{}; // Differences between Rect and actual size
 	std::vector<double> m_arrCFromDA; // Border color
-	std::vector<double> m_arrCL; // Leader coordinates
+	std::vector<double> m_arrCL; // Callout coordinates
 };
 
 //------------------------------------------------------------------------
@@ -537,7 +551,7 @@ public:
 
 private:
 	BYTE m_nSy; // Associated symbol - Sy
-	double m_pRD[4]{}; // Differences between Rect and Actual Size
+	double m_pRD[4]{}; // Differences between Rect and actual size
 };
 
 //------------------------------------------------------------------------
@@ -584,16 +598,16 @@ public:
 private:
 	std::string m_sName; // Icon
 	std::string m_sFS;   // File system
-	std::string m_sDesc; // File Description
-	std::string m_sF;    // File Specification (Backwards Compatible)
+	std::string m_sDesc; // File description
+	std::string m_sF;    // File specification (backward compatibility)
 	std::string m_sUF;   // File specification (cross-platform and cross-language compatibility)
-	std::string m_sDOS;  // DOS File Specification
-	std::string m_sMac;  // Mac File Specification
-	std::string m_sUnix; // Unix File Specification
-	std::pair<std::string, std::string> m_sID; // File ID
-	CEmbeddedFiles* m_pEF; // EF contains F/UF/DOS/Mac/Unix with links to embedded file streams according to the relevant specifications
-	// TODO RF contains F/UF/DOS/Mac/Unix with arrays of related files according to the corresponding specifications
-	// TODO CI collection for creating the user interface
+	std::string m_sDOS;  // DOS file specification
+	std::string m_sMac;  // Mac file specification
+	std::string m_sUnix; // Unix file specification
+	std::pair<std::string, std::string> m_sID; // File identifier
+	CEmbeddedFiles* m_pEF; // EF contains F/UF/DOS/Mac/Unix with references to embedded file streams by corresponding specifications
+	// TODO RF contains F/UF/DOS/Mac/Unix with arrays of related files by corresponding specifications
+	// TODO Cl collection for creating user interface
 };
 
 //------------------------------------------------------------------------
@@ -631,7 +645,7 @@ private:
 	unsigned int m_unFontStyle; // Font style - from DA
 	double m_dFontSize; // Font size - from DA
 	std::string m_sFontName; // Font name - from DA
-	std::string m_sActualFontName; // Replaced font name
+	std::string m_sActualFontName; // Substituted font name
 	std::string m_sOverlayText; // Overlay text
 	std::vector<double> m_arrQuadPoints; // Coordinates
 	std::vector<double> m_arrIC; // Fill color
@@ -674,7 +688,7 @@ private:
 		bool bChangeFullName;
 		unsigned int unFlags;
 		unsigned int unRefNum; // Object reference number
-		unsigned int unMaxLen; // Limit on maximum text field length
+		unsigned int unMaxLen; // Maximum length limit for text field
 		unsigned int unFieldFlag; // Flag Ff
 		unsigned int unMEOptions; // MEOptions
 		unsigned int unRefNumParent; // Parent object reference number
@@ -691,6 +705,8 @@ private:
 
 	void getParents(PDFDoc* pdfDoc, Object* oFieldRef, int nStartRefID);
 
+	BYTE* m_pRoles;
+	int m_nRoles;
 	std::vector<int> m_arrCO; // Calculation order - CO
 	std::vector<CAnnotParent*> m_arrParents; // Parent Fields
 	std::vector<CAnnotWidget*> m_arrAnnots;

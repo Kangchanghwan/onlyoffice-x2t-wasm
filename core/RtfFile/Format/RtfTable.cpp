@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #pragma once 
 
@@ -91,7 +101,7 @@ std::wstring RtfTable::RenderToRtf(RenderParameter oRenderParameter)
 }
 void RtfTable::CalculateGridProp()
 {
-	//array of all possible cells
+	//array of all possible cellx values
 	std::vector<int> aCellx; // sorted in ascending order
 	int nLastCellx = 0;
 
@@ -111,8 +121,8 @@ void RtfTable::CalculateGridProp()
 		if (PROP_DEF != oCurRow->m_oProperty.m_nWidthEndInvCell && mu_Twips == oCurRow->m_oProperty.m_eWidthEndInvCellUnit)
 			nWidthAfter = oCurRow->m_oProperty.m_nWidthEndInvCell;
 
-		int nDelta = 0;// correction for margin and indent and spacing
-		if (PROP_DEF != oCurRow->m_oProperty.m_nLeft) //for each row its own
+		int nDelta = 0;// adjustment for margin, indent and spacing
+		if (PROP_DEF != oCurRow->m_oProperty.m_nLeft) //different for each row
 			nDelta = -oCurRow->m_oProperty.m_nLeft;
 		else
 		{
@@ -142,7 +152,7 @@ void RtfTable::CalculateGridProp()
 			if (nCellx > maxCellxFirstRow && maxCellxFirstRow > 0)
 				nCellx = maxCellxFirstRow;
 			AddToArray(aCellx, nCellx);
-			//Don't touch those properties that remain in row - they aren't important for conversion to oox
+			//don't touch the properties that remain in row - they are not important for oox conversion
 			nLastCellx = nCellx;
 		}
 		//add widthAfter
@@ -166,8 +176,8 @@ void RtfTable::CalculateGridProp()
 		if (PROP_DEF != oCurRow->m_oProperty.m_nWidthEndInvCell && mu_Twips == oCurRow->m_oProperty.m_eWidthEndInvCellUnit)
 			nWidthAfter = oCurRow->m_oProperty.m_nWidthEndInvCell;
 
-		int nDelta = 0;// correction for margin and indent and spacing and border
-		if (PROP_DEF != oCurRow->m_oProperty.m_nLeft) //for each row its own
+		int nDelta = 0;// adjustment for margin, indent, spacing and border
+		if (PROP_DEF != oCurRow->m_oProperty.m_nLeft) //different for each row
 			nDelta = -oCurRow->m_oProperty.m_nLeft;
 		else
 		{
@@ -239,18 +249,18 @@ void RtfTable::CalculateGridProp()
 			m_aTableGrid.push_back(aCellx[i] - aCellx[i - 1]);
 	}
 }
-void RtfTable::CalculateCellx(RtfDocument& oDocument)//todo take into account margin indent
+void RtfTable::CalculateCellx(RtfDocument& oDocument)//todo consider margin indent
 {
 	if (m_aTableGrid.size() == 0 && m_aArray.size() > 0)
 	{
-		//if <w:tblGrid/> is missing, do it proportionally
+		//if <w:tblGrid/> is missing, make proportional
 		m_oProperty.m_nAutoFit = 1;
 		if ((PROP_DEF == m_oProperty.m_nWidth || m_oProperty.m_nWidth <= 0))
 		{
-			//if the table width isn't specified, we consider it 100%
+			//if table width is not specified, consider it 100%
 			// Width = PageWidth - MarginLeft - MarginRight - Gutter
 			int nGutter = oDocument.m_oProperty.m_nGutterWidth;
-			if (1 == oDocument.m_oProperty.m_bGutterAtTop)//don't take into account if it is Top gutter
+			if (1 == oDocument.m_oProperty.m_bGutterAtTop)//don't consider if it's Top gutter
 				nGutter = 0;
 			m_oProperty.m_nWidth = oDocument.m_oProperty.m_nPaperWidth - oDocument.m_oProperty.m_nMarginLeft - oDocument.m_oProperty.m_nMarginRight - nGutter;
 			m_oProperty.m_eWidthUnit = mu_Twips;
@@ -293,7 +303,7 @@ void RtfTable::CalculateCellx(RtfDocument& oDocument)//todo take into account ma
 				nLeft -= m_oProperty.m_nDefCellMarLeft;
 			if (PROP_DEF != m_oProperty.m_nDefCellSpLeft && 3 == m_oProperty.m_eDefCellSpLeftUnit)
 				nLeft += 2 * m_oProperty.m_nDefCellSpLeft;
-			int nDelta = nLeft;//left takes GridBefore into account
+			int nDelta = nLeft;//GrindBefore is accounted for in left
 
 							   //if( PROP_DEF != oCurRow->m_oProperty.m_nGridBefore )
 							   //{
@@ -353,7 +363,7 @@ void RtfTable::CalculateCellx(RtfDocument& oDocument)//todo take into account ma
 		}
 	}
 }
-void RtfTable::AddToArray(std::vector<int>& aArray, int nValue)//todo can be applied because it is ordered
+void RtfTable::AddToArray(std::vector<int>& aArray, int nValue)//todo can use the fact that it's sorted
 {
 	bool bNeedAdd = true;
 	for (size_t k = 0; k < aArray.size(); k++)

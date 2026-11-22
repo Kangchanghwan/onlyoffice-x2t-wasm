@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "logging.h"
@@ -224,7 +234,7 @@ void odf_text_context::add_text_space(int count)
 	text_s* s = dynamic_cast<text_s*>(s_elm.get());
 	if (s) s->text_c_ = count;
 
-	//no need to store...
+	// not necessary to store..
 	//int level = current_level_.size();
 	//odf_element_state state={	s_elm, L"", office_element_ptr(), level};
 	//text_elements_list_.push_back(state);
@@ -277,8 +287,10 @@ void odf_text_context::start_paragraph(office_element_ptr & elm, bool styled)
 	
 	if (single_paragraph_ && level > 0)
 	{
-		std::wstring str_enter(L"\n");
-		add_text_content(str_enter);
+		office_element_ptr break_elm;
+		create_element(L"text", L"line-break", break_elm, odf_context_);
+
+		current_level_.back().elm->add_child_element(break_elm);
 		return;
 	}
 	
@@ -384,7 +396,8 @@ int odf_text_context::get_last_level()
 }
 void odf_text_context::start_span(bool styled)
 {
-	if (styles_context_ == NULL || single_paragraph_)return;
+	if (styles_context_ == NULL) return;
+	if (single_paragraph_ && false == styled) return;
 
 	office_element_ptr span_elm;
 	create_element(L"text", L"span", span_elm, odf_context_);
@@ -415,7 +428,7 @@ void odf_text_context::start_span(bool styled)
 			{
 				style_->style_parent_style_name_ = parent_span_style_;
 			}
-			text_properties_ = style_->content_.add_get_style_text_properties();//for drop caps in the margin
+			text_properties_ = style_->content_.add_get_style_text_properties();// for drop caps in margin
 		}
 	}
 
@@ -437,7 +450,7 @@ bool odf_text_context::in_span()
 }
 void odf_text_context::end_span()
 {
-	if (styles_context_ == NULL || single_paragraph_)return;
+	if (styles_context_ == NULL) return;
 	
 	if (false == current_level_.empty() && dynamic_cast<text_span*>(current_level_.back().elm.get()))	
 		current_level_.pop_back();
@@ -483,7 +496,7 @@ void odf_text_context::end_list_item()
 
 	list_state_.levels.back() = false;
 }
-bool odf_text_context::start_list(std::wstring style_name) //TODO add new_numbering ???
+bool odf_text_context::start_list(std::wstring style_name) //todoooo add new_numbering ???
 {
 	if (styles_context_ == NULL || single_paragraph_)return false;
 
@@ -757,7 +770,7 @@ void odf_text_context::save_property_break()
 	need_break_ = boost::none;
 
 }
-bool odf_text_context::set_type_break(int type, int clear)//TODO clear ???
+bool odf_text_context::set_type_break(int type, int clear)//todooo clear ???
 {
 	bool need_restart = false;
 

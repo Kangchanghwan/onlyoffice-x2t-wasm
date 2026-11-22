@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include <stdlib.h>
 #include <string.h>
@@ -36,13 +46,13 @@ namespace NSFontConverter
 	// Terminology
 	// -----------
 	//
-	// character code = number used as a text string element
+	// character code = number used as an element of a text string
 	//
-	// character name = glyph name = name of a specific font glyph
+	// character name = glyph name = name of a specific font character
 	//
 	// glyph index = GID = position (within some internal table
-	//               in the font), where instructions are given on how to draw
-	//               this symbol
+	//               in the font) where instructions for drawing
+	//               the character are provided
 	//
 	// Type 1 fonts
 	// ------------
@@ -87,7 +97,7 @@ namespace NSFontConverter
 	//
 	//------------------------------------------------------------------------
 
-	// Character names in the standard order that Apple uses for
+	// Symbol names in standard order used by Apple for
 	// their TrueType fonts.
 	static char *c_arrAppleGlyphNames[258] =
 	{
@@ -369,7 +379,7 @@ namespace NSFontConverter
 		if ( m_bOpenTypeCFF )
 			return;
 
-		// write the header
+		// write header
 		bool bSuccess = true;
 		seBuffer = StringExt::Format("%!PS-TrueTypeFont-{0:2g}\n", (double)GetS32BE( 0, &bSuccess ) / 65536.0 );
 		(*pOutputFunc)( pOutputStream, seBuffer->GetBuffer(), seBuffer->GetLength() );
@@ -386,12 +396,12 @@ namespace NSFontConverter
 		delete seBuffer;
 		(*pOutputFunc)( pOutputStream, "/PaintType 0 def\n", 17);
 
-		// writing the contents of the font collection
+		// write font library contents
 		ConvertEncoding( ppEncoding, pOutputFunc, pOutputStream );
 		ConvertCharStrings( ppEncoding, pCodeToGID, pOutputFunc, pOutputStream);
 		ConvertSfnts( pOutputFunc, pOutputStream, NULL, false );
 
-		// finished writing the library
+		// finished writing library
 		(*pOutputFunc)( pOutputStream, "FontName currentdict end definefont pop\n", 40);
 	}
 
@@ -750,11 +760,11 @@ namespace NSFontConverter
 		unsigned int t;
 		int nPos = 0, i, j, k, n;
 
-		// This shouldn't happen
+		// This should not happen
 		if ( m_bOpenTypeCFF )
 			return;
 
-		// Checking missing tables
+		// Check for missing tables
 		bool bMissingCmap = (nCmapIndex = SeekTable("cmap")) < 0;
 		bool bMissingName = SeekTable("name") < 0;
 		bool bMissingPost = SeekTable("post") < 0;
@@ -780,7 +790,7 @@ namespace NSFontConverter
 			{
 				bUnsortedLoca = true;
 			}
-			// The glyph description must be at least 12 bytes (nContours,
+			// Glyph description must be at least 12 bytes (nContours,
 			// xMin, yMin, xMax, yMax, instructionLength - each 2 bytes);
 			if (i > 0 && pLocaTable[i].nOrigOffset - pLocaTable[i-1].nOrigOffset > 0 && pLocaTable[i].nOrigOffset - pLocaTable[i-1].nOrigOffset < 12)
 			{
@@ -790,7 +800,7 @@ namespace NSFontConverter
 			pLocaTable[i].nIndex = i;
 		}
 
-		// Checking for null tables
+		// Check for null tables
 		nZeroLengthTables = 0;
 		for (i = 0; i < m_nTablesCount; ++i)
 		{
@@ -798,7 +808,7 @@ namespace NSFontConverter
 				++nZeroLengthTables;
 		}
 
-		// Checking the length of the Cmap table
+		// Check Cmap table length
 		badCmapLen = false;
 		nCmapLen = 0;
 		if ( !bMissingCmap )
@@ -818,12 +828,12 @@ namespace NSFontConverter
 			}
 		}
 
-		// Checking whether the table 'hmtx' is shortened.
+		// Check if 'hmtx' table is abbreviated.
 		i = SeekTable("hhea");
 		nHMetrics = GetU16BE(m_pTables[i].nOffset + 34, &bSuccess);
 		abbrevHMTX = nHMetrics < m_nGlyphs;
 
-		// If everything is in order, and we don't need to rewrite the 'cmap' and 'name' tables, then write the TTF file as it is
+		// If everything is fine and we don't need to rewrite 'cmap' and 'name' tables, write TTF file as is
 		if (!bMissingCmap && !bMissingName && !bMissingPost && !bMissingOS2 && !bUnsortedLoca && !badCmapLen && !abbrevHMTX && nZeroLengthTables == 0 && !sName && !pCodeToGID && !pUseGlyfs )
 		{
 			(*pOutputFunc)( pOutputStream, (char *)m_sFile, m_nLen);
@@ -831,12 +841,12 @@ namespace NSFontConverter
 			return;
 		}
 
-		// Sorting the 'loca' table: some fonts contain unordered
-		// table 'loca'; and some fonts with a normal 'loca' table
-		// contain empty elements in the middle of the table, cmpTrueTypeLocaOffset
-		// uses shifts as the main sorting key, and glyph numbers
-		// as a second key (so that elements in the table that have the same position
-		// were in the same order as in the original font)
+		// Sort 'loca' table: some fonts contain unsorted 'loca' table;
+		// and some fonts with normal 'loca' table contain empty elements
+		// in the middle, cmpTrueTypeLocaOffset uses offsets as primary
+		// sort key and glyph numbers as secondary key (so elements in
+		// the table that had the same position go in the same order
+		// as in the original font)
 		nGlyphLen = 0;
 		if (bUnsortedLoca || pUseGlyfs)
 		{
@@ -851,7 +861,7 @@ namespace NSFontConverter
 
 			for (i = 0; i <= m_nGlyphs; ++i)
 			{
-				// TO DO: Test writing here only those glyphs that we need
+				// TO DO: Test here writing only the glyphs we need
 
 				if ( pUseGlyfs && lGlyfsCount == m_nGlyphs )
 				{
@@ -883,7 +893,7 @@ namespace NSFontConverter
 			nGlyphLen = nPos;
 		}
 
-		// Calculate checksums of tables 'loca' and 'glyf'
+		// Calculate checksums for 'loca' and 'glyf' tables
 		nLocaChecksum = nGlyphChecksum = 0;
 		if (bUnsortedLoca || pUseGlyfs)
 		{
@@ -920,7 +930,7 @@ namespace NSFontConverter
 			}
 		}
 
-		// Building a new table 'name'
+		// Build new 'name' table
 		if ( sName )
 		{
 			n = strlen(sName);
@@ -970,7 +980,7 @@ namespace NSFontConverter
 			arrNewNameTable = NULL;
 		}
 
-		// Building a new table 'cmap'
+		// Build new 'cmap' table
 		if (pCodeToGID)
 		{
 			//nNewCmapLen = 44 + 256 * 2;
@@ -979,9 +989,9 @@ namespace NSFontConverter
 			//arrNewCmapTable[1] = 0;           //
 			//arrNewCmapTable[2] = 0;           // number of encoding tables = 1
 			//arrNewCmapTable[3] = 1;           //
-			//arrNewCmapTable[4] = 0;           // platform ID = 1 (MacOS) // These two fields are required
-			//arrNewCmapTable[5] = 1;           // // have the same values, otherwise, Adobe
-			//arrNewCmapTable[6] = 0;           // encoding ID = 0 // Acrobat may not open this font.
+			//arrNewCmapTable[4] = 0;           // platform ID = 1 (MacOS) // These two fields must have
+			//arrNewCmapTable[5] = 1;           //                         // these values, otherwise Adobe
+			//arrNewCmapTable[6] = 0;           // encoding ID = 0         // Acrobat can open this font.
 			//arrNewCmapTable[7] = 0;           //                         //
 			//arrNewCmapTable[8] = 0;           // offset of subtable
 			//arrNewCmapTable[9] = 0;           //
@@ -1031,9 +1041,9 @@ namespace NSFontConverter
 			arrNewCmapTable[1] = 0;           //
 			arrNewCmapTable[2] = 0;           // number of encoding tables = 1
 			arrNewCmapTable[3] = 1;           //
-			arrNewCmapTable[4] = 0;           // platform ID = 1 (MacOS) // These two fields are required
-			arrNewCmapTable[5] = 1;           //                         // have the same values, otherwise, Adobe
-			arrNewCmapTable[6] = 0;           // encoding ID = 0 // Acrobat may not open this font.
+			arrNewCmapTable[4] = 0;           // platform ID = 1 (MacOS) // These two fields must have
+			arrNewCmapTable[5] = 1;           //                         // these values, otherwise Adobe
+			arrNewCmapTable[6] = 0;           // encoding ID = 0         // Acrobat can open this font.
 			arrNewCmapTable[7] = 0;           //                         //
 			arrNewCmapTable[8] = 0;           // offset of subtable
 			arrNewCmapTable[9] = 0;           //
@@ -1062,7 +1072,7 @@ namespace NSFontConverter
 			arrNewCmapTable = NULL;
 		}
 
-		// Generate a new table 'hmtx' and update the table 'hhea'
+		// Generate new 'hmtx' table and update 'hhea' table
 		if ( abbrevHMTX )
 		{
 			i = SeekTable("hhea");
@@ -1106,12 +1116,12 @@ namespace NSFontConverter
 			nNewHHEALen = nNewHMTXLen = 0;
 		}
 
-		// Create a table directory:
-		// - save the original non-zero tables
-		// - rewrite the length of the 'cmap' table, if necessary
+		// Create table list:
+		// - save original non-null tables
+		// - rewrite 'cmap' table length if necessary
 		// - add missing tables
 		// - sort tables by tags
-		// - calculate new table positions, taking into account 4-byte alignment
+		// - calculate new table positions with 4-byte alignment
 		// - recalculate table checksums
 		nNewTables = m_nTablesCount - nZeroLengthTables + (bMissingCmap ? 1 : 0) + (bMissingName ? 1 : 0) + (bMissingPost ? 1 : 0) + (bMissingOS2 ? 1 : 0);
 		pNewTables = (TrueTypeTable *)malloc( nNewTables * sizeof(TrueTypeTable) );
@@ -1256,7 +1266,7 @@ namespace NSFontConverter
 			}
 		}
 
-		// Writing table information
+		// Write table information to file
 		arrTableDir = (char *)malloc(12 + nNewReqTables * 16);
 		arrTableDir[0] = 0x00; // sfnt version
 		arrTableDir[1] = 0x01; //
@@ -1299,7 +1309,7 @@ namespace NSFontConverter
 		}
 		(*pOutputFunc)( pOutputStream, arrTableDir, 12 + nNewReqTables * 16);
 
-		// Calculate the checksum of the file
+		// Calculate file checksum
 		nFileChecksum = ComputeTableChecksum((unsigned char *)arrTableDir, 12 + nNewReqTables * 16);
 		for (i = 0; i < nNewTables; ++i)
 		{
@@ -1310,7 +1320,7 @@ namespace NSFontConverter
 		}
 		nFileChecksum = 0xb1b0afba - nFileChecksum;
 
-		// Write the tables themselves
+		// Write tables themselves
 		for (i = 0; i < nNewTables; ++i)
 		{
 			if ( 1 == pUseTable[i] )
@@ -1434,7 +1444,7 @@ namespace NSFontConverter
 
 	void CFontFileTrueType::ConvertEncoding   (char **ppEncoding, FontFileOutputFunc pOutputFunc, void *pOutputStream)
 	{
-		// converting encoding to Type42
+		// encoding conversion to Type42 type
 		char *sName;
 		StringExt *seBuffer;
 
@@ -1481,9 +1491,9 @@ namespace NSFontConverter
 			return;
 		}
 
-		// Match the glyph symbol name to the index:
-		// 1. Use ppEncoding to map the symbol name to its number
-		// 2. Use pnCodeToGID to map the symbol number to the glyph index
+		// Map symbol name to glyph index:
+		// 1. Use ppEncoding to map symbol name to its number
+		// 2. Use pnCodeToGID to map symbol number to glyph index
 		int nGlyphIndex = 0;
 		for (int nIndex = 255; nIndex >= 0; --nIndex)
 		{
@@ -1587,7 +1597,7 @@ namespace NSFontConverter
 			}
 		}
 
-		// Create a new table 'loca'
+		// Create new 'loca' table
 		pLocaData = (unsigned char *)MemUtilsMallocArray( m_nGlyphs + 1, (m_nLocaFormat ? 4 : 2) );
 		for (int nIndex = 0; nIndex <= m_nGlyphs; ++nIndex )
 		{
@@ -1606,7 +1616,7 @@ namespace NSFontConverter
 			}
 		}
 
-		// count the number of tables
+		// count number of tables
 		nNewTables = 0;
 		for (int nIndex = 0; nIndex < nT42Tables; ++nIndex )
 		{
@@ -1757,19 +1767,19 @@ namespace NSFontConverter
 			nPos += 16;
 		}
 
-		// calculate checksum and store it in the table header
+		// calculate checksum and save it in table header
 		nChecksum = ComputeTableChecksum( arrTableDir, 12 + nNewTables*16);
 		for (int nIndex = 0; nIndex < nNewTables; ++nIndex)
 		{
 			nChecksum += arrNewTables[ nIndex ].unChecksum;
 		}
-		nChecksum = 0xb1b0afba - nChecksum; // according to TrueType specification
+		nChecksum = 0xb1b0afba - nChecksum; // per TrueType specification
 		pHeadData[ 8] = (unsigned char)(nChecksum >> 24);
 		pHeadData[ 9] = (unsigned char)(nChecksum >> 16);
 		pHeadData[10] = (unsigned char)(nChecksum >>  8);
 		pHeadData[11] = (unsigned char) nChecksum;
 
-		// start writing the sfnts array
+		// start writing sfnts array
 		if ( seName )
 		{
 			(*pOutputFunc)( pOutputStream, "/", 1);
@@ -1783,7 +1793,7 @@ namespace NSFontConverter
 
 		DumpString( arrTableDir, 12 + nNewTables*16, pOutputFunc, pOutputStream);
 
-		// writing tables
+		// write tables
 		for (int nIndex = 0; nIndex < nNewTables; ++nIndex)
 		{
 			if ( t42HeadTable == nIndex )
@@ -1808,7 +1818,7 @@ namespace NSFontConverter
 			}
 			else
 			{
-				// nLength == 0 means the table wasn't found and the error was already thrown
+				// nLength == 0 means table not found, and error was already issued
 				// during table construction
 				if ( ( nLength = arrNewTables[nIndex].nLen ) > 0 )
 				{
@@ -1829,7 +1839,7 @@ namespace NSFontConverter
 			}
 		}
 
-		// finished writing the sfnts array
+		// finished writing sfnts array
 		(*pOutputFunc)( pOutputStream, "] def\n", 6);
 
 		MemUtilsFree( pLocaData );
@@ -1867,7 +1877,7 @@ namespace NSFontConverter
 				(*pOutputFunc)( pOutputStream, "00", 2);
 			}
 		}
-		// Adding an additional zero byte, according to the Adobe Type 42 specification
+		// Add extra null byte per Adobe Type 42 specification
 		(*pOutputFunc)( pOutputStream, "00>\n", 4);
 	}
 
@@ -1906,7 +1916,7 @@ namespace NSFontConverter
 
 		m_bSuccess = true;
 
-		// Checking whether this file is (TTC)
+		// Check if this file is (TTC)
 		unsigned int usTopTag = GetU32BE(0, &m_bSuccess);
 		if ( !m_bSuccess )
 			return;
@@ -1920,12 +1930,12 @@ namespace NSFontConverter
 		else
 			nPos = 0;
 
-		// Checking the sfnt version
+		// Check sfnt version
 		int nSfntVersion = GetU32BE( nPos, &m_bSuccess);
 		if ( !m_bSuccess )
 			return;
 
-		// Check the data format. CFF or not?
+		// Check data format. CFF or not?
 		m_bOpenTypeCFF = ( nSfntVersion == 0x4f54544f ); // 'OTTO'
 
 		m_nTablesCount = GetU16BE( nPos + 4, &m_bSuccess);
@@ -1950,7 +1960,7 @@ namespace NSFontConverter
 		if ( !m_bSuccess )
 			return;
 
-		// Find tables necessary for both TrueType and Type 42
+		// find tables needed for both TrueType and Type 42
 		if ( SeekTable("head") < 0 || SeekTable("hhea") < 0 || SeekTable("maxp") < 0 || SeekTable("hmtx") < 0 || ( !m_bOpenTypeCFF && SeekTable("loca") < 0 ) || ( !m_bOpenTypeCFF && SeekTable("glyf" ) < 0) || ( m_bOpenTypeCFF && SeekTable("CFF " ) < 0 ) )
 		{
 			m_bSuccess = false;
@@ -2005,7 +2015,7 @@ namespace NSFontConverter
 		if (!m_bSuccess)
 			return;
 
-		// Checking the correctness of the loca table
+		// Check loca table validity
 		if ( !m_bOpenTypeCFF )
 		{
 			nIndex = SeekTable("loca");
@@ -2032,7 +2042,7 @@ namespace NSFontConverter
 				return;
 		}
 
-		// Reading the post table
+		// Read post table
 		ReadPostTable();
 	}
 

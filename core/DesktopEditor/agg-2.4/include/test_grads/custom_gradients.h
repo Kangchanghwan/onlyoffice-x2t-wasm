@@ -24,12 +24,12 @@
 namespace agg
 {
 	/**
-	 *  The main idea is that there are two stages of calculation: parameterization and color calculation.
+	 *  The main idea is that there are two calculation stages: parameterization and color computation.
 	 *
-	 *  In particular, radial and linear gradients require parameterization, (x,y)->t,
+	 *  In particular, radial and linear gradients require parameterization, (x,y)-> t,
 	 * to then convert the parameter to color.
 	 *
-	 * Shaders have optional parameterization, so for them there is a separate method with and without parameterization
+	 * For shaders, parameterization is optional, so there's a separate method with and without parameterization
 	 *
 	 * */
 
@@ -37,7 +37,7 @@ namespace agg
 	/**
 	 * Abstract class for parameterization.
 	 *
-	 * Use nan to mark pixels that shouldn't be painted
+	 * To indicate that a pixel should not be filled, nan is used
 	 */
 	class calcBase
 	{
@@ -189,7 +189,7 @@ namespace agg
 	};
 
 	 /**
-	 * Cone gradient parameter. Not used in pdf.
+	 * Conical gradient parameter. Not used in PDF.
 	 */
 	class calcConical : public calcBase
 	{
@@ -221,7 +221,7 @@ namespace agg
 	};
 
 	/**
-	 * Square gradient parameter. Not used in pdf.
+	 * Diamond gradient parameter. Not used in PDF.
 	 */
 	class calcDiamond : public calcBase
 	{
@@ -292,7 +292,7 @@ namespace agg
 	};
 
 	/**
-	 * Triangular shading, paints the entire area.
+	 * Triangle shading, fills the entire area.
 	 */
 	class calcTriangle : public calcBase
 	{
@@ -310,7 +310,7 @@ namespace agg
 		}
 
 		/**
-		 *  Calculating weights using barycentric coordinates
+		 *  Calculate weights using barycentric coordinates
 		 *  https://codeplea.com/triangular-interpolation
 		*/
 		static std::vector<float>
@@ -328,19 +328,19 @@ namespace agg
 	};
 
 	/**
-	 * Shading a smooth surface, paints only the surface itself.
+	 * Smooth surface shading, fills only the surface itself.
 	 *
-	 * The operating algorithm is approximately the following.
-	 * Walk over the parameter-value plane and paint a bounded square for each point.
+	 * The algorithm works roughly as follows.
+	 * We iterate over the parameter value plane, and for each point fill a square with boundary.
 	 *
-	 * P(u,v), P(u + du, u + dv) - angles.
+	 * P(u,v), P(u + du, u + dv) - corners.
 	 *
-	 * This avoids calculating the inverse function, which can generally only be done using Newton's method.
+	 * This allows avoiding inverse function computation, which in general can only be calculated using Newton's method.
 	 */
 	class calcCurve : public calcBase
 	{
 	public:
-		// All the pre-calculation takes place in the constructor, i.e. the class instance is completely ready for use.
+		// All precalculation happens in the constructor, i.e. the class instance is fully ready to work.
 		calcCurve(const NSStructures::GradientInfo &_g, bool calculate_tensor_coefs = true) : tensor_size(4)
 		{
 			ginfo = _g;
@@ -413,7 +413,7 @@ namespace agg
 			}
 		}
 
-		// Fill the square with one color so that there are no gaps.
+		// Fill the square with one color to avoid gaps.
 		void fill_square(std::pair<int, int> index1, std::pair<int, int> index2, float t)
 		{
 			for (int i = std::min(index1.first, index2.first); i <= std::max(index1.first, index2.first); i++)
@@ -432,13 +432,13 @@ namespace agg
 		{
 			auto i = get_index(x, y);
 			if (i.first > RES - 1 || i.second > RES - 1 || i.first < 0 || i.second < 0)
-				return NAN_FLOAT; // Don't paint
+				return NAN_FLOAT; // Don't fill
 
 			return precalc[i.first][i.second];
 		}
 
 
-		// Polynomials of this type define the required surface.
+		// The required surface is defined through polynomials of this kind.
 		static float berstein_polynomial(float t, int i)
 		{
 			switch (i)
@@ -469,8 +469,8 @@ namespace agg
 		}
 
 		/**
-		 * because the sixth type of shading is essentially a special case of the seventh, only with the recalculation of some points.
-		 * This method calculates the required parameters; see PDF standard section 208c for details.
+		 * Since shading type 6 is essentially a special case of type 7, just with recalculation of some points.
+		 * This method allows calculating the required parameters, see PDF standard page 208 for details.
 		 */
 		void calculate_tensor()
 		{
@@ -513,7 +513,7 @@ namespace agg
 
 
 	/**
-	 * The main class responsible for gradients.
+	 * Main class responsible for gradients.
 	 */
 	template <class ColorT>
 	class gradient_base
@@ -553,7 +553,7 @@ namespace agg
 
 	private:
 
-		// Parameterization, with some wrappers.
+		// Parameterization with some wrappers.
 		inline float calculate_param(const float &x, const float &y)
 		{
 			float t = calculate->eval(x, y);
@@ -582,7 +582,7 @@ namespace agg
 		virtual ~gradient_base() {}
 
 		/**
-		 * Selecting a parameterization option. And getting basic information about the gradient.
+		 * Selection of parameterization variant. And getting main gradient info.
 		 */
 		void SetGradientInfo(const NSStructures::GradientInfo &_g, Aggplus::BrushType bType)
 		{
@@ -640,7 +640,7 @@ namespace agg
 		}
 
 		/**
-		 * For the old color function.
+		 * For old color function.
 		 */
 		void SetSubColors(const color_type *colors, const float *positions, int count)
 		{
@@ -650,7 +650,7 @@ namespace agg
 		}
 
 		/**
-		 * Needed for the rendering function.
+		 * Needed for rendering function.
 		 */
 		void prepare()
 		{
@@ -662,7 +662,7 @@ namespace agg
 		}
 
 		/**
-		 * Generates the pixel color for the render function.
+		 * Generates pixel color for render function.
 		 */
 		void generate(color_type *span, int x, int y, unsigned len)
 		{
@@ -715,7 +715,7 @@ namespace agg
 		}
 
 		/**
-		 * Set the gradient metadata.
+		 * Set various info about our gradient.
 		 */
 		void SetDirection(const agg::rect_d &bounds, const agg::trans_affine &trans, bool bSwapRGB)
 		{
@@ -740,7 +740,7 @@ namespace agg
 
 	protected:
 		/**
-		 * For the old color function
+		 * For old color function
 		 */
 		void CalcColor(int index)
 		{
@@ -752,7 +752,7 @@ namespace agg
 			{
 				if (i == 1 && t < m_pPosSubColors[0])
 				{
-					// below the minimum
+					// less than minimum
 					m_color_table[index] = m_pSubColors[0];
 					bFindColor = true;
 					break;
@@ -776,7 +776,7 @@ namespace agg
 		}
 
 		/**
-		 * Triangular saw, needed for periodic gradients.
+		 * Triangle wave, needed for periodic gradients.
 		 */
 		inline float triagle_saw(float x)
 		{
@@ -784,7 +784,7 @@ namespace agg
 		}
 
 
-		// Needed for safely adding colors.
+		// Needed for safe color addition.
 		int limit8bit(int a)
 		{
 			if (a < 0)
@@ -795,7 +795,7 @@ namespace agg
 		}
 
 
-		// Multiplying a color by a number (it is a template, so * isn't overloaded)
+		// Multiply color by number (template, so not * operator overload)
 		ColorT mul(ColorT c1, float t)
 		{
 			return ColorT(limit8bit(c1.r * t), limit8bit(c1.g * t), limit8bit(c1.b * t), limit8bit(c1.a * t));
@@ -808,7 +808,7 @@ namespace agg
 		}
 
 		/**
-		 * Triangular interpolation on the color function.
+		 * Triangle interpolation on color function.
 		 * Calculated using barycentric coordinates.
 		 */
 		ColorT triangle(float x, float y)
@@ -826,14 +826,14 @@ namespace agg
 
 
 		/**
-		 * Here, everything related to the curved surface will be code duplication, but then in theory it will be easier to work with.
-		 * And the logic is a little less confusing.
-		 * The basic algorithm is to divide the surface into many squares. And enter the values there right away. So that the inverse function doesn't need to be computed.
+		 * Everything related to curved surface is here, there will be code duplication, but in theory it will be easier to work with later.
+		 * And the logic is slightly less confusing.
+		 * Main algorithm - split the surface into many small squares. And fill values there immediately. To avoid calculating inverse function.
 		 *
-		 * The main purpose of the repetition is to make a single parameterization interface and everything else.
-		 * Simply by adding different parameterizations, a large number of desired gradients can be added.
+		 * Main goal of repetition - create unified parameterization interface and everything else.
+		 * Since by simply adding different parameterizations, we can add many needed gradients.
 		 *
-		 * Everything with curves works the same way as parameters, only it isn't the parameter that is interpolated, but the color.
+		 * Everything with curves works the same as parameters, only color is interpolated instead of parameter.
 		 */
 
 		std::vector<std::vector<ColorT>> precalc;
@@ -853,7 +853,7 @@ namespace agg
 			ymax_curve = ymin_curve = start_p.y;
 
 			/*
-			 * A small optimization based on the fact that this shape doesn't go beyond the boundaries of its reference points.
+			 * Small optimization based on the fact that this shape doesn't go beyond its control points boundaries.
 			 * */
 
 			for (int i = 0; i < 4; i++)

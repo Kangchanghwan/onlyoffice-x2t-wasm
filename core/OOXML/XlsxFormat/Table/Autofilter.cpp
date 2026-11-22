@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "Autofilter.h"
@@ -61,6 +71,7 @@
 #include "../../../MsBinaryFile/XlsFile/Format/Logic/Biff_records/AutoFilter12.h"
 #include "../../../MsBinaryFile/XlsFile/Format/Logic/Biff_structures/DXFN12.h"
 #include "../../../MsBinaryFile/XlsFile/Format/Logic/Biff_structures/AF12Criteria.h"
+#include "../../../MsBinaryFile/XlsFile/Format/Logic/Biff_structures/AF12DateInfo.h"
 
 namespace OOX
 {
@@ -223,7 +234,7 @@ namespace OOX
 			}
 			void CSortCondition::ReadAttributes(XmlUtils::CXmlLiteReader& oReader)
 			{
-				// Reading the attributes
+				
 				WritingElement_ReadAttributes_Start( oReader )
 
 					WritingElement_ReadAttributes_Read_if     ( oReader, _T("descending"),      m_oDescending )
@@ -453,7 +464,7 @@ namespace OOX
 			}
 			void CSortState::ReadAttributes(XmlUtils::CXmlLiteReader& oReader)
 			{
-				// Reading the attributes
+				
 				WritingElement_ReadAttributes_Start( oReader )
 
 					WritingElement_ReadAttributes_Read_if     ( oReader, _T("ref"),      m_oRef )
@@ -538,7 +549,7 @@ namespace OOX
 			}
 			void CColorFilter::ReadAttributes(XmlUtils::CXmlLiteReader& oReader)
 			{
-							// Reading the attributes
+							
 							WritingElement_ReadAttributes_Start( oReader )
 
 							WritingElement_ReadAttributes_Read_if     ( oReader, _T("cellColor"),      m_oCellColor )
@@ -696,7 +707,7 @@ namespace OOX
 			}
 			void CDynamicFilter::ReadAttributes(XmlUtils::CXmlLiteReader& oReader)
 			{
-				// Reading the attributes
+				
 				WritingElement_ReadAttributes_Start( oReader )
 
 					WritingElement_ReadAttributes_Read_if     ( oReader, _T("type"),      m_oType )
@@ -906,7 +917,7 @@ namespace OOX
 			}
 			void CCustomFilter::ReadAttributes(XmlUtils::CXmlLiteReader& oReader)
 			{
-				// Reading the attributes
+				
 				WritingElement_ReadAttributes_Start( oReader )
 
 					WritingElement_ReadAttributes_Read_if     ( oReader, _T("operator"),      m_oOperator )
@@ -1037,7 +1048,7 @@ namespace OOX
 			}
 			void CCustomFilters::ReadAttributes(XmlUtils::CXmlLiteReader& oReader)
 			{
-				// Reading the attributes
+				
 				WritingElement_ReadAttributes_Start( oReader )
 
 					WritingElement_ReadAttributes_Read_if     ( oReader, _T("and"),      m_oAnd )
@@ -1118,7 +1129,7 @@ namespace OOX
 			}
 			void CFilter::ReadAttributes(XmlUtils::CXmlLiteReader& oReader)
 			{
-				// Reading the attributes
+				
 				WritingElement_ReadAttributes_Start( oReader )
 
 					WritingElement_ReadAttributes_Read_if     ( oReader, _T("val"),      m_oVal )
@@ -1235,13 +1246,62 @@ namespace OOX
 					ptr->yr = 0;
 				return objectPtr;
 			}
+			XLS::BiffStructurePtr CDateGroupItem::toXLS()
+			{
+				auto ptr(new XLS::AF12DateInfo);
+
+				if (m_oDateTimeGrouping == SimpleTypes::Spreadsheet::EDateTimeGroup::datetimegroupYear)
+				{
+					ptr->nodeType = 0x00000000;
+				}
+				else if (m_oDateTimeGrouping == SimpleTypes::Spreadsheet::EDateTimeGroup::datetimegroupMonth)
+				{
+					ptr->nodeType = 0x00000001;
+				}
+				else if (m_oDateTimeGrouping == SimpleTypes::Spreadsheet::EDateTimeGroup::datetimegroupDay)
+				{
+					ptr->nodeType = 0x00000002;
+				}
+				else if (m_oDateTimeGrouping == SimpleTypes::Spreadsheet::EDateTimeGroup::datetimegroupHour)
+				{
+					ptr->nodeType = 0x00000003;
+				}
+				else if (m_oDateTimeGrouping == SimpleTypes::Spreadsheet::EDateTimeGroup::datetimegroupMinute)
+				{
+					ptr->nodeType = 0x00000004;
+				}
+				else if (m_oDateTimeGrouping == SimpleTypes::Spreadsheet::EDateTimeGroup::datetimegroupSecond)
+				{
+					ptr->nodeType = 0x00000005;
+				}
+
+				if(m_oDay.IsInit())
+					ptr->day = m_oDay->GetValue();
+
+				if(m_oHour.IsInit())
+					ptr->hour = m_oHour->GetValue();
+
+				if(m_oMinute.IsInit())
+					ptr->minute = m_oMinute->GetValue();
+
+				if(m_oMonth.IsInit())
+					ptr->month = m_oMonth->GetValue();
+
+				if(m_oSecond.IsInit())
+					ptr->second = m_oSecond->GetValue();
+
+				if(m_oYear.IsInit())
+					ptr->year = m_oYear->GetValue();
+
+				return XLS::BiffStructurePtr(ptr);
+			}
 			EElementType CDateGroupItem::getType () const
 			{
 				return et_x_DateGroupItem;
 			}
 			void CDateGroupItem::ReadAttributes(XmlUtils::CXmlLiteReader& oReader)
 			{
-				// Reading the attributes
+				
 				WritingElement_ReadAttributes_Start( oReader )
 
 					WritingElement_ReadAttributes_Read_if     ( oReader, _T("dateTimeGrouping"),      m_oDateTimeGrouping )
@@ -1385,10 +1445,10 @@ namespace OOX
 				for(auto i: m_arrItems)
 				{
 					if (CFilter* cfilter = dynamic_cast<CFilter*>(i)) {
-						// The element is an instance of the CFilter class
+						// Element is an instance of CFilter class
 						ptr->m_arBrtFilter.push_back(cfilter->toBin());
 					} else if (CDateGroupItem* groupItem = dynamic_cast<CDateGroupItem*>(i)) {
-						// The element is an instance of the CDateGroupItem class
+						// Element is an instance of CDateGroupItem class
 						ptr->m_arBrtAFilterDateGroupItem.push_back(groupItem->toBin());
 					}
 				}
@@ -1400,7 +1460,7 @@ namespace OOX
 			}
 			void CFilters::ReadAttributes(XmlUtils::CXmlLiteReader& oReader)
 			{
-				// Reading the attributes
+				
 				WritingElement_ReadAttributes_Start( oReader )
 
 					WritingElement_ReadAttributes_Read_if     ( oReader, _T("blank"),      m_oBlank )
@@ -1488,7 +1548,7 @@ namespace OOX
 			}
 			void CTop10::ReadAttributes(XmlUtils::CXmlLiteReader& oReader)
 			{
-				// Reading the attributes
+				
 				WritingElement_ReadAttributes_Start( oReader )
 
 					WritingElement_ReadAttributes_Read_if     ( oReader, _T("filterVal"),      m_oFilterVal )
@@ -1651,17 +1711,29 @@ namespace OOX
 				{
 					if(m_oFilters.IsInit())
 					{
-						ptr->cCriteria +=  m_oFilters->m_arrItems.size();
 						for(auto i :  m_oFilters->m_arrItems)
 						{
-							auto castedFilter = static_cast<CFilter*>(i);
-							ptr->arAF12Criteries.push_back(castedFilter->toXLS());
+							if(i->getType() == et_x_Filter)
+							{
+								auto castedFilter = static_cast<CFilter*>(i);
+								ptr->arAF12Criteries.push_back(castedFilter->toXLS());
+								ptr->cCriteria++;
+							}
+							else if(i->getType() == et_x_DateGroupItem)
+							{
+								auto castedFilter = static_cast<CDateGroupItem*>(i);
+								ptr->arAF12DateInfo.push_back(castedFilter->toXLS());
+								ptr->cDateGroupings++;
+								//todo
+							}
+							else
+								continue;
 						}
 					}
 					if(m_oCustomFilters.IsInit())
 					{
-						ptr->cCriteria +=  m_oCustomFilters->m_arrItems.size();
-						for(auto i :  m_oCustomFilters->m_arrItems)
+						ptr->cCriteria += m_oCustomFilters->m_arrItems.size();
+						for(auto i : m_oCustomFilters->m_arrItems)
 						{
 							auto castedFilter = static_cast<CCustomFilter*>(i);
 							ptr->arAF12Criteries.push_back(castedFilter->toXLS());
@@ -1677,7 +1749,7 @@ namespace OOX
 			}
 			void CFilterColumn::ReadAttributes(XmlUtils::CXmlLiteReader& oReader)
 			{
-				// Reading the attributes
+				
 				WritingElement_ReadAttributes_Start( oReader )
 
 					WritingElement_ReadAttributes_Read_if     ( oReader, _T("colId"),      m_oColId )

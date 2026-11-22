@@ -325,12 +325,12 @@ public:
 			CSignFolderFiles oFiles;
 			oFiles.Folder_Parse(m_pFolder, true);
 
-			// 1) All rels must be signed - otherwise the signature isn't valid
+			// 1) All rels must be signed - otherwise signature is invalid
 			for (std::vector<std::wstring>::const_iterator i = oFiles.m_rels.begin(); i != oFiles.m_rels.end(); i++)
 			{
 				if (m_arFilesInManifest.find(*i) == m_arFilesInManifest.end())
 				{
-					// there is no point in adding empty files
+					// no point in adding empty files
 					std::wstring sFile = *i;
 					CManifestFileInfo oInfo;
 					oInfo.m_pFolder = m_pFolder;
@@ -367,7 +367,7 @@ public:
 						if (curRel.target_mode == L"Internal" && !CSignFolderFiles::CheckNeedSign(curRel.target))
 							continue;
 
-						// if the internal file is missing, the signature isn't valid
+						// if internal file is missing - signature is invalid
 						if (curRel.target_mode == L"Internal")
 						{
 							std::wstring sFullPath = oInfo.GetHeadPath(curRel.target);
@@ -376,7 +376,7 @@ public:
 								m_valid = OOXML_SIGNATURE_INVALID;
 							else
 							{
-								// if the file is in the list, but not signed, then the signature is partial.
+								// if file is in the list but not signed - signature is partial.
 								if (m_arFilesInManifest.find(sFullPath) == m_arFilesInManifest.end())
 								{
 									AddInvalidType(OOXML_SIGNATURE_PARTIALLY);

@@ -1,3 +1,38 @@
+/*
+ * Copyright (C) Ascensio System SIA, 2009-2026
+ *
+ * This program is a free software product. You can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License (AGPL)
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
+ * Section 5 of the GNU AGPL version 3.
+ *
+ * No trademark rights are granted under this License.
+ *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 #include "Document.h"
 
 #include "../../../DesktopEditor/common/StringExt.h"
@@ -73,7 +108,7 @@ namespace NSDocxRenderer
 		*dDpiY = m_dDpiY;
 		return S_OK;
 	}
-	//-------- Functions for setting text settings ----------------------------------------------
+	//-------- Functions for setting text properties --------------------------------------------
 	// pen --------------------------------------------------------------------------------------
 	HRESULT CDocument::get_PenColor(LONG* lColor)
 	{
@@ -497,7 +532,7 @@ namespace NSDocxRenderer
 		double dAngleMatrix = m_oCurrentPage.m_oTransform.z_Rotation();
 		if (fabs(dAngleMatrix) > 1 || m_oCurrentPage.m_oTransform.sx() < 0 || m_oCurrentPage.m_oTransform.sy() < 0)
 		{
-			//note Rotated symbols don't receive coordinates.
+			//note Rotated characters don't receive coordinates.
 			_SetFont();
 			PathCommandEnd();
 			BeginCommand(c_nPathType);
@@ -546,7 +581,7 @@ namespace NSDocxRenderer
 		delete [] pUnicodes;
 		return S_OK;
 	}
-	//-------- Markers for commands ---------------------------------------------------------------
+	//-------- Command markers ------------------------------------------------------------------
 	HRESULT CDocument::BeginCommand(DWORD lType)
 	{
 		if (c_nPageType == lType && m_bIsDisablePageCommand)
@@ -586,7 +621,7 @@ namespace NSDocxRenderer
 
 		return S_OK;
 	}
-	//-------- Functions for working with Graphics Path -----------------------------------------------
+	//-------- Functions for working with Graphics Path -----------------------------------------
 	HRESULT CDocument::PathCommandMoveTo(double fX, double fY)
 	{
 		if (c_nSimpleGraphicType == m_lCurrentCommandType)
@@ -708,7 +743,7 @@ namespace NSDocxRenderer
 		ApplyTransform2(dAngle, dLeft, dTop, dWidth, dHeight, lFlags);
 		return S_OK;
 	}
-	//-------- Functions for displaying images --------------------------------------------------
+	//-------- Functions for image output -------------------------------------------------------
 	HRESULT CDocument::DrawImage(IGrObject* pImage, double fX, double fY, double fWidth, double fHeight)
 	{
 		m_oCurrentPage.WriteImage(m_oImageManager.WriteImage((Aggplus::CImage*)pImage, fX, fY, fWidth, fHeight), fX, fY, fWidth, fHeight);
@@ -810,10 +845,10 @@ namespace NSDocxRenderer
 	{
 		Clear();
 
-		// Reset the font cache. In theory, a cache for fonts "by name" can be kept,
-		// but for fonts from temp folders - no. The temp folder for Reader (PDF/XPS/DJVU)
-		// may be the same. And creating files there with the function of creating temporary files
-		// may return the same path. And the font will be taken from the old file.
+		// Clear font cache. In theory, we could keep the cache for fonts "by name",
+		// but not for fonts from temp folders. The temp folder for Reader (PDF/XPS/DJVU)
+		// may be the same. And creating files there using the temp file creation function
+		// may return the same path. And the font will be taken from an old file.
 		m_oFontSelector.ClearCache();
 		m_oFontManager.ClearCache();
 		if (m_pAppFonts && bIsClearStreams) m_pAppFonts->GetStreams()->Clear();
@@ -1169,7 +1204,7 @@ namespace NSDocxRenderer
 		oWriter.WriteString(L"<w:uiPriority w:val=\"1\"/>");
 		oWriter.WriteString(L"<w:semiHidden/>");
 		oWriter.WriteString(L"<w:unhideWhenUsed/>");
-		oWriter.WriteString(L"<w:noProof/>"); //disable spell checking
+		oWriter.WriteString(L"<w:noProof/>"); // disable spell checking
 		oWriter.WriteString(L"<w:b w:val=\"0\"/>");
 		oWriter.WriteString(L"<w:bCs w:val=\"0\"/>");
 		oWriter.WriteString(L"<w:i w:val=\"0\"/>");

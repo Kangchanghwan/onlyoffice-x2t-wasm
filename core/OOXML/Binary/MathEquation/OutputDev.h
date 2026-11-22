@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #pragma once
 
@@ -34,72 +44,72 @@ namespace MathEquation
 	{
 	public:
 
-		// The beginning and end of the formula
+		// Start and end of equation
 		virtual void BeginEquation() = 0;
 		virtual void EndEquation()   = 0;
 
-		// The beginning and end of the block.
+		// Start and end of block.
 		virtual void BeginBlock() = 0;
 		virtual void EndBlock()   = 0;
 
-		// Set the size in the current block
+		// Set size in current block
         virtual void SetSize(_UINT16 nSize) = 0;
 
-		// Add a symbol. Various elements can be added to the symbol. Strikethrough, adding emphasis, etc.
+		// Add symbol. Various elements can be added to symbol. Strikethrough, accent, etc.
         virtual void BeginChar(unsigned short uChar, unsigned char nTypeFace, bool bSpecialSymbol) = 0;
 		virtual void AddCharEmbel(MEMBELTYPE eType) = 0;
 		virtual void EndChar() = 0;
 
-		// Matrix. The number of blocks here is nRows * nCol, sent sequentially in the usual order (first row from left to right, second row from left to right, etc.)
+		// Matrix. Number of blocks here equals nRows * nCol, sent sequentially in normal order (first row left to right, second row left to right, etc.)
         virtual void BeginMatrix(unsigned char nVAlign, MMATRIXHORALIGN eHorAlign, MMATRIXVERALIGN eVerAlign, bool bEqualRows, bool bEqualCols, unsigned char nRows, unsigned char nCols, unsigned char* pVerBorders, unsigned char* pHorBorders) = 0;
 		virtual void EndMatrix  () = 0;
 
         virtual void StartPile(unsigned char nHAlign, unsigned char nVAlign) = 0;
 		virtual void EndPile() = 0;
 
-		// Parentheses with an element inside
+		// Brackets with element inside
 		virtual void BeginBrackets(MBRACKETSTYPE eType, bool bOpen, bool bClose) = 0;
 		virtual void EndBrackets  (MBRACKETSTYPE eType, bool bOpen, bool bClose) = 0;
 
-		// Root. The first block is the base, the second, if there is one, the degree.
+		// Root. First block - base, second if present - degree.
 		virtual void BeginRoot(bool bDegree) = 0;
 		virtual void EndRoot  () = 0;
 
-		// Fractions. The first block is the numerator, the second block is the denominator.
+		// Fractions. First block - numerator, second block - denominator.
 		virtual void BeginFraction(MFRACTIONTYPES eType, bool bInline) = 0;
 		virtual void EndFraction  () = 0;
 
-		// If bInline = true, then the sequence of blocks Base, Sub, Sup
-		// If bInline = false, then the sequence of blocks is Sub, Sup, Base
+		// If bInline = true, then block sequence is Base, Sub, Sup
+		// If bInline = false, then block sequence is Sub, Sup, Base
 		virtual void BeginScript(MSCRIPTALIGN eAlign, bool bBase = false, bool bSup = false, bool bSub = false, bool bInline = true) = 0;
 		virtual void EndScript  () = 0;
 
-		// An overline or underline
+		// Line above or below text
 		virtual void BeginBar(MBARTYPE eType, bool bTop) = 0;
 		virtual void EndBar  () = 0;
 
-		// An arrow with an inscription at the top or bottom (different from BeginBar/EndBar in that here the arrow is the main one
-		// object, and the text is a small inscription, and for those functions it's the other way around)
+		// Arrow with label above or below (differs from BeginBar/EndBar in that here arrow is main
+		// object, and text is small label, while those functions are opposite)
 		virtual void BeginArrow(MARROWTYPE eType, bool bTop) = 0;
 		virtual void EndArrow  () = 0;
 
-		// Integrals. The sequence of blocks is always the following (if the block is present) Base, Sub, Sup
+		// Integrals. Block sequence is always following (if block present) Base, Sub, Sup
 		virtual void BeginIntegral(MINTEGRALTYPE eType) = 0;
 		virtual void EndIntegral  () = 0;
 
-		// A curly brace with text above/below an object. The main object comes first, then the curly brace label.
+		// Curly brace with text above/below object. First comes main object, then curly brace label.
 		virtual void BeginVerticalBrace(bool bTop) = 0;
 		virtual void EndVerticalBrace  () = 0;
 
-		// Sum, product, coproduct, union, intersection. Sequence of blocks Base, Sub, Sup
+		// Sum, product, coproduct, union, intersection. Block sequence Base, Sub, Sup
 		virtual void BeingNArray(MNARRAYTYPE eType) = 0;
 		virtual void EndNArray  () = 0;
 
-		// Long division. With or without a quotient. The base always comes first, then if there is a quotient.
+		// Long division. With quotient or without. First always comes base, then quotient if present.
 		virtual void BeginLongDivision(MLONGDIVISION eType) = 0;
 		virtual void EndLongDivision  () = 0;
 
-		// < | > - such an element
+		// < | > - this type of element
 		virtual void BeginAngleBracketsWithSeparator(MANGLEBRACKETSWITHSEPARATORTYPE eType) = 0;
 		virtual void EndAngleBracketsWithSeparator  () = 0;
 

@@ -1,4 +1,39 @@
-﻿#include "J2kFile.h"
+﻿/*
+ * Copyright (C) Ascensio System SIA, 2009-2026
+ *
+ * This program is a free software product. You can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License (AGPL)
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
+ * Section 5 of the GNU AGPL version 3.
+ *
+ * No trademark rights are granted under this License.
+ *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
+#include "J2kFile.h"
 #include "J2kIncludes.h"
 #include "Utils.h"
 
@@ -101,7 +136,7 @@ namespace Jpeg2000
         unsigned char indB = isBGRA ? 0 : 2;
         Jpeg2000::ImageComponent* pComponents = pImage->pComponents;
 
-        // Writing data to pBufferPtr
+        // Write data to pBufferPtr
         if (pImage->nCsiz == 3 && pImage->pComponents[0].nXRsiz == pImage->pComponents[1].nXRsiz && pImage->pComponents[1].nXRsiz == pImage->pComponents[2].nXRsiz
             && pImage->pComponents[0].nYRsiz == pImage->pComponents[1].nYRsiz && pImage->pComponents[1].nYRsiz == pImage->pComponents[2].nYRsiz
             && pImage->pComponents[0].nPrecision == pImage->pComponents[1].nPrecision && pImage->pComponents[1].nPrecision == pImage->pComponents[2].nPrecision)
@@ -173,7 +208,7 @@ namespace Jpeg2000
 
 		DecoderParams oParameters;
 
-		// Set standard parameter values
+		// Set default parameter values
 		ApplyDecoderOptions(&oParameters, wsXmlOptions);
 
 		///////////////////////////////////////////////////////////////////////////////////
@@ -215,7 +250,7 @@ namespace Jpeg2000
 
 		DecoderParams oParameters;
 
-		// Set standard parameter values
+		// Set default parameter values
 		ApplyDecoderOptions(&oParameters, wsXmlOptions);
 
 		///////////////////////////////////////////////////////////////////////////////////
@@ -252,7 +287,7 @@ namespace Jpeg2000
 
 		DecoderParams oParameters;
 
-		// Set standard parameter values
+		// Set default parameter values
 		ApplyDecoderOptions(&oParameters, wsXmlOptions);
 
 		///////////////////////////////////////////////////////////////////////////////////
@@ -307,7 +342,7 @@ namespace Jpeg2000
 
 		nComponentsCount = pImage->nCsiz;
 
-		// Writing data to pBufferPtr
+		// Write data to pBufferPtr
 		for (int nComponent = 1; nComponent < nComponentsCount; nComponent++)
 		{
 			if (pImage->pComponents[0].nXRsiz != pImage->pComponents[nComponent].nXRsiz
@@ -338,7 +373,7 @@ namespace Jpeg2000
 	}
 	bool CJ2kFile::Save(CBgraFrame* pFrame, const std::wstring& wsDstPath, const std::wstring& wsXmlOptions)
 	{
-		// TODO: Writing hasn't been implemented yet, it needs to be completed.
+		// TODO: Writing is not implemented, needs to be completed.
 		return false;
 
 		if (!pFrame)
@@ -349,12 +384,12 @@ namespace Jpeg2000
 		BYTE* pSourceBuffer = pFrame->get_Data();
 		LONG lBufferSize    = 4 * lWidth * lHeight;
 
-		// Next, we process the Xml with compression parameters
+		// Next process Xml with compression parameters
 		EncoderParams oParameters;
 		int nFormat = ApplyEncoderOptions(&oParameters, wsXmlOptions);
 
-		// TODO: Add ability to record alpha channel
-		ImageComponentParams aComponentParams[3]; // For now, let there be a maximum of three components (RGB)
+		// TODO: Add ability to write alpha channel
+		ImageComponentParams aComponentParams[3]; // For now maximum three components (RGB)
 		Image *pImage = NULL;
 		int nComponentsCount = oParameters.nComponentsCount;
 
@@ -370,7 +405,7 @@ namespace Jpeg2000
 			aComponentParams[nIndex].nHeight    = (int)lHeight;
 		}
 
-		// Create the Image structure
+		// Create Image structure
 		pImage = Image_Create(nComponentsCount, &aComponentParams[0], csRGB);
 		if (!pImage)
 			return false;
@@ -433,7 +468,7 @@ namespace Jpeg2000
 		pParameters->nReduce        = 0;
 		pParameters->nLayer         = 0;
 
-		// TODO: Make reading decoding parameters
+		// TODO: Implement reading of decoding parameters
 		//if (sXml.GetLength() > 0)
 		//{
 		//	XmlUtils::CXmlNode oMainNode;
@@ -475,7 +510,7 @@ namespace Jpeg2000
 	{
 		EncoderParams* pParameters = (EncoderParams*)pParameters;
 		int nFormat = 0; // J2k
-		// First, set the standard parameter values
+		// First set default parameter values
 		memset(pParameters, 0, sizeof(EncoderParams));
 		pParameters->nComponentsCount     = 3;
 		pParameters->nResolutionsCount    = 6;
@@ -488,7 +523,7 @@ namespace Jpeg2000
 		pParameters->bTileSizeOn          = false;
 		pParameters->sComment             = (char*)"Manufactured by Online Media Technologies Ltd.";
 
-		// TODO: Make reading encoding parameters
+		// TODO: Implement reading of encoding parameters
 		//if (sXml.GetLength() > 0)
 		//{
 		//	XmlUtils::CXmlNode oMainNode;
@@ -598,7 +633,7 @@ namespace Jpeg2000
 		//			// SOPmarker
 		//			if (oSaveNode.GetNode(_T("SOPmarker"), oCurNode))
 		//			{
-		//				// Let's disable it for now, then we'll need to add it - for this we need to allocate memory for the ImageInfo structure
+		//				// Disabled for now, needs to be added later - requires allocating memory for ImageInfo structure
 		//				//pParameters->nCodingStyle |= 0x02;
 		//			}
 
@@ -622,7 +657,7 @@ namespace Jpeg2000
 		//			if (oSaveNode.GetNode(_T("Comment"), oCurNode))
 		//			{
 		//				sValue = oCurNode.GetAttribute(_T("value"));
-		//				// TO DO: Incorrect string copying
+		//				// TODO: Incorrect string copying
 		//				USES_CONVERSION;
 		//				pParameters->sComment = W2A(sValue.GetBuffer());
 		//			}
@@ -731,13 +766,13 @@ namespace Jpeg2000
 		//}
 
 
-		// Check the correctness of the entered parameters
+		// Check validity of input parameters
 
-		// The parameters nDistoAlloc, nFixedQuality, nFixedAlloc can't be used together
+		// Parameters nDistoAlloc, nFixedQuality, nFixedAlloc cannot be used together
 		if ((pParameters->nDistoAlloc || pParameters->nFixedAlloc || pParameters->nFixedQuality) && (!(pParameters->nDistoAlloc ^ pParameters->nFixedAlloc ^ pParameters->nFixedQuality)))
 			return -1;
 
-		// If the parameters aren't specified, then by default we set lossless compression
+		// If parameters are not set, default to lossless compression
 		if (0 == pParameters->nLayersCount)
 		{
 			pParameters->afRates[0]   = 0;
@@ -751,7 +786,7 @@ namespace Jpeg2000
 		{
 			if (-1 == pParameters->aoPOC[nIndex].ePpoc)
 			{
-				// TO DO: Throw an error that the order isn't specified
+				// TODO: Report error that order is not set
 			}
 		}
 

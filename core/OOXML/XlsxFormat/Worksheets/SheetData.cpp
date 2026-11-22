@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "../Workbook/Workbook.h"
@@ -38,6 +48,7 @@
 #include "../ComplexTypes_Spreadsheet.h"
 
 #include "../../Binary/Presentation/BinaryFileReaderWriter.h"
+#include "../../Binary/Sheets/Reader/CellFormatController/DateReader.h"
 #include "../../Binary/Sheets/Writer/CSVWriter.h"
 #include "../../../DesktopEditor/common/StreamWriter.h"
 #include "../../../DesktopEditor/common/StringExt.h"
@@ -65,6 +76,7 @@
 #include "../../../MsBinaryFile/XlsFile/Format/Logic/Biff_records/Blank.h"
 #include "../../../MsBinaryFile/XlsFile/Format/Logic/Biff_records/BoolErr.h"
 #include "../../../MsBinaryFile/XlsFile/Format/Logic/Biff_records/LabelSst.h"
+#include "../../../MsBinaryFile/XlsFile/Format/Logic/Biff_records/Label.h"
 #include "../../../MsBinaryFile/XlsFile/Format/Logic/Biff_records/Formula.h"
 #include "../../../MsBinaryFile/XlsFile/Format/Logic/Biff_structures/BIFF12/CellRef.h"
 #include "../../../MsBinaryFile/XlsFile/Format/Logic/Biff_structures/PtgArea.h"
@@ -655,8 +667,22 @@ namespace OOX
                     case SimpleTypes::Spreadsheet::celltypeSharedString: nType = XLSB::rt_CellIsst; break;
                     case SimpleTypes::Spreadsheet::celltypeError: nType = XLSB::rt_CellError; break;
                     case SimpleTypes::Spreadsheet::celltypeBool: nType = XLSB::rt_CellBool; break;
+					case SimpleTypes::Spreadsheet::celltypeDate: 
+					{
+						std::wstring tmp(m_oValue.m_oValue.m_sBuffer, m_oValue.m_oValue.m_nLen);
+						DateReader dateChecker;
+						double result = 0;
+						bool bTime = false, bDate = false;
+						if (dateChecker.GetDigitalDate(tmp, result, bDate, bTime))
+						{
+							nType = XLSB::rt_CellReal;
+							m_oValue.m_dValue = result;
+						}
+						else if (m_oValue.m_oValue.m_nLen > 0)
+							nType = XLSB::rt_CellSt;
+					}break;
 					case SimpleTypes::Spreadsheet::celltypeInlineStr:
-                    case SimpleTypes::Spreadsheet::celltypeStr: nType = XLSB::rt_CellSt; break;
+					case SimpleTypes::Spreadsheet::celltypeStr: nType = XLSB::rt_CellSt; break;
 				}
 			}
 			bool bIsBlankFormula = false;
@@ -723,28 +749,31 @@ namespace OOX
 			oStream.XlsbStartRecord(nType, nLen);
 			oStream.WriteULONG(m_nCol & 0x3FFF);
 
-
 			oStream.WriteULONG(nFlags2);
 			//todo RkNumber
-			switch(nType)
+			switch (nType)
 			{
-                case XLSB::rt_CellReal:
-                case XLSB::rt_FmlaNum:
+				case XLSB::rt_CellReal:
+				case XLSB::rt_FmlaNum:
+				{
 					oStream.WriteDoubleReal(m_oValue.m_dValue);
-				break;
-                case XLSB::rt_CellIsst:
+				}break;
+				case XLSB::rt_CellIsst:
+				{
 					oStream.WriteULONG(m_oValue.m_nValue);
-				break;
-                case XLSB::rt_CellSt:
-                case XLSB::rt_FmlaString:
+				}break;
+				case XLSB::rt_CellSt:
+				case XLSB::rt_FmlaString:
+				{
 					oStream.WriteStringData(m_oValue.m_oValue.m_sBuffer, m_oValue.m_oValue.m_nLen);
-				break;
-                case XLSB::rt_CellError:
-                case XLSB::rt_FmlaError:
-                case XLSB::rt_CellBool:
-                case XLSB::rt_FmlaBool:
+				}break;
+				case XLSB::rt_CellError:
+				case XLSB::rt_FmlaError:
+				case XLSB::rt_CellBool:
+				case XLSB::rt_FmlaBool:
+				{
 					oStream.WriteBYTE(m_oValue.m_nValue);
-				break;
+				}break;
 			}
 
 			_UINT16 nFlags = 0;
@@ -825,7 +854,7 @@ namespace OOX
             oStream.XlsbStartRecord(XLSB::rt_RowHdr, 17);
 			oStream.WriteULONG(m_nR & 0xFFFFF);
 			oStream.WriteULONG(m_nS);
-			oStream.WriteUSHORT(((_UINT16)(m_dHt * 20)) & 0x1FFF);//pt to twips;
+			oStream.WriteUSHORT(((_UINT16)(m_dHt * 20)) & 0xFFFF);//pt to twips;
 
 			BYTE byteExtra1 = 0;
 			if(m_oThickTop.ToBool())
@@ -954,7 +983,7 @@ namespace OOX
 		}
 		void CFormula::toXML(NSStringUtils::CStringBuilder& writer) const
 		{
-			writer.WriteString(_T("<f"));
+			writer.WriteString(L"<f");
 			WritingStringNullableAttrString(L"t", m_oT, m_oT->ToString());
 			WritingStringNullableAttrBool(L"aca", m_oAca);
 			WritingStringNullableAttrString(L"ref", m_oRef, m_oRef.get());
@@ -969,13 +998,13 @@ namespace OOX
 			WritingStringNullableAttrBool(L"bx", m_oBx);
 			if(!m_sText.empty())
 			{
-				writer.WriteString(_T(">"));
+				writer.WriteString(L">");
 				writer.WriteEncodeXmlStringHHHH(m_sText);
-				writer.WriteString(_T("</f>"));
+				writer.WriteString(L"</f>");
 			}
 			else
 			{
-				writer.WriteString(_T("/>"));
+				writer.WriteString(L"/>");
 			}
 		}
 		void CFormula::fromXLSB (NSBinPptxRW::CBinaryFileReader& oStream)
@@ -1144,7 +1173,7 @@ namespace OOX
         }
         void CFormula::fromBin(XLS::StreamCacheReaderPtr& reader, XLS::CFRecordPtr& record)
         {
-            //reading the rest of the data in the cell record
+            //read remaining data in the cell record
             {
                 XLSB::GrbitFmla flags;
                 *record >> flags;
@@ -1207,7 +1236,7 @@ namespace OOX
             {
                 XLS::CellParsedFormula BinFmla(false);
                 *record >> BinFmla;
-                //case if the formula contains a reference to another
+                //case when the formula contains a reference to another one
                 if(!BinFmla.rgce.isEmpty() && BinFmla.rgce.sequence.begin()->get()->ptg_id.get() == 1 && !BinFmla.rgcb.isEmpty())
                 {
                     auto rowPart = static_cast<XLS::PtgExp*>(BinFmla.rgce.sequence.begin()->get());
@@ -1279,7 +1308,12 @@ namespace OOX
 					FmlaUnion->m_SharedFormula = XLS::BaseObjectPtr(shrFmla);
 					shrFmla->ref_.fromString(m_oRef.get());
 					shrFmla->formula = m_sText;
-					FmlaUnion->shared_formulas_locations_ref_.push_back(shrFmla->ref_);
+					CellRangeRef shrFmlaLoc;
+					shrFmlaLoc.columnFirst = cellBaseRef.column;
+					shrFmlaLoc.columnLast = cellBaseRef.column;
+					shrFmlaLoc.rowFirst = cellBaseRef.row;
+					shrFmlaLoc.rowLast = cellBaseRef.row;
+					FmlaUnion->shared_formulas_locations_ref_.push_back(shrFmlaLoc);
 					parseFmlaValueType(shrFmla->formula);
 				}
 				if(m_oSi.IsInit() && FmlaUnion->shared_formulas_locations_ref_.size() > m_oSi->GetValue())
@@ -1308,7 +1342,7 @@ namespace OOX
 					auto ArrayFmla = new XLS::Array(cellBaseRef);
 					FmlaUnion->m_ArrayFormula = XLS::BaseObjectPtr(ArrayFmla);
 					ArrayFmla->ref_.fromString(m_oRef.get());
-					ArrayFmla->formula = m_sText;
+					ArrayFmla->formula.parseStringFormula(m_sText, L"XLS");
 					parseFmlaValueType(ArrayFmla->formula);
 
 					auto cellPos = new XLS::PtgExp;
@@ -1487,7 +1521,7 @@ namespace OOX
             {
                 case SimpleTypes::Spreadsheet::ECellFormulaType::cellformulatypeNormal:
                 {
-                    //writing flags for the formula
+                    //write flags for the formula
                     {
                         XLSB::GrbitFmla flags;
                         if(m_oAca.IsInit() && m_oAca->GetValue())
@@ -1607,7 +1641,7 @@ namespace OOX
 		}
 		std::wstring CCell::toXML() const
 		{
-			return _T("");
+			return L"";
 		}
         bool CCell::parseRef(std::wstring sRef, int& nRow, int& nCol)
 		{
@@ -1662,7 +1696,7 @@ namespace OOX
 
 			int nBaseRow = (pXlsxFlat)? 0 : 1; // xml/xlsb->xlsx
 
-			writer.WriteString(_T("<c"));
+			writer.WriteString(L"<c");
 			if (m_oRow.IsInit() && m_oCol.IsInit())
 			{
 				int nCol = *m_oCol;
@@ -1691,21 +1725,31 @@ namespace OOX
 			WritingStringNullableAttrBool(L"ph", m_oShowPhonetic);
 			if(m_oFormula.IsInit() || m_oRichText.IsInit() || m_oValue.IsInit())
 			{
-				writer.WriteString(_T(">"));
+				writer.WriteString(L">");
 				if(m_oFormula.IsInit())
 					m_oFormula->toXML(writer);
-				if(m_oRichText.IsInit())
+				if(m_oRichText.IsInit() || (m_oType.IsInit() && SimpleTypes::Spreadsheet::celltypeInlineStr == m_oType->GetValue()))
 				{
-					writer.WriteString(_T("<is>"));
-					m_oRichText->toXML2(writer);
-					writer.WriteString(_T("</is>"));
+					writer.WriteString(L"<is>");
+					if (m_oRichText.IsInit())
+					{
+						m_oRichText->toXML2(writer);
+					}
+					else if (m_oValue.IsInit())
+					{
+						m_oValue->toXML2(writer, L"t");
+					}
+					writer.WriteString(L"</is>");
 				}
-				if(m_oValue.IsInit())
-					m_oValue->toXML2(writer, _T("v"));
-				writer.WriteString(_T("</c>"));
+				else
+				{
+					if (m_oValue.IsInit())
+						m_oValue->toXML2(writer, L"v");
+				}
+				writer.WriteString(L"</c>");
 			}
 			else
-				writer.WriteString(_T("/>"));
+				writer.WriteString(L"/>");
 		}
 		void CCell::fromXML(XmlUtils::CXmlLiteReader& oReader)
 		{
@@ -2021,7 +2065,7 @@ namespace OOX
 				if (false == xlsx->m_arWorksheets.back()->m_bPrepareForBinaryWriter) return;
 
 				if (!xlsx->m_pSharedStrings)
-				{	// haven't read rels yet
+				{	// rels not yet read
 					xlsx->m_arWorksheets.back()->m_bPrepareForBinaryWriter = false;
 					return;
 				}
@@ -2047,7 +2091,7 @@ namespace OOX
 					if (NULL != pSi)
 					{
 						int nIndex = pSharedStrings->AddSi(pSi);
-						//change the cell value
+						//change cell value
 						m_oValue.Init();
 						m_oValue->m_sText = std::to_wstring(nIndex);
 						//change cell type
@@ -2073,7 +2117,7 @@ namespace OOX
 
 						int nIndex = pSharedStrings->AddSi(pSi);
 
-						//change the cell value
+						//change cell value
 						m_oValue.Init();
 						m_oValue->m_sText = std::to_wstring(nIndex);
 						//change cell type
@@ -2091,7 +2135,7 @@ namespace OOX
 				}
 				else if (SimpleTypes::Spreadsheet::celltypeBool == m_oType->GetValue())
 				{
-					//Usually it is written 1/0, but sometimes it is written true/false
+					//usually written as 1/0, but sometimes true/false is encountered
 					if (m_oValue.IsInit())
 					{
 						SimpleTypes::COnOff oOnOff;
@@ -2099,9 +2143,9 @@ namespace OOX
 						oOnOff.FromString(sVal.c_str());
 						m_oValue.Init();
 						if (oOnOff.ToBool())
-							m_oValue->m_sText = _T("1");
+							m_oValue->m_sText = L"1";
 						else
-							m_oValue->m_sText = _T("0");
+							m_oValue->m_sText = L"0";
 					}
 				}
 			}
@@ -2830,6 +2874,8 @@ namespace OOX
 				CellReference.row = m_oRow.get() -1;
 				CellReference.column = m_oCol.get();
 			}
+			if(CellReference.row >  65535 || CellReference.column > 255)
+				return;
 			bool isReal = false;
 			double realCache = 0;
 			if(!m_oType.IsInit())
@@ -2952,7 +2998,7 @@ namespace OOX
 					}
 					case SimpleTypes::Spreadsheet::celltypeSharedString:
 					{
-						if(m_oValue.IsInit())
+						if(m_oValue.IsInit() && !m_oValue->m_sText.empty())
 						{
 							auto CellSst = new XLS::LabelSst;
 							CellSst->cell.rw = CellReference.row;
@@ -2966,6 +3012,19 @@ namespace OOX
 						}
 						break;
 					}
+					case SimpleTypes::Spreadsheet::celltypeInlineStr:
+					{
+
+							auto CellLabel = new XLS::Label;
+							CellLabel->cell.rw = CellReference.row;
+							CellLabel->cell.col = CellReference.column;
+							if(m_oStyle.IsInit())
+									CellLabel->cell.ixfe = m_oStyle.get();
+							if(m_oRichText.IsInit())
+								CellLabel->st = m_oRichText->ToString();
+							castedPtr->cellContent = XLS::BaseObjectPtr(CellLabel);
+							break;
+					}
 					case SimpleTypes::Spreadsheet::celltypeStr:
 					{
 
@@ -2977,7 +3036,6 @@ namespace OOX
 							castedPtr->cellContent = XLS::BaseObjectPtr(CellBlank);
 						break;
 					}
-
 				}
 			}
 			else
@@ -2996,7 +3054,11 @@ namespace OOX
 				else if(cellType == SimpleTypes::Spreadsheet::celltypeStr)
 				{
 					if(m_oValue.IsInit() && !m_oValue.get().m_sText.empty())
+					{
 						FmlaCell->val.data.Byte1 = 0x00;
+						fmlaUnion->m_stringValCache.Init();
+						fmlaUnion->m_stringValCache = m_oValue->m_sText;
+					}
 					else
 						FmlaCell->val.data.Byte1 = 0x03;
 				}
@@ -3033,10 +3095,11 @@ namespace OOX
 					}
 					FmlaCell->val.data.Byte3 = cellval;
 				}
+				if(cellType != SimpleTypes::Spreadsheet::celltypeNumber)
+					FmlaCell->val.data.fExprO = 0xFFFF;
 				if(m_oFormula.IsInit())
 					m_oFormula->toXls(castedPtr->cellContent);
 			}
-
 		}
         void CCell::toBin(XLS::StreamCacheWriterPtr& writer)
         {
@@ -3083,10 +3146,22 @@ namespace OOX
 				if(m_oValue.IsInit())
 					m_oType->SetValue(processCellType(m_oValue.get().m_sText, isReal, realCache));
             }
+			else if(m_oType->GetValue() == SimpleTypes::Spreadsheet::celltypeNumber)
+			{
+				wchar_t *tail;
+				try
+				{
+					realCache =  std::wcstod(m_oValue.get().m_sText.c_str(), &tail);
+				}
+				catch(const std::exception& e)
+				{
+					realCache = 0;
+				}
+			}
             auto cellType = m_oType->GetValue();
-            //cell master record
+            //main cell record
             CFRecordPtr CellRecord;
-            // additional entry for shared, array and table formulas
+            // additional record for shared, array, and table formulas
             CFRecordPtr ExtraRecord;
             //processing celltype datatable
             if(m_oFormula.IsInit() && m_oFormula->m_oT.IsInit() && m_oFormula->m_oT->GetValue() == SimpleTypes::Spreadsheet::ECellFormulaType::cellformulatypeDataTable)
@@ -3097,7 +3172,7 @@ namespace OOX
                 m_oFormula.reset();
                 ExtraRecord.reset();
             }
-            //cell metadata processing
+            //processing cell metadata
             if(m_oCellMetadata.IsInit())
             {
                 auto metaRecord = writer->getNextRecord(XLSB::rt_CellMeta);
@@ -3263,7 +3338,7 @@ namespace OOX
                             SharedFmlaRef = &SharedFormulasRef::sharedRefsLocations->at(m_oFormula->m_oSi->GetValue());
                         XLS::CellParsedFormula BinFmla(false);
 
-                        //writing flags for the formula
+                        //write flags for the formula
                         {
                             XLSB::GrbitFmla flags;
                             if(m_oFormula->m_oAca.IsInit() && m_oFormula->m_oAca->GetValue())
@@ -3294,7 +3369,7 @@ namespace OOX
                         SharedFmlaRef = &CellReference;
                     }
                     XLS::CellParsedFormula BinFmla(false);
-                    //writing flags for the formula
+                    //write flags for the formula
                     {
                         XLSB::GrbitFmla flags;
                         if(m_oFormula->m_oAca.IsInit() && m_oFormula->m_oAca->GetValue())
@@ -4052,7 +4127,7 @@ namespace OOX
 		}
 		std::wstring CRow::toXML() const
 		{
-			return _T("");
+			return L"";
 		}
 		void CRow::toXML(NSStringUtils::CStringBuilder& writer) const
 		{
@@ -4088,11 +4163,20 @@ namespace OOX
 		}
 		void CRow::toXMLStart(NSStringUtils::CStringBuilder& writer) const
 		{
-			writer.WriteString(_T("<row"));
+			writer.WriteString(L"<row");
 				WritingStringNullableAttrInt(L"r", m_oR, m_oR->GetValue());
 				WritingStringNullableAttrInt(L"s", m_oS, m_oS->GetValue());
 				WritingStringNullableAttrBool(L"customFormat", m_oCustomFormat);
-				WritingStringNullableAttrDouble(L"ht", m_oHt, m_oHt->GetValue());
+				if (m_oHt.IsInit())
+				{
+					double dVal = m_oHt->GetValue();
+					if (dVal < 409.6)
+					{
+						WritingStringNullableAttrDouble(L"ht", m_oHt, dVal);
+					}
+					else
+						writer.WriteString(L" ht=\"409.6\""); //todooo ? WritingStringNullableAttrDoubleLimit
+				}
 				WritingStringNullableAttrBool(L"hidden", m_oHidden);
 				WritingStringNullableAttrBool(L"customHeight", m_oCustomHeight);
 				WritingStringNullableAttrInt(L"outlineLevel", m_oOutlineLevel, m_oOutlineLevel->GetValue());
@@ -4100,11 +4184,11 @@ namespace OOX
 				WritingStringNullableAttrBool(L"thickTop", m_oThickTop);
 				WritingStringNullableAttrBool(L"thickBot", m_oThickBot);
 				WritingStringNullableAttrBool(L"ph", m_oPh);
-			writer.WriteString(_T(">"));
+			writer.WriteString(L">");
 		}
 		void CRow::toXMLEnd(NSStringUtils::CStringBuilder& writer) const
 		{
-			writer.WriteString(_T("</row>"));
+			writer.WriteString(L"</row>");
 		}
 		void CRow::fromXML(XmlUtils::CXmlLiteReader& oReader)
 		{
@@ -4125,7 +4209,7 @@ namespace OOX
 					CCell *pCell = new CCell(m_pMainDocument);
 					if (pCell)
 					{
-						 //trying to squeeze empty cells
+						 //try to compress empty cells
 						pCell->fromXML(oReader);
 						if(!compressCell(pCell))
 							m_arrItems.push_back(pCell);
@@ -4204,7 +4288,7 @@ namespace OOX
 				pCell->m_oRow = m_oR->GetValue()-1;
                 if(pCell->fromBin(reader))
                 {
-                    //trying to squeeze empty cells
+                    //try to compress empty cells
                     if(!compressCell(pCell))
                         m_arrItems.push_back(pCell);
                     else
@@ -4413,7 +4497,7 @@ namespace OOX
 			m_oR.Init();
 			m_oR->SetValue((oStream.GetULong() & 0xFFFFF) + 1);
 			_UINT32 nS = oStream.GetULong();
-			_UINT16 nHt = oStream.GetUShort() & 0x1FFF;
+			_UINT16 nHt = oStream.GetUShort() & 0xFFFF;
 			BYTE byteExtra1 = oStream.GetUChar();
 			if(0 != (byteExtra1 & 0x1))
 			{
@@ -4695,7 +4779,7 @@ namespace OOX
         }
         bool CRow::compressCell(CCell* pCell)
         {
-            if(!pCell->m_oValue.IsInit() && !pCell->m_oFormula.IsInit() && !m_arrItems.empty())
+			if(!pCell->m_oValue.IsInit() && !pCell->m_oRichText.IsInit() && !pCell->m_oFormula.IsInit() && !m_arrItems.empty())
             {
                 auto prevCell = m_arrItems.back();
                 if(!prevCell->m_oRepeated.IsInit())
@@ -4737,7 +4821,7 @@ namespace OOX
 		}
 		std::wstring CSheetData::toXML() const
 		{
-			return _T("");
+			return L"";
 		}
 		void CSheetData::toXML(NSStringUtils::CStringBuilder& writer) const
 		{
@@ -4775,11 +4859,11 @@ namespace OOX
 		}
 		void CSheetData::toXMLStart(NSStringUtils::CStringBuilder& writer) const
 		{
-			writer.WriteString(_T("<sheetData>"));
+			writer.WriteString(L"<sheetData>");
 		}
 		void CSheetData::toXMLEnd(NSStringUtils::CStringBuilder& writer) const
 		{
-			writer.WriteString(_T("</sheetData>"));
+			writer.WriteString(L"</sheetData>");
 		}
         void CSheetData::AddRowToCache(CRow &row)
         {
@@ -5073,7 +5157,7 @@ namespace OOX
             {
                 CRow *pRow = new CRow(m_pMainDocument);
                 pRow->fromBin(reader);
-                //checking whether empty lines can be compressed
+                //check if we can compress empty rows
                 if(!compressRow(pRow))
                     m_arrItems.push_back(pRow);
                 else
@@ -5145,6 +5229,8 @@ namespace OOX
 		};
 		auto processRow = [&](CRow *row, XLS::CELL_GROUP *groupPtr, std::vector<CellRangeRef> &shared_formulas_locations_ref)
 		{
+			if(row->m_oR.IsInit() && row->m_oR->GetValue() > 65535)
+				return;
 			groupPtr->m_arRows.push_back(row->toXLS());
 			for(auto cell : row->m_arrItems)
 			{
@@ -5175,7 +5261,7 @@ namespace OOX
 		{
 			processRow(row, cellGroup, shared_formulas_locations_ref);
 		}
-
+		ClearSharedFmlaRefs();
 		return tablePtr;
 	}
     void CSheetData::toBin(XLS::StreamCacheWriterPtr& writer)
@@ -5223,13 +5309,13 @@ namespace OOX
                     prevRow->m_oRepeated = 1;
                 if(prevRow->m_oR->GetValue() + prevRow->m_oRepeated.get() == pRow->m_oR->GetValue() && prevRow->m_oHt == pRow->m_oHt)
                 {
-                    //case with empty lines
+                    //case with empty rows
                     if(prevRow->m_arrItems.empty() && pRow->m_arrItems.empty())
                     {
                         prevRow->m_oRepeated = prevRow->m_oRepeated.get() + 1;
                         return true;
                     }
-                    //case with rows filled with the same type of compressed cells
+                    //case with rows filled with compressed cells of the same type
                     if(prevRow->m_arrItems.size() == 1 && pRow->m_arrItems.size() == 1 && prevRow->m_arrItems.back()->m_oRepeated.IsInit()
                             && pRow->m_arrItems.back()->m_oRepeated.get() ==  prevRow->m_arrItems.back()->m_oRepeated.get())
                     {

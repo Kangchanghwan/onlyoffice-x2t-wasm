@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "MetaFile.h"
 #include "Common/MetaFileTypes.h"
@@ -44,7 +54,7 @@ namespace MetaFile
 	{
 		m_pFontManager = NULL;
 		m_pAppFonts = pAppFonts;
-		// Creating a font manager with its own cache
+		// Create font manager with its own cache
 		if (pAppFonts)
 		{
 			m_pFontManager = pAppFonts->GenerateFontManager();
@@ -146,7 +156,7 @@ namespace MetaFile
 			return;
 
 		unsigned int alfa = 0xffffff;
-		//default tone should be transparent, not white
+		// default tone should be transparent, not white
 		//memset(pBgraData, 0xff, nWidth * nHeight * 4);
 		for (int i = 0; i < nWidth * nHeight; i++)
 		{
@@ -268,14 +278,14 @@ namespace MetaFile
 		m_oEmfFile.SetOutputDevice(wsFilePath, InterpretatorType::Emf);
 		m_oEmfFile.PlayMetaFile();
 
-		//TODO:: saving to *.emf file
+		//TODO:: save to *.emf file
 	}
 #endif
 
 	bool CMetaFile::LoadFromFile(const wchar_t *wsFilePath)
 	{
-		// TODO: Now, when loading each new image, we recreate
-		//       FontManager because it currently has unlimited cache.
+		// TODO: Currently when loading each new image we recreate
+		//       FontManager, because currently its cache has no limit.
 		//------------------------------------------------------
 
 		RELEASEINTERFACE(m_pFontManager);
@@ -304,7 +314,7 @@ namespace MetaFile
 		//------------------------------------------------------
 
 	#ifdef METAFILE_SUPPORT_WMF_EMF
-		// First, try to open the file as Wmf
+		// First try to open file as Wmf
 		if (m_oWmfFile.OpenFromWmfFile(wsFilePath) == true)
 		{
 			m_oWmfFile.Scan();
@@ -316,7 +326,7 @@ namespace MetaFile
 			}
 			m_oWmfFile.Close();
 		}
-		// This isn't WMF
+		// This is not Wmf
 		if (m_oEmfFile.OpenFromEmfFile(wsFilePath) == true)
 		{
 			m_oEmfFile.Scan();
@@ -329,7 +339,7 @@ namespace MetaFile
 			m_oEmfFile.Close();
 		}
 	#endif
-		// This isn't Emf
+		// This is not Emf
 	#ifdef METAFILE_SUPPORT_SVM
 		if (m_oSvmFile.OpenFromFile(wsFilePath) == true)
 		{
@@ -344,7 +354,7 @@ namespace MetaFile
 			m_oSvmFile.Close();
 		}
 	#endif
-		// This isn't svm
+		// This is not svm
 	#ifdef METAFILE_SUPPORT_SVG
 		if (m_oSvgFile.OpenFromFile(wsFilePath) == true)
 		{
@@ -362,8 +372,8 @@ namespace MetaFile
 		if (NULL == pBuffer || 0 == unSize)
 			return false;
 
-		// TODO: Now, when loading each new image, we recreate
-		//       FontManager because it currently has unlimited cache.
+		// TODO: Currently when loading each new image we recreate
+		//       FontManager, because currently its cache has no limit.
 		//------------------------------------------------------
 
 		RELEASEINTERFACE(m_pFontManager);
@@ -392,7 +402,7 @@ namespace MetaFile
 		//------------------------------------------------------
 
 	#ifdef METAFILE_SUPPORT_WMF_EMF
-		// First, try to open the file as Wmf
+		// First try to open file as Wmf
 		if (m_oWmfFile.ReadFromBuffer(pBuffer, unSize) == true)
 		{
 			m_oWmfFile.Scan();
@@ -404,7 +414,7 @@ namespace MetaFile
 			}
 			m_oWmfFile.Close();
 		}
-		// This isn't WMF
+		// This is not Wmf
 		if (m_oEmfFile.ReadFromBuffer(pBuffer, unSize) == true)
 		{
 			m_oEmfFile.Scan();
@@ -417,7 +427,7 @@ namespace MetaFile
 			m_oEmfFile.Close();
 		}
 	#endif
-		// This isn't Emf
+		// This is not Emf
 	#ifdef METAFILE_SUPPORT_SVM
 		if (m_oSvmFile.ReadFromBuffer(pBuffer, unSize) == true)
 		{
@@ -432,7 +442,7 @@ namespace MetaFile
 			m_oSvmFile.Close();
 		}
 	#endif
-		// This isn't svm
+		// This is not svm
 	#ifdef METAFILE_SUPPORT_SVG
 		if (m_oSvgFile.ReadFromBuffer(pBuffer, unSize) == true)
 		{
@@ -605,19 +615,10 @@ namespace MetaFile
 		if (*pdH < 0) *pdH = -*pdH;
 	}
 
-	void CMetaFile::ConvertToRaster(const wchar_t* wsOutFilePath, unsigned int unFileType, int nWidth, int nHeight)
+	void CMetaFile::ConvertTo(const wchar_t* wsOutFilePath, BYTE*& pBuffer, int& nSize, unsigned int unFileType, int nWidth, int nHeight)
 	{
 		if (nWidth == 0 || nHeight == 0)
 			return;
-
-		NSGraphics::IGraphicsRenderer* pGrRenderer = NSGraphics::Create();
-
-		NSFonts::IFontManager* pFontManager = m_pAppFonts->GenerateFontManager();
-		NSFonts::IFontsCache* pFontCache = NSFonts::NSFontCache::Create();
-		pFontCache->SetStreams(m_pAppFonts->GetStreams());
-		pFontManager->SetOwnerCache(pFontCache);
-
-		pGrRenderer->SetFontManager(pFontManager);
 
 		if (-1 == nHeight)
 		{
@@ -632,6 +633,18 @@ namespace MetaFile
 			if (nWidth < 0) nWidth = (int)(dW * 96 / 25.4);
 			nHeight = (int)((double)nWidth * dH / dW);
 		}
+
+		if (nWidth <= 0 || nHeight <= 0)
+			return;
+
+		NSGraphics::IGraphicsRenderer* pGrRenderer = NSGraphics::Create();
+
+		NSFonts::IFontManager* pFontManager = m_pAppFonts->GenerateFontManager();
+		NSFonts::IFontsCache* pFontCache = NSFonts::NSFontCache::Create();
+		pFontCache->SetStreams(m_pAppFonts->GetStreams());
+		pFontManager->SetOwnerCache(pFontCache);
+
+		pGrRenderer->SetFontManager(pFontManager);
 
 		double dWidth  = 25.4 * nWidth / 96;
 		double dHeight = 25.4 * nHeight / 96;
@@ -654,7 +667,7 @@ namespace MetaFile
 			return;
 
 		unsigned int alfa = 0xffffff;
-		//default tone should be transparent, not white
+		// default tone should be transparent, not white
 		//memset(pBgraData, 0xff, nWidth * nHeight * 4);
 		for (int i = 0; i < nWidth * nHeight; i++)
 		{
@@ -673,12 +686,26 @@ namespace MetaFile
 
 		DrawOnRenderer(pGrRenderer, 0, 0, dWidth, dHeight);
 
-		oFrame.SaveFile(wsOutFilePath, unFileType);
+		if (wsOutFilePath)
+			oFrame.SaveFile(wsOutFilePath, unFileType);
+		else
+			oFrame.Encode(pBuffer, nSize, unFileType);
+
 		oFrame.put_Data(NULL);
 		RELEASEINTERFACE(pFontManager);
 		RELEASEINTERFACE(pGrRenderer);
 
 		if (pBgraData)
 			free(pBgraData);
+	}
+	void CMetaFile::ConvertToRaster(const wchar_t* wsOutFilePath, unsigned int unFileType, int nWidth, int nHeight)
+	{
+		BYTE* pBuffer = NULL;
+		int nSize = 0;
+		ConvertTo(wsOutFilePath, pBuffer, nSize, unFileType, nWidth, nHeight);
+	}
+	void CMetaFile::ConvertToRaster(BYTE*& pBuffer, int& nSize, unsigned int unFileType, int nWidth, int nHeight)
+	{
+		ConvertTo(NULL, pBuffer, nSize, unFileType, nWidth, nHeight);
 	}
 }

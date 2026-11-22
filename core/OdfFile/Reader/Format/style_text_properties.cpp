@@ -1,29 +1,40 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include <iostream>
+#include <map>
 
 #include "../../Common/logging.h"
 #include <xml/simple_xml_writer.h>
@@ -158,38 +169,53 @@ int text_format_properties::process_font_size(const _CP_OPT(font_size) & FontSiz
     return 0;
 }
 
-double text_format_properties::process_font_size_impl(const _CP_OPT(font_size) & FontSize, const style_instance * currnetStyle, bool Complex, double Mul)
+double text_format_properties::process_font_size_impl(const _CP_OPT(font_size)& FontSize, const style_instance* currentStyle, bool Complex, double Mul)
 {
-    font_size usedFontSize = (!FontSize) ? font_size(percent(100)) : *FontSize;
+	font_size usedFontSize = (!FontSize) ? font_size(percent(100)) : *FontSize;
 
-    if (usedFontSize.get_type() == font_size::Length)
-    {
+	if (usedFontSize.get_type() == font_size::Length)
+	{
 		const double w_val = 2.0 * Mul * usedFontSize.get_length().get_value_unit(length::pt);
-        return w_val;
-    } 
-    else if (usedFontSize.get_type() == font_size::Percent)
-    {
-        if (currnetStyle)
-        {
-            const style_instance * parentStyle = currnetStyle->parent();
-            if (!parentStyle)
-            {
-                if (currnetStyle->container())
-                    parentStyle = currnetStyle->container()->style_default_by_type(style_family::Paragraph);
-            }
-            else
-            {
-                if (const style_text_properties * textProp = parentStyle->content()->get_style_text_properties())
-                {
-                    return process_font_size_impl(textProp->content_.fo_font_size_, parentStyle, Complex, Mul * usedFontSize.get_percent().get_value() / 100.0);
-                }
-            }
-        }
-    }
-    else
-    {
-        //_CP_LOG << L"[docx_convert] convert font_size error (" << FontSize << ")\n";
-    }
+		return w_val;
+	}
+	else if (usedFontSize.get_type() == font_size::Percent)
+	{
+		std::map<std::wstring, int> usedStyles;
+
+		Mul *= usedFontSize.get_percent().get_value() / 100.0;
+
+		while (currentStyle)
+		{
+			std::wstring style_name = currentStyle->name();
+			if (usedStyles.find(style_name) != usedStyles.end())
+				break;
+			usedStyles.insert(std::make_pair(style_name, 0));
+
+			const style_instance* parentStyle = currentStyle->parent();
+			if (!parentStyle)
+			{
+				if (currentStyle->container())
+					parentStyle = currentStyle->container()->style_default_by_type(style_family::Paragraph);
+				if (!parentStyle)
+					break;
+			}
+
+			const style_content* content = parentStyle->content();
+			const style_text_properties* textProp = content ? content->get_style_text_properties() : NULL;
+			if (textProp && textProp->content_.fo_font_size_)
+			{
+				const font_size& parentFontSize = *textProp->content_.fo_font_size_;
+				if (parentFontSize.get_type() == font_size::Length)
+				{
+					const double w_val = 2.0 * Mul * parentFontSize.get_length().get_value_unit(length::pt);
+					return w_val;
+				}
+				else if (parentFontSize.get_type() == font_size::Percent)
+					Mul *= parentFontSize.get_percent().get_value() / 100.0;
+			}
+			currentStyle = parentStyle;
+		}
+	}
 
     return -1.0;
 }
@@ -284,7 +310,7 @@ void text_format_properties::pptx_convert_as_list(oox::pptx_conversion_context &
 				if (font)		
 					w_font = font->name();
 
-				//'Arial' is buggy
+				//'Arial' has issues
 				removeCharsFromString(w_font, L"'");
 			}
 
@@ -483,7 +509,7 @@ void text_format_properties::drawing_serialize(std::wostream & strm, std::wstrin
 	//nodes
 			if (fo_color_)
 			{
-				std::wstring strRGB = fo_color_->get_hex_value(); //auto... not necessary
+				std::wstring strRGB = fo_color_->get_hex_value(); //auto... not needed
 				if (!strRGB.empty())
 				{
 					CP_XML_NODE(L"a:solidFill")
@@ -535,7 +561,7 @@ void text_format_properties::drawing_serialize(std::wostream & strm, std::wstrin
 			}
 			if ((fo_background_color_) && (fo_background_color_->get_type() == odf_types::background_color::Enabled ))
 			{
-				std::wstring strRGB = fo_background_color_->get_color().get_hex_value(); //auto... not necessary
+				std::wstring strRGB = fo_background_color_->get_color().get_hex_value(); //auto... not needed
 				if (!strRGB.empty())
 				{
 					CP_XML_NODE(L"a:highlight")
@@ -709,7 +735,7 @@ void text_format_properties::docx_serialize(std::wostream & _rPr, fonts_containe
 		if ((style_text_underline_type_ && style_text_underline_type_->get_type() == line_type::None) ||
 			(style_text_underline_style_ && style_text_underline_style_->get_type() == line_style::None))
 		{
-			// underline disabled
+			// underline is disabled 
 			underline = L"none";
 		}
 		else if (style_text_underline_type_ && 
@@ -1154,7 +1180,7 @@ void text_format_properties::docx_convert(oox::docx_conversion_context & Context
         if (( style_text_underline_type_ && style_text_underline_type_->get_type() == line_type::None) ||
             (style_text_underline_style_ && style_text_underline_style_->get_type() == line_style::None))      
         {
-            // underline disabled
+            // underline is disabled 
             underline = L"none";
         }
         else if (style_text_underline_type_ && 
@@ -1263,7 +1289,7 @@ void text_format_properties::docx_convert(oox::docx_conversion_context & Context
     // 17.3.2.42
 	//if (Context.get_drop_cap_context().state() == 2)
 	//{
-	//	_rPr << L"<w:position w:val=\"-" << (2+Context.get_drop_cap_context().Scale*2-3)*2 << "\"/> ";//the formula is amazing !! - manual selection
+	//	_rPr << L"<w:position w:val=\"-" << (2+Context.get_drop_cap_context().Scale*2-3)*2 << "\"/> ";//crazy formula!! - manual adjustment
 	//}
 	//else
 		if (style_text_position_)
@@ -1339,7 +1365,7 @@ void text_format_properties::docx_convert(oox::docx_conversion_context & Context
 		 if (Context.get_drop_cap_context().state()==2)
 		 {
 			 fontSize = process_font_size(fo_font_size_, Context.get_styles_context().get_current_processed_style(),false,
-				 Context.get_drop_cap_context().Scale + (Context.get_drop_cap_context().Scale-1) * 0.7);//instead of 1 there SHOULD be a coefficient. line spacing!!!
+				 Context.get_drop_cap_context().Scale + (Context.get_drop_cap_context().Scale-1) * 0.7);//instead of 1 SHOULD BE line spacing coefficient!!!
 			 if (fontSize < 1)
                  fontSize = (int)(Context.get_drop_cap_context().FontSize / 10.0);
 		 }
@@ -1477,7 +1503,7 @@ void text_format_properties::docx_convert(oox::docx_conversion_context & Context
 		odf_reader::draw_shape *shape = Context.get_drawing_context().get_current_shape();
 
 		if (shape->word_art_)
-		{//take the text color from the graphic properties..
+		{//get text color from graphic properties.. 
 
 			const std::wstring styleName = shape->common_draw_attlists_.shape_with_text_and_styles_.
 				common_shape_draw_attlist_.draw_style_name_.get_value_or(L"");

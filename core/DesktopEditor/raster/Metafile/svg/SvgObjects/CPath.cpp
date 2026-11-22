@@ -1,3 +1,38 @@
+/*
+ * Copyright (C) Ascensio System SIA, 2009-2026
+ *
+ * This program is a free software product. You can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License (AGPL)
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
+ * Section 5 of the GNU AGPL version 3.
+ *
+ * No trademark rights are granted under this License.
+ *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 #include "CPath.h"
 
 #include <algorithm>
@@ -79,7 +114,7 @@ namespace SVG
 
 	TBounds CMoveElement::GetBounds() const
 	{
-		return TBounds{m_oPoint.dX, m_oPoint.dY, 1, 1};
+		return TBounds{m_oPoint.dX, m_oPoint.dY, m_oPoint.dX, m_oPoint.dY};
 	}
 
 	//CLineElement
@@ -151,7 +186,7 @@ namespace SVG
 
 	TBounds CLineElement::GetBounds() const
 	{
-		return TBounds{m_oPoint.dX, m_oPoint.dY, 1, 1};
+		return TBounds{m_oPoint.dX, m_oPoint.dY, m_oPoint.dX, m_oPoint.dY};
 	}
 
 	//CCurveBezierElement
@@ -472,7 +507,7 @@ namespace SVG
 
 	TBounds CCloseElement::GetBounds() const
 	{
-		return TBounds{0., 0., 0., 0.};
+		return TBounds{DBL_MAX, DBL_MAX, -DBL_MAX, -DBL_MAX};
 	}
 
 	#define LASTELEMENT(array) (array.empty()) ? NULL : array.back()
@@ -521,13 +556,13 @@ namespace SVG
 	{
 		Aggplus::CMatrix oOldTransform;
 
-		if (m_arElements.empty() || !StartPath(pRenderer, pFile, oOldTransform, oMode))
+		if (m_arElements.empty() || !StartPath(pRenderer, pFile, oOldTransform, oMode, true))
 			return false;
 
 		for (const IPathElement* oElement : m_arElements)
 			oElement->Draw(pRenderer);
 
-		EndPath(pRenderer, pFile, oOldTransform, oMode, pOtherStyles, pContexObject);
+		EndPath(pRenderer, pFile, oOldTransform, oMode, pOtherStyles, pContexObject, true);
 
 		DrawMarkers(pRenderer, pFile, oMode);
 
@@ -610,7 +645,7 @@ namespace SVG
 			}
 		}
 
-		if (!m_oMarkers.m_oMid.Empty() && NSCSS::NSProperties::EColorType::ColorUrl == m_oMarkers.m_oMid.GetType())
+		if (!m_oMarkers.m_oMid.Empty() && NSCSS::NSProperties::EColorType::ColorUrl == m_oMarkers.m_oMid.GetType() && m_arElements.size() > 2)
 		{
 			CMarker *pMidMarker = dynamic_cast<CMarker*>(pFile->GetMarkedObject(m_oMarkers.m_oMid.ToWString()));
 
@@ -717,12 +752,14 @@ namespace SVG
 			oBounds.m_dBottom = std::max(oBounds.m_dBottom, oTempBounds.m_dBottom);
 		}
 
+		if (oBounds.m_dLeft > oBounds.m_dRight || oBounds.m_dTop > oBounds.m_dBottom)
+			return TBounds{0., 0., 0., 0.};
+
 		if (nullptr != pTransform)
 		{
 			*pTransform += m_oTransformation.m_oTransform.GetMatrix();
 
-			pTransform->GetFinalValue().TransformPoint(oBounds.m_dLeft,  oBounds.m_dTop   );
-			pTransform->GetFinalValue().TransformPoint(oBounds.m_dRight, oBounds.m_dBottom);
+			TransformBounds(oBounds, pTransform->GetFinalValue());
 
 			*pTransform -= m_oTransformation.m_oTransform.GetMatrix();
 		}

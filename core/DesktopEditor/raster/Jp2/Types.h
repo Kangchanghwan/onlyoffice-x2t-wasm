@@ -1,4 +1,39 @@
-﻿#pragma once
+﻿/*
+ * Copyright (C) Ascensio System SIA, 2009-2026
+ *
+ * This program is a free software product. You can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License (AGPL)
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
+ * Section 5 of the GNU AGPL version 3.
+ *
+ * No trademark rights are granted under this License.
+ *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
+#pragma once
 #include "Reader.h"
 #include "../../graphics/Defines.h"
 #include <algorithm>
@@ -12,9 +47,9 @@ namespace Jpeg2000
 #define MAX_PATH_LEN 4096 // Maximum length for file names
 
 #define J2K_MAXRLVLS 33					    // Maximum number of decomposition levels
-#define J2K_MAXBANDS (3 * J2K_MAXRLVLS - 2)	// Maximum number of areas associated with decomposition levels
+#define J2K_MAXBANDS (3 * J2K_MAXRLVLS - 2)	// Maximum number of bands associated with decomposition levels
 
-#define J2K_MAXSSFTR 2    // Max SubSampling Factor (Values greater than 2 may result in an error)
+#define J2K_MAXSSFTR 2    // Max SubSampling Factor (Values greater than 2 may cause errors)
 
 	void* Malloc(size_t nSize);
 
@@ -42,21 +77,21 @@ namespace Jpeg2000
 		poCPRL    =  4  // component-precinct-resolution-layer
 	} ProgressionOrder;
 
-	// Supported Color Spaces
+	// Supported color spaces
 	typedef enum EColorSpace
 	{
-		csUnknown = -1, // color space is undefined
+		csUnknown = -1, // color space undefined
 		csRGB     =  1, // sRGB
 		csGray    =  2, // Grayscale
 		csYUV     =  3  // YUV
 	} ColorSpace;
 
-	// Supported Formats
+	// Supported formats
 	typedef enum ECodecFormat
 	{
 		codecUnknown = -1, // unknown codec
-		codecJ2K     =  0, // JPEG-2000 codestream: read/write
-		codecJPT     =  1, // JPT-stream (JPEG 2000, JPIP): read only
+		codecJ2K     =  0, // JPEG-2000 codestream : read/write
+		codecJPT     =  1, // JPT-stream (JPEG 2000, JPIP) : read only
 		codecJP2     =  2, // JPEG-2000 file format (Jp2-wrapper) : read/write
 		codecMj2     =  3, // Motion JPEG-2000
 	} CodecFormat;
@@ -64,12 +99,12 @@ namespace Jpeg2000
 	// Jpeg2000-Codestream decoding limitations
 	typedef enum ELimitDecoding
 	{
-		declimNoLimitation      = 0, // There are no restrictions when decoding. We decode Jpeg2000-codestream completely
-		declimLimitToMainHeader = 1	 // Decode only Main Header
+		declimNoLimitation      = 0, // No decoding limitations. Decode Jpeg2000-codestream completely
+		declimLimitToMainHeader = 1	 // Decode Main Header only
 	} LimitDecoding;
 
 	//-------------------------------------------------------------------------------------------------------------------------------
-	// Event (Message processing)
+	// Event (Message handling)
 	//-------------------------------------------------------------------------------------------------------------------------------
 
 #define EVT_ERROR	1 // Error
@@ -102,7 +137,7 @@ namespace Jpeg2000
 	// Compression parameters
 	typedef struct TEncoderParams
 	{
-		bool             bTileSizeOn;          // False: tile sizes aren't specified, true: tile sizes are specified
+		bool             bTileSizeOn;          // False: tile sizes not specified, true: tile sizes specified
 		int              nXTOsiz;              // XTOsiz
 		int              nYTOsiz;              // YTOsiz
 		int              nXTsiz;               // XTsiz
@@ -117,58 +152,58 @@ namespace Jpeg2000
 		POC              aoPOC[32];            // Progression order changes
 		int              nPOCsCount;           // Number of progression order changes (POC), default to 0
 		int              nLayersCount;         // Number of layers
-		float            afRates[100];         // Array of norms
-		float            afDistoratio[100];    // Distortion Array
-		int              nResolutionsCount;    // Number of resolutions (levels of decomposition)
-		int              nCodeBlockWidthInit;  // Initial block width (standard 64)
-		int              nCodeBlockHeightInit; // Initial block height (standard 64)
+		float            afRates[100];         // Rates array
+		float            afDistoratio[100];    // Distortion array
+		int              nResolutionsCount;    // Number of resolutions (decomposition levels)
+		int              nCodeBlockWidthInit;  // Initial block width (64 by standard)
+		int              nCodeBlockHeightInit; // Initial block height (64 by standard)
 		int              nCodeBlockStyle;      // CodeBlockStyle
-		int              nTransformId;         // 1: irreversible wavelet transform (Irreversible DTW), 0: lossless compression (standard)
-		int              nROIComponentIndex;   // Region of interest: components affected [0..3], -1 means no ROI
+		int              nTransformId;         // 1: irreversible wavelet transform ( Irreversible DWT ), 0: lossless compression (by standard)
+		int              nROIComponentIndex;   // Region of interest: affected components [0..3], -1 means ROI is absent
 		int              nROIShift;            // Region of interest: shift
-		int              nPrecinctCount;                     // Number of areas
-		int              anPrecinctWidthInit[J2K_MAXRLVLS];  // Initial area widths
-		int              anPrecinctHeightInit[J2K_MAXRLVLS]; // Initial area heights
+		int              nPrecinctCount;                     // Number of precincts
+		int              anPrecinctWidthInit[J2K_MAXRLVLS];  // Initial precinct widths
+		int              anPrecinctHeightInit[J2K_MAXRLVLS]; // Initial precinct heights
 
-		int              nComponentsCount;       // Number of components in the source file
+		int              nComponentsCount;       // Number of components in source file
 		char             sInFile[MAX_PATH_LEN];  // Source file name
-		char             sOutfile[MAX_PATH_LEN]; // Result file name
-		int              nIndexOn;               // Do create a file with indexing (according to standard 0)
-		char             sIndex[MAX_PATH_LEN];   // Indexing file
-		int              nImageOffsetX0;         // Shift the original image by X
-		int              nImageOffsetY0;         // Shift the original image along Y
+		char             sOutfile[MAX_PATH_LEN]; // Output file name
+		int              nIndexOn;               // Create index file (0 by standard)
+		char             sIndex[MAX_PATH_LEN];   // Index file
+		int              nImageOffsetX0;         // Source image offset by X
+		int              nImageOffsetY0;         // Source image offset by Y
 		int              nSubSamplingDx;         // SubSampling X         
 		int              nSubSamplingDy;         // SubSampling Y
-		int              nDecoderFormat;         // Source file format. 0:PGX, 1:PxM, 2:BMP
+		int              nDecoderFormat;         // Source file format. 0: PGX, 1: PxM, 2: BMP
 		int              nEncoderFormat;         // Output file format. 0: J2K, 1: JP2, 2: JPT
 	} EncoderParams;
 
 	// Decompression parameters
 	typedef struct TDecoderParams
 	{
-		int           nReduce;                // If != 0, then the resolution of the original image is divided by 2^(nReduce). If == 0, or not used, then the image is decoded at full resolution.
-		int           nLayer;                 // Set the maximum number of layers that we will decode.
-		LimitDecoding eLimitDecoding;         // Decode the entire file, or just the header.
+		int           nReduce;                // If != 0, then source image resolution is divided by 2^(nReduce). If == 0, or not used, then image is decoded at full resolution.
+		int           nLayer;                 // Set maximum number of layers that will be decoded.
+		LimitDecoding eLimitDecoding;         // Decode full file or header only.
 
 		char          sInFile[MAX_PATH_LEN];  // Source file name
-		char          sOutfile[MAX_PATH_LEN]; // Result file name
+		char          sOutfile[MAX_PATH_LEN]; // Output file name
 		int           nDecoderFormat;         // Source file format. 0: J2k, 1: Jp2, 2: Jpt
-		int           nEncoderFormat;         // Output file format. 0:PGX, 1:PxM, 2:BMP
+		int           nEncoderFormat;         // Output file format. 0: PGX, 1: PxM, 2: BMP
 	} DecoderParams;
 
 	// Common fields for JPEG-2000 compression and decompression
-	//EventManager *pEventManager;   /* Pointer to message handler (events) */\
+	//EventManager *pEventManager;   /* Pointer to event handler (events) */\
 		//void         *pClientData;     /* */\
 
 #define CommonFields \
-	bool          bIsDecompressor; /* To find out compression or decompression */\
+	bool          bIsDecompressor; /* To determine if compression or decompression */\
 	ECodecFormat  eCodecFormat;	   /* Selected codec */\
 	void         *pJ2k;            /* Pointer to J2K codec */\
 	void         *pJp2;            /* Pointer to JP2 codec */\
 	void         *pMj2;            /* Pointer to JP2 codec */\
-	int           nErrorCode       /* Error number */
+	int           nErrorCode       /* Error code */
 
-	// Fields that are used for both reading and writing
+	// Fields used for both reading and writing
 	typedef struct TCommonStruct
 	{
 		CommonFields;
@@ -179,15 +214,15 @@ namespace Jpeg2000
 	// Compression parameters
 	typedef struct TCInfo
 	{
-		CommonFields; // General fields
-		// Fields specific only to compression
+		CommonFields; // Common fields
+		// Fields specific to compression only
 	} CInfo;
 
 	// Decompression parameters
 	typedef struct TDInfo
 	{
-		CommonFields; // General fields
-		// Fields characteristic only for decompression
+		CommonFields; // Common fields
+		// Fields specific to decompression only
 	} DInfo;
 
 
@@ -197,39 +232,39 @@ namespace Jpeg2000
 
 	typedef struct TImageComponent
 	{
-		int  nXRsiz;           // XRsiz: horizontal separation of the i-th component
-		int  nYRsiz;           // YRsiz: vertical separation of the i-th component
+		int  nXRsiz;           // XRsiz: horizontal separation of i-th component
+		int  nYRsiz;           // YRsiz: vertical separation of i-th component
 		int  nWidth;           // Image width
 		int  nHeight;          // Image height
-		int  nXOsiz;           // Shift the component in X relative to the entire image
-		int  nYOsiz;           // Shift of the component in Y relative to the entire image
+		int  nXOsiz;           // Component offset by X relative to entire image
+		int  nYOsiz;           // Component offset by Y relative to entire image
 		int  nPrecision;       // Precision
 		int  nBPP;             // Bits Per Pixel
 		int  nSigned;          // Signed - 1, unsigned - 0
-		int  nDecodedResCount; // Number of Resolutions in an encoded image
-		int  nFactorDiv2;      // The number of divisions into 2 of the resulting image, compared to the size of the original
+		int  nDecodedResCount; // Number of Resolutions in encoded image
+		int  nFactorDiv2;      // Number of divisions by 2 of resulting image compared to source size
 		int *pData;            // Image data for i-th component
 	} ImageComponent;
 
 	typedef struct TImage
 	{
-		int             nXOsiz;      // XOsiz: horizontal shift from the starting point of the entire mesh to the area with the real image
-		int             nYOsiz;      // YOsiz: vertical shift from the starting point of the entire mesh to the area with the real image
+		int             nXOsiz;      // XOsiz: horizontal offset from grid origin to actual image area
+		int             nYOsiz;      // YOsiz: vertical offset from grid origin to actual image area
 		int             nXsiz;       // Xsiz: grid width
 		int             nYsiz;       // Ysiz: grid height
-		int             nCsiz;       // Csiz: number of components in the image
+		int             nCsiz;       // Csiz: number of components in image
 		ColorSpace      eColorSpace; // Color space: sRGB, Greyscale or YUV
-		ImageComponent *pComponents; // Image Components
+		ImageComponent *pComponents; // Image components
 	} Image;
 
 	typedef struct TImageComponentParams
 	{
-		int nXRsiz;     // XRsiz: horizontal separation of the i-th component
+		int nXRsiz;     // XRsiz: horizontal separation of i-th component
 		int nYRsiz;     // YRsiz: vertical separation of the i-th component
 		int nWidth;     // Width
 		int nHeight;    // Image height
-		int nXoffset;   // Shift the component in X relative to the entire image
-		int nYoffset;   // Shift of the component in Y relative to the entire image
+		int nXoffset;   // Component X offset relative to the whole image
+		int nYoffset;   // Component Y offset relative to the whole image
 		int nPrecision; // Precision
 		int nBPP;       // Bits Per Pixel
 		int nSigned;    // Signed - 1, unsigned - 0
@@ -311,16 +346,16 @@ namespace Jpeg2000
 
 	//-------------------------------------------------------------------------------------------------------------------------------
 
-	// Values that determine the decoding status (when the Main Header is decoded)
+	// Values defining decoding status (when Main Header is being decoded)
 	typedef enum EJ2kStatus
 	{
 		j2kstateMHSOC  = 0x0001, // SOC marker
 		j2kstateMHSIZ  = 0x0002, // SIZ marker
-		j2kstateMH     = 0x0004, // The decoding process is in the Main Header
-		j2kstateTPHSOT = 0x0008, // The decoding process is in the Tile Part Header and the SOT marker is now being read
-		j2kstateTPH    = 0x0010, // The decoding process is in the Tile Part Header
-		j2kstateMT     = 0x0020, // The EOC marker has just been read
-		j2kstateNEOC   = 0x0040  // When decoding, we ignore the EOC marker because the codestream is truncated
+		j2kstateMH     = 0x0004, // Decoding process is in Main Header
+		j2kstateTPHSOT = 0x0008, // Decoding process is in Tile Part Header, and SOT marker is being read
+		j2kstateTPH    = 0x0010, // Decoding process is in Tile Part Header
+		j2kstateMT     = 0x0020, // EOC marker was just read
+		j2kstateNEOC   = 0x0040  // During decoding we ignore EOC marker because codestream is truncated
 	} J2kStatus;
 
 	//-------------------------------------------------------------------------------------------------------------------------------
@@ -349,8 +384,8 @@ namespace Jpeg2000
 		int           anPrecinctHeight[J2K_MAXRLVLS]; // Precinct height	
 	} TileCompCodingParams;
 
-	// Tile coding parameters: this structure stores encoding/decoding parameters common to all tiles
-	// (similar to COD, COC information in Main Header)
+	// Tile coding parameters : this structure is used to store encoding/decoding parameters common to all
+	// tiles (similar to COD, COC information in Main Header)
 	typedef struct TTileCodingParams
 	{
 		int                   nFirst;            // Flag. 1 : first part-tile of this tile
@@ -358,16 +393,16 @@ namespace Jpeg2000
 		ProgressionOrder      eProgOrder;        // SPcod, Ppod: Progression order
 		int                   nLayersCount;      // SPcod: Number of layers
 		int                   nMCT;              // SPcod: Multiple component transform
-		float                 afRates[100];      // Layer dimensions
+		float                 afRates[100];      // Layer sizes
 		int                   nPOCsCount;        // Number of POC (progression order changes)
-		int                   nUsePOC;           // Flag; whether we use a POC marker. 0 - no, 1 - yes.
+		int                   nUsePOC;           // Flag; whether POC marker is used. 0 - no, 1 - yes.
 		POC                   aoPOC[32];         // Progression order changes
-		unsigned char        *pPPTData;          // Store a pointer to the Packet header in order to use it in Tier2 decoding
-		unsigned char        *pPPTDataFirst;     // Pointer to the start of the first packet in the PacketHeader if PPT is used
-		int                   nPPT;              // Flag. If a PPT marker is found for the current Tile, then the flag is 1.
-		int                   nPPTStore;         // Use it if we found several PPT markers (we store their total length in bytes here)
+		unsigned char        *pPPTData;          // Store pointer to Packet header for use in Tier2 decoding
+		unsigned char        *pPPTDataFirst;     // Pointer to start of first packet in PacketHeader, if PPT is used
+		int                   nPPT;              // Flag. If PPT marker was found for current Tile, flag equals 1.
+		int                   nPPTStore;         // Used if multiple PPT markers were found (store their total length in bytes here)
 		int                   nPPTLength;        // PPM bug 1
-		float                 afDistoRatio[100]; // Add Fixed quality
+		float                 afDistoRatio[100]; // Adding Fixed quality
 		TileCompCodingParams *pTCCP;             // Tile-component coding parameters
 	} TileCodingParams;
 
@@ -376,94 +411,94 @@ namespace Jpeg2000
 	{
 		int               nDistoAlloc;    // allocation by rate/distortion
 		int               nFixedAlloc;    // allocation by fixed layer
-		int               nFixedQuality;  // Add Fixed quality
-		int               nReduceFactor;  // If this value is different from 0, then the original resolution is divided by 2^(nReduceFactor); if equal to 0, or not used, decode the image at full resolution
-		int               nLayerFactor;   // If this value is different from 0, then we decode only the first "layer"; if equal to 0, or not used, decode all "layers"
-		LimitDecoding     eLimitDecoding; // Decoding restrictions.
-		int               nIndexOn;       // 0 - no numbering, 1 - yes.
-		int               nXTOsiz;        // XTOsiz: horizontal shift of the first Tile
-		int               nYTOsiz;        // YTOsiz: vertical shift of the first Tile
-		int               nXTsiz;         // XTsiz: width of one Tile in relation to the overall grid
-		int               nYTsiz;         // YTsiz: height of one Tile in relation to the overall grid
+		int               nFixedQuality;  // Adding Fixed quality
+		int               nReduceFactor;  // If this value is not 0, divide original resolution by 2^(nReduceFactor); if 0 or not used, decode image at full resolution
+		int               nLayerFactor;   // If this value is not 0, decode only first "layer"; if 0 or not used, decode all "layers"
+		LimitDecoding     eLimitDecoding; // Decoding limitations.
+		int               nIndexOn;       // 0 - no indexing, 1 - indexing enabled.
+		int               nXTOsiz;        // XTOsiz: horizontal offset of first Tile
+		int               nYTOsiz;        // YTOsiz: vertical offset of first Tile
+		int               nXTsiz;         // XTsiz: width of one Tile relative to the overall grid
+		int               nYTsiz;         // YTsiz: height of one Tile relative to the overall grid
 		char             *sComment;       // Comment
 		int               nXTilesCount;   // Number of Tiles horizontally
 		int               nYTilesCount;   // Number of Tiles vertically
-		int              *pTileIndex;     // Tiles serial numbers in codestream
-		int               nTileIndexSize; // Array size pTileIndex
-		unsigned char    *pPPMData;       // Store a pointer to the Packet header in order to use it in Tier2 decoding
-		unsigned char    *pPPMDataFirst;  // Pointer to the start of the first packet in the PacketHeader if PPM is used
-		int               nPPM;           // Flag. If a PPM marker is found for the current Tile, then the flag is equal to 1.
-		int               nPPMStore;      // Use it if we found several PPM markers (we store their total length in bytes here)
-		int               nPPMPrevious;   // Use it if we have found several PPM markers (the case if the previous PPM marker wasn't yet completed)
+		int              *pTileIndex;     // Sequential numbers of Tiles in codestream
+		int               nTileIndexSize; // Size of pTileIndex array
+		unsigned char    *pPPMData;       // Store pointer to Packet header for use in Tier2 decoding
+		unsigned char    *pPPMDataFirst;  // Pointer to start of first packet in PacketHeader, if PPM is used
+		int               nPPM;           // Flag. If PPM marker was found for current Tile, flag equals 1.
+		int               nPPMStore;      // Used if multiple PPM markers were found (store their total length in bytes here)
+		int               nPPMPrevious;   // Used if multiple PPM markers were found (case when previous PPM marker was not yet finished)
 		int               nPPMLength;     // PPM bug 1
 		TileCodingParams *pTCP;           // Tile coding parameters
 		int              *pMatrix;        // Fixed layer
 	} CodingParams;
 
-	// Packet information in Tile
+	// Information about packet in Tile
 	typedef struct TPacketInfo
 	{
-		int    nStartPos; // Starting position
+		int    nStartPos; // Start position
 		int    nEndPos;   // End position
 		double dDisto;
 	} PacketInfo;
 
-	// Information related to Tiles inside an image
+	// Information related to Tiles within the image
 	typedef struct TTileInfo
 	{
 		double     *pdThreshold;          // Threshold value for each layer
 		int         nTileCount;           // Total number of Tiles
-		int         nStartPos;            // Starting position
+		int         nStartPos;            // Start position
 		int         nEndHeader;           // End position for header
 		int         nEndPos;              // End position
-		int         anXPrecinctCount[33]; // Number of areas (precinct) X for each resolution level
-		int         anYPrecinctCount[33]; // Number of areas (precinct) in Y for each resolution level
-		int         anPrecinctWidth[33];  // Area width (to the power of 2), for each resolution level
-		int         anPrecinctHeight[33]; // Area height (to the power of 2), for each resolution level
+		int         anXPrecinctCount[33]; // Number of precincts along X for each resolution level
+		int         anYPrecinctCount[33]; // Number of precincts along Y for each resolution level
+		int         anPrecinctWidth[33];  // Precinct width (as power of 2), for each resolution level
+		int         anPrecinctHeight[33]; // Precinct height (as power of 2), for each resolution level
 		PacketInfo *pPacket;              // PacketInfo
-		int         nNBPix;               // Add Fixed Quality
-		double      dDistoTile;           // Add Fixed Quality
+		int         nNBPix;               // Adding Fixed Quality
+		double      dDistoTile;           // Adding Fixed Quality
 	} TileInfo;
 
 	typedef struct TImageInfo
 	{
-		int              nIndexOn;        // 0 - no numbering, 1 - yes.
-		double           dDistoMax;       // Maximum level of distortion reduction for the entire image
+		int              nIndexOn;        // 0 - no indexing, 1 - indexing enabled.
+		double           dDistoMax;       // Maximum distortion reduction level for entire image
 		int              nPacketCount;    // Number of packets
 		int              nIndexWrite;     //
 		int              nImageWidth;     // Image width
 		int              nImageHeight;    // Image height
 		ProgressionOrder eProgOrder;      // Progression Order
-		int              nXTsiz;          // Tile size X
-		int              nYTsiz;          // Tile size in Y
-		int              nXTOsiz;         // Shift the first tile by X
-		int              nYTOsiz;         // Y shift of the first tile
+		int              nXTsiz;          // Tile size by X
+		int              nYTsiz;          // Tile size by Y
+		int              nXTOsiz;         // First tile offset by X
+		int              nYTOsiz;         // First tile offset by Y
 		int              nXTilesCount;    // Number of tiles by X
-		int              nYTilesCount;    // Number of tiles in Y
+		int              nYTilesCount;    // Number of tiles by Y
 		int              nCompCount;      // Number of components
 		int              nLayersCount;    // Number of layers
 		int              nDecompCount;    // Number of decomposition levels
-		int              nMainHeadEnd;    // End position Main Header
-		int              nCodestreamSize; // codestream size
+		int              nMainHeadEnd;    // Main Header end position
+		int              nCodestreamSize; // Codestream size
 		TileInfo        *pTile;           // TileInfo
 	} ImageInfo;
 
 	// JPEG-2000 codestream reader/writer
 	typedef struct TJ2kCodestream
 	{
-		PCommon           pCodecInfo;     // General information for encoding and decoding
-		int               nState;         // Here we store the current position of the Codestream decoder (Main header, Tile header, end of decoding)
-		int               nCurTileIndex;  // Number of the current tile (i.e. which is currently being encoded/decoded)
-		//unsigned char *pEndOfTile;     // Used to determine the position of the end of the tile in the codestream (to determine if the codestream is normal)
+		PCommon           pCodecInfo;     // Common info for encoding and decoding
+		int               nState;         // Stores current decoder position in Codestream ( Main header, Tile header, end of decoding )
+		int               nCurTileIndex;  // Current tile number (i.e. currently being encoded/decoded)
+		//unsigned char    *pEndOfTile;     // Used to determine tile end position in codestream (to check if codestream is valid)
 		int				  nSizeOfTile;
-		int               nSOTStartPos;   // Save the initial position of the SOT marker so that after encoding the current tile we can return and record the length of this marker
-		int               nSODStartPos;   // Likewise for the SOD marker
-		int               nPosCorrection; // Needed to adjust the position, since the J2k file is written in several parts during encoding
-		unsigned char   **ppTileData;     // An array with the data of all tiles
-		int              *pTileLen;       // An array storing the data size for each tile
-		TileCodingParams *pDefaultTCP;    // Used only during decompression: store general information for all tiles ( COD, COC )
-		Image            *pImage;         // Pointer to the image being encoded or decoded
-		CodingParams     *pCodingParams;  // Pointer to a structure storing encoding information
+		int               nSOTStartPos;   // Save SOT marker start position, so after encoding current tile we can return and write marker length
+		int               nSODStartPos;   // Same for SOD marker
+		int               nPosCorrection; // Required for position correction, since J2k file is written in parts during encoding
+		unsigned char   **ppTileData;     // Array with data for all tiles
+		int              *pTileLen;       // Array storing data size for each tile
+		TileCodingParams *pDefaultTCP;    // Used only for decompression: store common info for all tiles ( COD, COC )
+		Image            *pImage;         // Pointer to image being encoded or decoded
+		CodingParams     *pCodingParams;  // Pointer to structure storing encoding info
 		ImageInfo        *pImageInfo;     // 
 		CReader           *pStreamIO;      // Input / Output stream
 	} J2kCodestream;
@@ -494,16 +529,16 @@ namespace Jpeg2000
 	{
 		int            nPassesCount; // Number of passes
 		int            nLen;         // Information length
-		double         dDisto;       // Deviation
+		double         dDisto;       // Distortion
 		unsigned char *pData;        // Data
 	} Layer;
 
 	typedef struct TCodeBlock
 	{
-		int           nX0;                  // CodeBlock Dimensions
-		int           nY0;                  // (x0, y0) - upper left corner
-		int           nX1;                  // (x1, y1) - lower right corner
-		int           nY1;                  // 
+		int           nX0;                  // CodeBlock dimensions
+		int           nY0;                  // (x0, y0) - top left corner
+		int           nX1;                  // (x1, y1) - bottom right corner
+		int           nY1;                  //
 		int           nBPSCount;            //
 		int           nLenBitsCount;        //
 		int           nLen;                 // Length
@@ -512,19 +547,19 @@ namespace Jpeg2000
 		int           nSegmentsCount;       // Number of segments
 		TCDSegment    aSegments[100];		// The segments themselves
 		unsigned char  aData[8192];			 // Data
-		int           nPassesCountInLayers; // Number of passes in the layer
-		Layer         aLayers[100];				// Layer information
+		int           nPassesCountInLayers; // Number of passes in layer
+		Layer         aLayers[100];				// Layer info
 		int           nTotalPassesCount;    // Total number of passes
-		TCDPass       aPasses[100];         // Information about passes
+		TCDPass       aPasses[100];         // Pass info
 	} CodeBlock;
 
 	typedef struct TPrecinct
 	{
-		int        nX0;            // Dimensions Precinct
-		int        nY0;            // (x0, y0) - upper left corner
-		int        nX1;            // (x1, y1) - lower right corner
-		int        nY1;            // 
-		int        nCountInWidth;  // Number of blocks wide
+		int        nX0;            // Precinct dimensions
+		int        nY0;            // (x0, y0) - top left corner
+		int        nX1;            // (x1, y1) - bottom right corner
+		int        nY1;            //
+		int        nCountInWidth;  // Number of blocks in width
 		int        nCountInHeight; // Number of blocks in height
 		CodeBlock *pCodeBlocks;    // CodeBlocks
 		TagTree   *pInclTree;      // Inclusion tree
@@ -533,34 +568,34 @@ namespace Jpeg2000
 
 	typedef struct TBand
 	{
-		int       nX0;        // Band sizes
-		int       nY0;        // (x0, y0) - upper left corner
-		int       nX1;        // (x1, y1) - lower right corner
-		int       nY1;        // 
+		int       nX0;        // Band dimensions
+		int       nY0;        // (x0, y0) - top left corner
+		int       nX1;        // (x1, y1) - bottom right corner
+		int       nY1;        //
 		int       nBandIndex; // Current Band number
-		Precinct *pPrecincts; // Information about the areas (Precinct) included in this Band
+		Precinct *pPrecincts; // Info about precincts included in this Band
 		int       nBPSCount;  //
 		float     fStepSize;  //
 	} Band;
 
 	typedef struct TResolution
 	{
-		int  nX0;         // Dimensions Resolution
-		int  nY0;         // (x0, y0) - upper left corner
-		int  nX1;         // (x1, y1) - lower right corner
-		int  nY1;         // 
-		int  nPrecCountW; // Number of areas (Precinct) by width
-		int  nPrecCountH; // Number of areas (Precinct) by height
-		int  nBandsCount; // Sub-band quantity
+		int  nX0;         // Resolution dimensions
+		int  nY0;         // (x0, y0) - top left corner
+		int  nX1;         // (x1, y1) - bottom right corner
+		int  nY1;         //
+		int  nPrecCountW; // Number of precincts by width
+		int  nPrecCountH; // Number of precincts by height
+		int  nBandsCount; // Number of Sub-bands
 		Band aBands[3];   // Sub-bands
 	} Resolution;
 
 	typedef struct TTileComp
 	{
-		int         nX0;               // TileComp Dimensions
-		int         nY0;               // (x0, y0) - upper left corner
-		int         nX1;               // (x1, y1) - lower right corner
-		int         nY1;               // 
+		int         nX0;               // TileComp dimensions
+		int         nY0;               // (x0, y0) - top left corner
+		int         nX1;               // (x1, y1) - bottom right corner
+		int         nY1;               //
 		int         nResolutionsCount; // Number of resolutions
 		Resolution *pResolutions;      // Resolutions
 		int        *pData;             // Component data
@@ -569,10 +604,10 @@ namespace Jpeg2000
 
 	typedef struct TTile
 	{
-		int       nX0;               // Tile sizes
-		int       nY0;               // (x0, y0) - upper left corner
-		int       nX1;               // (x1, y1) - lower right corner
-		int       nY1;               // 
+		int       nX0;               // Tile dimensions
+		int       nY0;               // (x0, y0) - top left corner
+		int       nX1;               // (x1, y1) - bottom right corner
+		int       nY1;               //
 		int       nComponentsCount;  // Number of components
 		TileComp *pComponents;       // Components
 		int       nNBPix;            // Fixed_quality
@@ -589,13 +624,13 @@ namespace Jpeg2000
 
 	typedef struct TTCD
 	{
-		PCommon           pCodecInfo;    // Codec information
-		TCDImage         *pTCDImage;     // Encoded Image
+		PCommon           pCodecInfo;    // Codec info
+		TCDImage         *pTCDImage;     // Encoded image
 		Image            *pImage;        // Image
-		CodingParams     *pCodingParams; // Options
-		Tile             *pTCDTile;      // Pointer to the current tile being encoded/decoded
-		TileCodingParams *pTCP;          // Encoding/decoding options for all tiles
-		int               nTCDTileIndex; // Number of the current encoded/decoded tile
+		CodingParams     *pCodingParams; // Parameters
+		Tile             *pTCDTile;      // Pointer to currently encoded/decoded tile
+		TileCodingParams *pTCP;          // Encoding/decoding parameters for all tiles
+		int               nTCDTileIndex; // Current encoded/decoded tile number
 	} TCD;
 
 	//-------------------------------------------------------------------------------------------------------------------------------
@@ -642,8 +677,8 @@ namespace Jpeg2000
 	// Jp2 file format reader/writer
 	typedef struct TJp2Stream
 	{
-		PCommon        pCodecInfo;       // General information for encoding and decoding
-		J2kCodestream *pJ2k;             // Pointer to structure to read/write JPEG2000 Codestream
+		PCommon        pCodecInfo;       // Common info for encoding and decoding
+		J2kCodestream *pJ2k;             // Pointer to structure for reading/writing JPEG2000 Codestream
 
 		unsigned int   nWidth;           // Image width
 		unsigned int   nHeight;          // Image height
@@ -682,16 +717,16 @@ namespace Jpeg2000
 	// MQ-coder (ArithmeticCoder.h)
 	//-------------------------------------------------------------------------------------------------------------------------------
 
-	// See Annex C. fcd15444-1.pdf (MQ-coder Encoder/Decoder)
+	// See Annex C. fcd15444-1.pdf ( MQ-coder Encoder/Decoder )
 
 #define MQC_NUMCTXS 32
 
 	typedef struct TMQCoderState
 	{
-		unsigned int          nLPSValue; // probability for the Least Probable Symbol (0.75->0x8000, 1.5->0xffff)
-		int                   nMPS;      // Most Probable Symbol (0 or 1)
-		struct TMQCoderState *pNextMPS;  // Pointer to the next state if the next MPS symbol is encoded
-		struct TMQCoderState *pNextLPS;  // Pointer to the next state if the next LPS symbol is encoded
+		unsigned int          nLPSValue; // probability for Least Probable Symbol (0.75->0x8000, 1.5->0xffff)
+		int                   nMPS;      // Most Probable Symbol ( 0 or 1 )
+		struct TMQCoderState *pNextMPS;  // Pointer to next state if next encoded symbol is MPS
+		struct TMQCoderState *pNextLPS;  // Pointer to next state if next encoded symbol is LPS
 	} MQCoderState;
 
 	// MQ-coder
@@ -714,13 +749,13 @@ namespace Jpeg2000
 
 	typedef struct TRaw
 	{
-		unsigned char  nBuffer;        // Temporary buffer in which bit encoding/decoding occurs
-		unsigned int   nFreeBitsCount; // Number of bits free to read or write
-		unsigned int   nMaxLen;        // Maximum length for decoding
-		unsigned int   nLen;           // Length of decoded information
-		unsigned char *pBufferPointer; // Pointer to the current position in the buffer
-		unsigned char *pBufferStart;   // Pointer to the beginning of the buffer
-		unsigned char *pBufferEnd;     // Pointer to the end of the buffer
+		unsigned char  nBuffer;        // Temporary buffer for bitwise encoding/decoding
+		unsigned int   nFreeBitsCount; // Number of bits free for reading or writing
+		unsigned int   nMaxLen;        // Maximum decoding length
+		unsigned int   nLen;           // Decoded information length
+		unsigned char *pBufferPointer; // Pointer to current buffer position
+		unsigned char *pBufferStart;   // Pointer to buffer start
+		unsigned char *pBufferEnd;     // Pointer to buffer end
 	} Raw;
 
 	//-------------------------------------------------------------------------------------------------------------------------------
@@ -761,24 +796,24 @@ namespace Jpeg2000
 
 	typedef struct TPacketIterator
 	{
-		short int       *pInclude;         // Flag indicating whether this packet has been used (used in POC)
-		int              nStepLayer;       // LayerStep is used to localize the packet into pInclude
-		int              nStepResolution;  // ResolutionStep is used to localize the packet into pInclude
-		int              nStepComponent;   // ComponentStep is used to localize the packet into pInclude
-		int              nStepPrecinct;    // PrecinctStep is used to localize the packet into pInclude
+		short int       *pInclude;         // Flag indicating if this packet was used (used in POC)
+		int              nStepLayer;       // LayerStep used to locate packet in pInclude
+		int              nStepResolution;  // ResolutionStep used to locate packet in pInclude
+		int              nStepComponent;   // ComponentStep used to locate packet in pInclude
+		int              nStepPrecinct;    // PrecinctStep used to locate packet in pInclude
 
-		int              nIndexComponent;  // Component number for packet definition
-		int              nIndexResolution; // Level of detail number for packet definition
-		int              nIndexPrecinct;   // Area number for packet definition
-		int              nIndexLayer;      // Layer number to identify the packet
+		int              nIndexComponent;  // Component number for packet identification
+		int              nIndexResolution; // Resolution level number for packet identification
+		int              nIndexPrecinct;   // Precinct number for packet identification
+		int              nIndexLayer;      // Layer number for packet identification
 
-		int              nFirst;           // Flag indicating whether this is the first packet
+		int              nFirst;           // Flag indicating if this is the first packet
 		POC              oPOC;             // Progression Order Change
 		int              nComponentsCount; // Number of components
 
 		PacketComponent *pComponents;
 		int              nTileX0;          //
-		int              nTileY0;          // Boundaries of the current tile
+		int              nTileY0;          // Current tile boundaries
 		int              nTileX1;          //
 		int              nTileY1;          //
 		int              nX;
@@ -788,7 +823,7 @@ namespace Jpeg2000
 	} PacketIterator;
 
 	//-------------------------------------------------------------------------------------------------------------------------------
-	//  Tier-1 coding (coefficient coding)
+	//  Tier-1 coding (coefficient encoding)
 	//-------------------------------------------------------------------------------------------------------------------------------
 
 #define T1_NMSEDEC_BITS 7
@@ -797,13 +832,13 @@ namespace Jpeg2000
 #define T1_MAXCBLKH 1024	// Maximum CodeBlock size (height)
 
 #define T1_SIG_NE 0x0001	// Context orientation: Northeast direction
-#define T1_SIG_SE 0x0002	// Context orientation: southeast direction
-#define T1_SIG_SW 0x0004	// Context orientation: southwest direction
-#define T1_SIG_NW 0x0008	// Context orientation: northwest direction
+#define T1_SIG_SE 0x0002	// Context orientation: Southeast direction
+#define T1_SIG_SW 0x0004	// Context orientation: Southwest direction
+#define T1_SIG_NW 0x0008	// Context orientation: Northwest direction
 #define T1_SIG_N  0x0010	// Context orientation: North direction
-#define T1_SIG_E  0x0020	// Context orientation: east direction
-#define T1_SIG_S  0x0040	// Context orientation: south direction
-#define T1_SIG_W  0x0080	// Context orientation: west direction
+#define T1_SIG_E  0x0020	// Context orientation: East direction
+#define T1_SIG_S  0x0040	// Context orientation: South direction
+#define T1_SIG_W  0x0080	// Context orientation: West direction
 #define T1_SIG_OTH  (T1_SIG_N|T1_SIG_NE|T1_SIG_E|T1_SIG_SE|T1_SIG_S|T1_SIG_SW|T1_SIG_W|T1_SIG_NW)
 #define T1_SIG_PRIM (T1_SIG_N|T1_SIG_E|T1_SIG_S|T1_SIG_W)
 
@@ -832,16 +867,16 @@ namespace Jpeg2000
 
 #define T1_NMSEDEC_FRACBITS (T1_NMSEDEC_BITS - 1)
 
-#define T1_TYPE_MQ  0  // Normal coding, using Arithmetic entropy coding (Annex C)
-#define T1_TYPE_RAW 1  // There is no coding, the information in Codestream is contained in raw form
+#define T1_TYPE_MQ  0  // Normal encoding using Arithmetic entropy coding (Annex C)
+#define T1_TYPE_RAW 1  // No encoding, information in Codestream is in raw form
 
 	//-------------------------------------------------------------------------------------------------------------------------------
 
 	typedef struct TTier1
 	{
-		PCommon  pCodecInfo;  // Codec information
-		MQCoder *pMQCoder;    // Pointer to a structure for reading/writing MQ-encoded data
-		Raw     *pRaw;        // Pointer to a structure for reading/writing unencoded data
+		PCommon  pCodecInfo;  // Codec info
+		MQCoder *pMQCoder;    // Pointer to structure for reading/writing MQ-encoded data
+		Raw     *pRaw;        // Pointer to structure for reading/writing unencoded data
 
 		int      lut_ctxno_zc[1024];
 		int      lut_ctxno_sc[256];
@@ -852,7 +887,7 @@ namespace Jpeg2000
 		int      lut_nmsedec_ref[1 << T1_NMSEDEC_BITS];
 		int      lut_nmsedec_ref0[1 << T1_NMSEDEC_BITS];
 
-		int      aData[T1_MAXCBLKH][T1_MAXCBLKW];          // codeblock data
+		int      aData[T1_MAXCBLKH][T1_MAXCBLKW];          // Codeblock data
 		int      aFlags[T1_MAXCBLKH + 2][T1_MAXCBLKH + 2]; // Flags
 
 	} Tier1;
@@ -864,7 +899,7 @@ namespace Jpeg2000
 	typedef struct TTier2
 	{
 		PCommon       pCodecInfo;
-		Image        *pImage;        // Encoding: pointer to the source image. Decoding: pointer to the resulting image.
+		Image        *pImage;        // Encoding: pointer to source image. Decoding: pointer to result image.
 		CodingParams *pCodingParams;
 	} Tier2;
 
@@ -1085,11 +1120,11 @@ namespace Jpeg2000
 
 	typedef struct TBitIO
 	{
-		unsigned char *pStart;          // Pointer to the beginning of the buffer
-		unsigned char *pEnd;            // Pointer to the end of the buffer
-		unsigned char *pCurPos;         // Pointer to the current position in the buffer
+		unsigned char *pStart;          // Pointer to buffer start
+		unsigned char *pEnd;            // Pointer to buffer end
+		unsigned char *pCurPos;         // Pointer to current buffer position
 		unsigned int   nBuffer;         // Buffer
-		int            nValidBitsCount; // Coder: number of free bits to write
-		// Decoder: number of available bits to read
+		int            nValidBitsCount; // Coder: number of free bits for writing
+		// Decoder: number of available bits for reading
 	} BitIO;
 }

@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "MathEquation.h"
 #include "OutputDev.h"
@@ -49,9 +59,9 @@ CEquationReader::~CEquationReader()
 
 void CEquationReader::InitSizes()
 {
-	//todo process open(true/false)
+	// todo handle open(true/false)
 	m_oStorage.open(false, false);
-	// Set the text sizes to default (if they are changed, then nothing can be done, because this isn't saved in the file itself)
+	// Set default text sizes (if they are changed, there's nothing we can do, as this is not saved in the file itself)
 	aSizeTable[0] = 12;
 	aSizeTable[1] = 7;
 	aSizeTable[2] = 5;
@@ -65,8 +75,8 @@ void CEquationReader::SetOutputDev(IOutputDev *pOutput)
 }
 void CEquationReader::InitFonts()
 {
-	// Standard fonts for MathEquation with standard style settings.
-	// (if they are changed, then nothing can be done, because it isn't saved in the file itself)
+	// Standard fonts for MathEquation with default style settings.
+	// (if they are changed, there's nothing we can do, as this is not saved in the file itself)
 
 	if (pOutputDev)
 	{
@@ -77,8 +87,8 @@ void CEquationReader::InitFonts()
 			case 1: pOutputDev->AddFont(i + 128, "Times New Roman", false, false); break; // text
 			case 2: pOutputDev->AddFont(i + 128, "Times New Roman", false, false); break; // function
 			case 3: pOutputDev->AddFont(i + 128, "Times New Roman", false, true);  break; // variable
-			case 4: pOutputDev->AddFont(i + 128, "Symbol",          false, true);  break; // standard Greek
-			case 5: pOutputDev->AddFont(i + 128, "Symbol",          false, false); break; // other Greek
+			case 4: pOutputDev->AddFont(i + 128, "Symbol",          false, true);  break; // lowercase Greek
+			case 5: pOutputDev->AddFont(i + 128, "Symbol",          false, false); break; // uppercase Greek
 			case 6: pOutputDev->AddFont(i + 128, "Symbol",          false, false); break; // symbol
 			case 7: pOutputDev->AddFont(i + 128, "Times New Roman", true, false);  break; // matrix-vector
 			case 8: pOutputDev->AddFont(i + 128, "Times New Roman", false, false); break; // numbers
@@ -89,8 +99,8 @@ void CEquationReader::InitFonts()
 
 int CEquationReader::Parse()
 {
-    //looking at the implementation, pStm can be deleted after the CLEStream constructor,
-    //but without looking at the implementation, it's correct to remove pStm after pS
+    // looking at implementation, pStm can be deleted after CLEStream constructor,
+    // but without looking at implementation, it's correct to delete pStm after pS
     pStm = new POLE::Stream( &m_oStorage, L"Equation Native");
     pS = new CLEStream<Stream>(pStm);
 	if (!pS->IsValid())

@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "imagemanager.h"
@@ -75,8 +85,8 @@ namespace NSShapeImageGen
 		int n3 = (int)strFile.find(L"ftp");
 		int n4 = (int)strFile.find(L"https");
 
-		//if nI is compared with something other than 0, there will be problems
-		//because in the installation we put the files in /var/www...
+		//if nI is compared not with 0, there will be problems
+		//because in installation we put files in /var/www...
 		if (0 == n1 || 0 == n2 || 0 == n3 || 0 == n4)
 			bIsDownload = true;
 
@@ -138,8 +148,8 @@ namespace NSShapeImageGen
 		int n3 = (int)strFile.find (L"ftp");
 		int n4 = (int)strFile.find (L"https");
 
-		//if nI is compared with something other than 0, there will be problems
-		//because in the installation we put the files in /var/www...
+		//if nI is compared not with 0, there will be problems
+		//because in installation we put files in /var/www...
 		if (0 == n1 || 0 == n2 || 0 == n3 || 0 == n4)
 			bIsDownload = true;
 
@@ -305,7 +315,7 @@ namespace NSShapeImageGen
 
 		if (false == result)
 		{
-			//conversion is unsuccessful - take the original file
+			//conversion failed - use original file
 			OOX::CPath pathOriginal = strFileSrc;
 
 			//default is itJPG. set itUnknown to use original extension
@@ -385,7 +395,7 @@ namespace NSShapeImageGen
 		std::map<DWORD, CMediaInfo>::iterator pPair = m_mapMediaData.find(dwSum);
 		if (m_mapMediaData.end() == pPair)
 		{
-			// need to be added
+			// need to add
 			++m_lNextIDImage;
 			
 			oInfo.m_lID = m_lNextIDImage;
@@ -508,7 +518,7 @@ namespace NSShapeImageGen
 
 				if (pMetafile->LoadFromFile(strFileName.c_str()))
 				{
-					// trying to save as svg directly from metafiles
+					// try to save to svg directly from metafiles
 					std::wstring sInternalSvg = pMetafile->ConvertToSvg(lWidth, lHeight);
 
 					if (!sInternalSvg.empty())
@@ -520,8 +530,8 @@ namespace NSShapeImageGen
 						return oInfo;
 					}
 
-					// Couldn't convert to svg.
-					// try in png
+					// couldn't convert to svg.
+					// try png
 
 					std::wstring strSaveItem = strSaveItemWE + L".png";
 					pMetafile->ConvertToRaster(strSaveItem.c_str(), 4 /*CXIMAGE_FORMAT_PNG*/,  lWidth, lHeight);

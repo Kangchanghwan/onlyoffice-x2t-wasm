@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "OOXReader.h"
 #include "OOXPictureReader.h"
@@ -165,22 +175,22 @@ bool OOXShapeReader::ParseVmlStyle(RtfShapePtr pShape, SimpleTypes::Vml::CCssPro
 	}break;
 	case SimpleTypes::Vml::cssptMsoWrapDistanceBottom:
 	{
-		//TODO check for size
+		//todooo check dimension
 		pShape->m_nWrapDistBottom =  (int)(20 * prop->get_Value().oValue.dValue );
 	}break;
 	case SimpleTypes::Vml::cssptMsoWrapDistanceLeft :
 	{
-		//TODO check for size
+		//todooo check dimension
 		pShape->m_nWrapDistLeft = (int)(20 * prop->get_Value().oValue.dValue );
 	}break;
 	case SimpleTypes::Vml::cssptMsoWrapDistanceRight:
 	{
-		//TODO check for size
+		//todooo check dimension
 		pShape->m_nWrapDistRight = (int)(20 * prop->get_Value().oValue.dValue );
 	}break;
 	case SimpleTypes::Vml::cssptMsoWrapDistanceTop :
 	{
-		//TODO check for size
+		//todooo check dimension
 		pShape->m_nWrapDistTop =  (int)(20 * prop->get_Value().oValue.dValue );
 	}break;
 	case SimpleTypes::Vml::cssptMsoWrapEdited:
@@ -234,7 +244,7 @@ bool OOXShapeReader::ParseVmlStyle(RtfShapePtr pShape, SimpleTypes::Vml::CCssPro
 	}break;
 	case SimpleTypes::Vml::cssptVTextAnchor:
 	{
-		pShape->m_nAnchorText		= prop->get_Value().eVTextAnchor;//coincides
+		pShape->m_nAnchorText		= prop->get_Value().eVTextAnchor;//matches
 		pShape->m_bFitShapeToText	= 0;
 	}break;
 	case SimpleTypes::Vml::csspctMsoWidthPercent:
@@ -449,7 +459,7 @@ bool OOXShapeReader::ParseVmlChild( ReaderParameter oParam , RtfShapePtr& pOutpu
 				int nCropedWidthGoal = pOutput->m_oPicture->m_nWidthGoal;
 				if( PROP_DEF != nCropedWidthGoal )
 				{
-					//make a crop
+					//do crop
 					if( image_data->m_oCropLeft.IsInit() )
 					{
 						double nCropLeft = image_data->m_oCropLeft->GetValue();
@@ -609,7 +619,7 @@ bool OOXShapeReader::ParseVmlChild( ReaderParameter oParam , RtfShapePtr& pOutpu
 		default: break;
 		}
 	}
-	//check on inline
+	//check for inline
 	if((PROP_DEF == pOutput->m_nLeft/* || 0 == pOutput->m_nLeft */) && ( PROP_DEF == pOutput->m_nTop/* || 0 == pOutput->m_nTop */) &&
 			PROP_DEF == pOutput->m_nPositionH && PROP_DEF == pOutput->m_nPositionV )
 	{
@@ -797,12 +807,12 @@ bool OOXShapeReader::Parse(ReaderParameter oParam, RtfShapePtr& pOutput, PPTX::L
 		//for (size_t i = 0 ; i < oox_bitmap_fill->m_oBlip->m_arrEffects.size(); i++)
 		//	convert(oox_bitmap_fill->m_oBlip->m_arrEffects[i]);
 	}
-	if (oox_bitmap_fill->srcRect.IsInit())//part of the image
+	if (oox_bitmap_fill->srcRect.IsInit())//part of image
 	{
 		int nCropedWidthGoal = pOutput->m_oPicture->m_nWidthGoal;
 		if( PROP_DEF != nCropedWidthGoal )
 		{
-			//make a crop
+			//do crop
 			if (oox_bitmap_fill->srcRect->l.IsInit())
 			{
 				double nCropLeft = XmlUtils::GetInteger( oox_bitmap_fill->srcRect->l.get()) / 100. ;
@@ -1044,7 +1054,7 @@ void OOXShapeReader::Parse(ReaderParameter oParam, RtfShapePtr& pOutput, PPTX::L
 	//nullable<SimpleTypes::CCompoundLine<>>            m_oCmpd;
 
 
-	//ELineJoinType m_eJoinType;   // Line connection type
+	//ELineJoinType                                     m_eJoinType;   // line join type
 	//nullable<OOX::Drawing::CLineJoinBevel>            m_oBevel;
 	//nullable<OOX::Drawing::CLineJoinMiterProperties>  m_oMiter;
 	//nullable<OOX::Drawing::CLineJoinRound>            m_oRound;
@@ -1089,7 +1099,7 @@ void OOXShapeReader::Parse( ReaderParameter oParam, RtfShapePtr& pOutput, PPTX::
 	//	{
 	//		Parse(oParam, theme->m_oThemeElements.m_oFmtScheme.m_oEffectStyleLst.m_arrEffectStyle[fmt_index]->m_oEffectList.GetPointer(), &color);
 	//	}
-	//	//TODO
+	//	//todooo
 	//	//Parse(theme->m_oThemeElements.m_oFmtScheme.m_oEffectStyleLst.m_arrEffectStyle[fmt_index].m_oEffectDag.GetPointer(), &color);
 	//	//Parse(theme->m_oThemeElements.m_oFmtScheme.m_oEffectStyleLst.m_arrEffectStyle[fmt_index].m_oScene3D.GetPointer(), &color);
 	//	//Parse(theme->m_oThemeElements.m_oFmtScheme.m_oEffectStyleLst.m_arrEffectStyle[fmt_index].m_oSp3D.GetPointer(), &color);
@@ -1171,51 +1181,70 @@ bool OOXShapeReader::ParseShape( ReaderParameter oParam, RtfShapePtr& pOutput)
 	std::wstring strXml;
 	if (ooxShape->spPr.Geometry.getType() == OOX::et_a_custGeom)
 	{
-		PPTX::Logic::CustGeom& geometry = ooxShape->spPr.Geometry.as<PPTX::Logic::CustGeom>();
 		pOutput->m_nShapeType = SimpleTypes::Vml::sptNotPrimitive;
-		strXml = geometry.toXML();
+		strXml = ooxShape->spPr.Geometry.as<PPTX::Logic::CustGeom>().toXML();
 	}
-	if (ooxShape->spPr.Geometry.getType() == OOX::et_a_prstGeom)
+	else if (ooxShape->spPr.Geometry.getType() == OOX::et_a_prstGeom)
 	{
 		PPTX::Logic::PrstGeom& geometry = ooxShape->spPr.Geometry.as<PPTX::Logic::PrstGeom>();
-		
 		SimpleTypes::CShapeType prst_type(geometry.prst.get());
-		SimpleTypes::EShapeType type = prst_type.GetValue();
-
-		pOutput->m_nShapeType = OOX::PrstGeom2VmlShapeType(type);
-		if (pOutput->m_nShapeType == SimpleTypes::Vml::sptNotPrimitive)
-			strXml = geometry.prst.get();
+		pOutput->m_nShapeType = OOX::PrstGeom2VmlShapeType(prst_type.GetValue());
+		strXml = geometry.prst.get();
 	}
-	if (pOutput->m_nShapeType == SimpleTypes::Vml::sptNotPrimitive && !strXml.empty())
+	if (!strXml.empty())
 	{
-		XmlUtils::CXmlNode xmlNode;
-		xmlNode.FromXmlString(strXml);
-		PPTX::Logic::Geometry geom;
-		geom = xmlNode;
-
 		std::wstring strVmlPath, strVmlRect;
-
 		LONG lW = 0, lH = 0;
-
-		//if ((ooxShape->spPr.xfrm->IsInit()) && (ooxShape->spPr.xfrm->m_oExt.IsInit()))
-		//{
-		//	lW = ooxShape->spPr.xfrm->m_oExt->m_oCx.GetValue();
-		//	lH = ooxShape->spPr.xfrm->m_oExt->m_oCy.GetValue();
-		//}
-
+		if (ooxShape->spPr.xfrm.IsInit() && ooxShape->spPr.xfrm->extX.IsInit() && ooxShape->spPr.xfrm->extY.IsInit())
+		{
+			lW = ooxShape->spPr.xfrm->extX.get();
+			lH = ooxShape->spPr.xfrm->extY.get();
+		}
 		COOXToVMLGeometry *renderer = new COOXToVMLGeometry();
-		geom.ConvertToCustomVML(renderer, strVmlPath, strVmlRect, lW, lH);
+		ooxShape->spPr.Geometry.ConvertToCustomVML(renderer, strVmlPath, strVmlRect, lW, lH);
 		delete renderer;
 
 		if (!strVmlPath.empty())
+		{
 			ParseVmlPath(pOutput, strVmlPath);
+			// preset types conflict(?) for some reason with a custom path in MS Word (diamond as example)
+			// and dont wanna show the text.
+			// 100 is a type without built-in geometry: Word draws our path and keeps the text.
+			pOutput->m_nShapeType = SimpleTypes::Vml::sptNotchedCircularArrow;
+		}
 
-		pOutput->m_nShapePath = 4; //complex
-		
-		pOutput->m_nGeoLeft		= 0;
-		pOutput->m_nGeoTop		= 0;
-		pOutput->m_nGeoRight	= 100000;
-		pOutput->m_nGeoBottom	= 100000;
+		LONG nCoordW = 100000, nCoordH = 100000;
+		if (lW > 0 && lH > 0)
+		{
+			nCoordW = lW;
+			nCoordH = lH;
+			for (size_t i = 0; i < pOutput->m_aPVerticles.size(); ++i)
+			{
+				pOutput->m_aPVerticles[i].first  = (int)((double)pOutput->m_aPVerticles[i].first  / 100000. * nCoordW);
+				pOutput->m_aPVerticles[i].second = (int)((double)pOutput->m_aPVerticles[i].second / 100000. * nCoordH);
+			}
+		}
+		pOutput->m_nGeoRight	= nCoordW;
+		pOutput->m_nGeoBottom	= nCoordH;
+
+		LONG nRectL = 0, nRectT = 0, nRectR = 100000, nRectB = 100000;
+		if (!strVmlRect.empty())
+		{
+			std::vector< std::wstring > rect;
+			boost::algorithm::split(rect, strVmlRect, boost::algorithm::is_any_of(L","), boost::algorithm::token_compress_on);
+			if (rect.size() == 4)
+			{
+				nRectL = XmlUtils::GetInteger(rect[0]);
+				nRectT = XmlUtils::GetInteger(rect[1]);
+				nRectR = XmlUtils::GetInteger(rect[2]);
+				nRectB = XmlUtils::GetInteger(rect[3]);
+			}
+		}
+		pOutput->m_nInscribeLeft	= (int)((double)nRectL / 100000. * nCoordW);
+		pOutput->m_nInscribeTop		= (int)((double)nRectT / 100000. * nCoordH);
+		pOutput->m_nInscribeRight	= (int)((double)nRectR / 100000. * nCoordW);
+		pOutput->m_nInscribeBottom	= (int)((double)nRectB / 100000. * nCoordH);
+		pOutput->m_nShapePath = 4;
 	}
 
 	Parse(oParam, pOutput, ooxShape->spPr.xfrm.GetPointer());
@@ -1350,7 +1379,7 @@ void OOXShapeReader::Parse(ReaderParameter oParam, RtfShapePtr& pOutput, PPTX::L
 		case 2:
 		case 3:
 		default:
-			pOutput->m_nAnchorText = 4; break;
+			pOutput->m_nAnchorText = 1; break;
 		}
 	}
 
@@ -1410,7 +1439,7 @@ bool OOXShapeReader::ParsePic( ReaderParameter oParam, RtfShapePtr& pOutput)
 	{
 		pOutput->m_oPicture->eDataType = RtfPicture::dt_png;
 		pOutput->m_oPicture->m_sPicFilename = ooxPic->blipFill.blip->oleFilepathImage;
-		pOutput->m_oPicture->m_bIsCopy = false; //don't delete
+		pOutput->m_oPicture->m_bIsCopy = false; //do not delete
 
 		if (pOutput->m_oPicture->m_nWidthGoal == PROP_DEF)
 		{
@@ -1621,7 +1650,7 @@ bool OOXShapeReader::ParseVml(ReaderParameter oParam, RtfShapePtr& pOutput, bool
 		pOutput->m_nID = oParam.oReader->m_oOOXIdGenerator.GetId(m_vmlElement->m_sId.get());
 	}
 
-	//pOutput->m_nLeft = 0; //styles only with width height (for example in Numbering)
+	//pOutput->m_nLeft		= 0; //styles only with width height (e.g. in Numbering)
 	//pOutput->m_nTop		= 0;
 
 	// geometry --------------------------------------------------------------------------------------------------------
@@ -1821,6 +1850,22 @@ bool OOXShapeReader::ParseVml(ReaderParameter oParam, RtfShapePtr& pOutput, bool
 		default: break;
 		}
 	}
+    if (m_vmlElement->m_oHr.IsInit())
+        pOutput->m_bHr = m_vmlElement->m_oHr.get();
+    if (m_vmlElement->m_oHrStd.IsInit())
+        pOutput->m_bHrStd = m_vmlElement->m_oHrStd.get();
+    if (m_vmlElement->m_oHrNoShade.IsInit())
+        pOutput->m_bHrNoShade = m_vmlElement->m_oHrNoShade.get();
+    if (m_vmlElement->m_oHrAlign.IsInit())
+    {
+        SimpleTypes::EHrAlign eVal = m_vmlElement->m_oHrAlign->GetValue();
+        switch (eVal)
+        {
+        case SimpleTypes::hralignLeft:   pOutput->m_nHrAlign = 0; break;
+        case SimpleTypes::hralignCenter: pOutput->m_nHrAlign = 1; break;
+        case SimpleTypes::hralignRight:  pOutput->m_nHrAlign = 2; break;
+        }
+    }
 	
 	bool res = ParseVmlChild(oParam, pOutput);
 	
@@ -1914,17 +1959,17 @@ bool OOXShapeReader::WriteDataToPicture( std::wstring sPath, RtfPicture& pOutput
 	pOutput.m_dScaleX = 100;
 	pOutput.m_dScaleY = 100;
 
-	//Set the image type
+	//Set picture type
 	pOutput.eDataType = RtfPicture::GetPictureType( sPath );
 
-	//if the type isn't supported, rtf is converted to png
+	//if type is not supported by rtf, convert to png
 	if( RtfPicture::dt_none == pOutput.eDataType )
 	{
-		//in the same folder as the original image
+		//in the same folder as the source image
 		CBgraFrame image;
 		if (image.OpenFile(sPath) == false ) return false;
 
-		//set the sizes correctly
+		//set correct dimensions
 		pOutput.m_nWidthGoal	= image.get_Width()	* 15;  //pixels to twip (  1440 / 96 )
 		pOutput.m_nHeightGoal	= image.get_Height()* 15;  //pixels to twip (  1440 / 96 )
 
@@ -1933,14 +1978,14 @@ bool OOXShapeReader::WriteDataToPicture( std::wstring sPath, RtfPicture& pOutput
 		if (image.SaveFile(sTargetFile, 4 /*_CXIMAGE_FORMAT_PNG*/) )
 		{
 			pOutput.eDataType = RtfPicture::dt_png;
-			//Remember the name
+			//Store filename
 			pOutput.m_sPicFilename = sTargetFile;
-			pOutput.m_bIsCopy = true;//set the flag to delete the file later
+			pOutput.m_bIsCopy = true;//set flag to delete file later
 		}
 	}
 	else if( RtfPicture::dt_apm ==  pOutput.eDataType )
 	{
-		//remove the apm header (22 byte)
+		//remove apm header (22 byte)
 		NSFile::CFileBinary file_inp; //mpa
 		NSFile::CFileBinary file_out;//wmf
 
@@ -1984,7 +2029,7 @@ bool OOXShapeReader::WriteDataToPicture( std::wstring sPath, RtfPicture& pOutput
 		file_out.CloseFile();
 
 		pOutput.eDataType = RtfPicture::dt_wmf;
-		//Remember the name
+		//Store filename
 		pOutput.m_sPicFilename = sTargetFile;
 		pOutput.m_bIsCopy = true;
 	}
@@ -2010,22 +2055,22 @@ bool OOXShapeReader::WriteDataToPicture( std::wstring sPath, RtfPicture& pOutput
 				pOutput.m_nHeightGoal	= (int)(dH * 15);  //pixels to twip;
 			}
 			RELEASEOBJECT(meta);
-			//Only remember the name
+			//Store only filename
 			pOutput.m_sPicFilename = sPath;
-			pOutput.m_bIsCopy = false; //don't delete
+			pOutput.m_bIsCopy = false; //do not delete
 		}
 		else
 		{//png, jpeg
 			CBgraFrame image;
 
 			if (image.OpenFile(sPath, 0) == false ) return false;
-			//set the sizes correctly
+			//set correct dimensions
 			pOutput.m_nWidthGoal	= image.get_Width()		* 15;  //pixels to twip
 			pOutput.m_nHeightGoal	= image.get_Height()	* 15;  //pixels to twip;
 
-			//Only remember the name
+			//Store only filename
 			pOutput.m_sPicFilename = sPath;
-			pOutput.m_bIsCopy = false; //don't delete
+			pOutput.m_bIsCopy = false; //do not delete
 		}
 	}
 	return true;

@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "RunProperty.h"
 #include "RunContent.h"
@@ -311,8 +321,8 @@ namespace OOX
 					m_oFontName = oReader;
 				else if ( !m_bRPRChange && L"w:rPrChange" == sName )
 					m_oRPrChange = oReader;
-				// For some reason, the specification says pStyle, although according to the meaning, see the link in the
-				// the same specifications and, in the end, alphabetically there should be rStyle
+				// For some reason the specification says pStyle, but by meaning, by reference in the
+				// same specification, and finally by alphabetical order, it should be rStyle here
 				else if ( L"w:rStyle" == sName )
 					m_oRStyle = oReader;
 				else if ( !m_oRStyle.IsInit() && L"w:pStyle" == sName )
@@ -483,8 +493,8 @@ namespace OOX
 			if ( !m_bRPRChange && oNode.GetNode( L"w:rPrChange", oChild ) )
 				m_oRPrChange = oChild;
 
-			// For some reason, the specification says pStyle, although according to the meaning, see the link in the
-			// the same specifications and, in the end, alphabetically there should be rStyle
+			// For some reason the specification says pStyle, but by meaning, by reference in the
+			// same specification, and finally by alphabetical order, it should be rStyle here
 			if ( oNode.GetNode( L"w:rStyle", oChild ) )
 				m_oRStyle = oChild;
 
@@ -566,7 +576,7 @@ namespace OOX
 			if (m_oSmallCaps.IsInit())	sResult += m_oSmallCaps->ValNode(L"w:smallCaps");
 			if (m_oStrike.IsInit())		sResult += m_oStrike->ValNode(L"w:strike");
 			if ((m_oDStrike.IsInit()) && (m_oDStrike->m_oVal.ToBool()))
-										sResult += m_oDStrike->ValNode(L"w:dstrike");
+											sResult += m_oDStrike->ValNode(L"w:dstrike");
 			if (m_oOutline.IsInit())		sResult += m_oOutline->ValNode(L"w:outline");
 			if (m_oShadow.IsInit())			sResult += m_oShadow->ValNode(L"w:shadow");
 			if (m_oEmboss.IsInit())			sResult += m_oEmboss->ValNode(L"w:emboss");
@@ -590,7 +600,7 @@ namespace OOX
 			if (m_oFitText.IsInit())		sResult += m_oFitText->ValNode(L"w:fitText");
 			if (m_oVertAlign.IsInit())		sResult += m_oVertAlign->ValNode(L"w:vertAlign");
 			if (m_oRtL.IsInit())			sResult += m_oRtL->ValNode(L"w:rtl");
-			if (m_oCs.IsInit())			sResult += m_oCs->ValNode(L"w:cs");
+			if (m_oCs.IsInit())				sResult += m_oCs->ValNode(L"w:cs");
 			if (m_oEm.IsInit())				sResult += m_oEm->ValNode(L"w:em");
 			if (m_oLang.IsInit())			sResult += m_oLang->ValNode(L"w:lang");
 			if (m_oEastAsianLayout.IsInit())sResult += m_oEastAsianLayout->ValNode(L"w:eastAsianLayout");	

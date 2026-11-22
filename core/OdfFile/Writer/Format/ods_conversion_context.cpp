@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include <boost/algorithm/string.hpp>
@@ -301,9 +311,9 @@ void ods_conversion_context::end_row()
 	}
 }
 //////////////////////
-void ods_conversion_context::start_comment(int col, int row, std::wstring & author)
+void ods_conversion_context::start_comment(int col, int row, std::wstring & author, std::wstring& date_time)
 {
-	current_table()->start_comment(col, row, author);
+	current_table()->start_comment(col, row, author, date_time);
 	start_text_context();
 ////////////////
 	office_element_ptr paragr_elm;
@@ -338,7 +348,7 @@ void ods_conversion_context::add_hyperlink(const std::wstring & ref, const std::
 	boost::algorithm::split(ref_cells, ref, boost::algorithm::is_any_of(L":"), boost::algorithm::token_compress_on);
 	if (ref_cells.size() > 1)
 	{
-	//in oox one link per range can be inserted, but in oo it can't - we insert the link and don't change the text
+	//in oox you can put one link on a range, in oo you can't - we insert link, don't change text
 		int start_col = -1, start_row = -1;
 		int end_col = -1, end_row = -1;
 		
@@ -350,7 +360,7 @@ void ods_conversion_context::add_hyperlink(const std::wstring & ref, const std::
 			for (long row = start_row; row <= end_row; row++)
 			{
 				current_table()->add_hyperlink(ref, col, row, link, location);
-				//the link is the same, but the displayed text is different
+				//link is one, but displayed text is different
 			}
 		}
 	}
@@ -402,7 +412,7 @@ void ods_conversion_context::add_merge_cells(const std::wstring & ref)
  	std::vector<std::wstring> ref_cells;
 	boost::algorithm::split(ref_cells, ref, boost::algorithm::is_any_of(L":"), boost::algorithm::token_compress_on);
 
-	if (ref_cells.size() != 2) return;//Definitely here .. according to OOXML rules
+	if (ref_cells.size() != 2) return;//definitely here.. according to ooxml rules
 
 	int start_col = -1, start_row = -1;
 	int end_col = -1, end_row = -1;
@@ -491,8 +501,8 @@ void ods_conversion_context::start_columns()
 }
 void ods_conversion_context::end_columns()
 {
-	//add default last column - IF they aren't registered in the source (1024 - at random)
-	//The question is - if adding it, then with what style???
+	//add default last column - IF they are not specified in the source (1024 - arbitrary)
+	//question - if adding then with what style???
 	//if (current_table()->current_column() < 1 )
 	//	add_column(current_table()->current_column() + 1,1024, 0, true);
 	//else
@@ -536,7 +546,7 @@ void ods_conversion_context::add_default_row(int repeated)
 			}
 		}
 		if (row_split > current_table()->current_row() && row_split_repeated != repeated)
-		{//divide by 3 - before, with --, after;
+		{//split into 3 - before, with --, after;			
 			int r = current_table()->current_row();
 
 			add_default_row(row_split - r - 1);
@@ -617,8 +627,8 @@ void ods_conversion_context::add_column(int start_column, int repeated, int leve
 	}
 	else
 	{
-		//In fact, in this style there are only different column-width options .. and if the properties match, one can be generated, although it is indicated above that the styles are different.
-		//that is, in oo they divide the oox style into 2 (for the column itself, and to describe the cells in the columns)
+		//essentially this style has different column width options only.. and if properties match - can generate one, although above it's indicated that styles are different.
+		//i.e. in oo they split oox style into 2 (for the column itself, and cell description in column)
 		styles_context()->create_style(L"", style_family::TableColumn, true, false, -1);
 		style_elm = styles_context()->last_state()->get_office_element();
 		
@@ -724,8 +734,8 @@ void ods_conversion_context::start_cell_text()
 		text_a_->common_xlink_attlist_.type_ = xlink_type(xlink_type::Simple);
 		text_a_->common_xlink_attlist_.href_ = state.link;
 		
-		text_context()->start_element(text_a_elm); // maybe it's worth making its own???
-		// LibreOffice acts up if the tables have a nested span in the hyperlink... oO (although this is allowed in the specification!!!)
+		text_context()->start_element(text_a_elm); // maybe worth making a custom one???
+		// LibreOffice acts weird if there's a nested span in hyperlink inside tables... o_O (although it's allowed in specification!!!)
 
 		text_context()->single_paragraph_ = true;
 	}

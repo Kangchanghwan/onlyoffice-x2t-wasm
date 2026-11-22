@@ -1,16 +1,44 @@
+/*
+ * Copyright (C) Ascensio System SIA, 2009-2026
+ *
+ * This program is a free software product. You can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License (AGPL)
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
+ * Section 5 of the GNU AGPL version 3.
+ *
+ * No trademark rights are granted under this License.
+ *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 #include "CInterpretatorSvgBase.h"
 #include "../../../BgraFrame.h"
 
 #include <algorithm>
 #include <numeric>
 #include <cmath>
-#include <stdint.h>
-
-#ifndef MININT32
-#define MAXUINT32   ((uint32_t)~((uint32_t)0))
-#define MAXINT32    ((int32_t)(MAXUINT32 >> 1))
-#define MININT32    ((int32_t)~MAXINT32)
-#endif
 
 namespace MetaFile
 {
@@ -131,6 +159,16 @@ namespace MetaFile
 	void CInterpretatorSvgBase::SetShapeRendering(EShapeRendering eShapeRenderingType)
 	{
 		m_eShapeRendering = eShapeRenderingType;
+	}
+
+	void CInterpretatorSvgBase::SetNumberDefs(unsigned int unNumberDefs)
+	{
+		m_unNumberDefs = unNumberDefs;
+	}
+
+	unsigned int CInterpretatorSvgBase::GetNumberDefs() const
+	{
+		return m_unNumberDefs;
 	}
 
 	std::wstring CInterpretatorSvgBase::GetFile()
@@ -339,7 +377,7 @@ namespace MetaFile
 		else if (pFont->IsStrikeOut())
 			arNodeAttributes.Add(L"text-decoration", L"line-through");
 
-		//TODO:: investigate this for correct operation
+		//TODO:: figure out for correct operation
 		//                        double dFontCharSpace = pFont->GetCharSet();
 
 		//                        if (dFontCharSpace > 1)
@@ -392,7 +430,7 @@ namespace MetaFile
 			// Do nothing
 		}
 
-		if (oScale.Y < -0.00001) //TODO::Needed for dXScale too
+		if (oScale.Y < -0.00001) //TODO:: Also needed for dXScale
 		{
 			dYCoord += dFontHeight;
 
@@ -660,7 +698,7 @@ namespace MetaFile
 		unsigned int ulPenEndCap    = unMetaPenStyle & PS_ENDCAP_MASK;
 		unsigned int ulPenJoin      = unMetaPenStyle & PS_JOIN_MASK;
 
-		// svg doesn't support different styles for different sides of a line
+		// svg doesn't support different styles for different line sides
 		std::wstring wsLineCap, wsLineJoin;
 
 		if (PS_ENDCAP_ROUND == ulPenEndCap)
@@ -1289,6 +1327,79 @@ namespace MetaFile
 		return wsStyleId;
 	}
 
+	static std::wstring CreateGradientStops(const IBrush* pBrush)
+	{
+		std::vector<long> arColors;
+		std::vector<double> arPositions;
+		pBrush->GetGradientColors(arColors, arPositions);
+
+		std::wstring wsStops;
+
+		for (unsigned int unIndex = 0; unIndex < arColors.size(); ++unIndex)
+		{
+			const unsigned int unColor = static_cast<unsigned int>(arColors[unIndex]);
+			const BYTE uchAlpha = unColor >> 24;
+
+			wsStops += L"<stop offset=\"" + ConvertToWString(arPositions[unIndex], 4) + L"\" stop-color=\"rgb(" + INTCOLOR_TO_RGB(unColor) + L")\"";
+
+			if (255 != uchAlpha)
+				wsStops += L" stop-opacity=\"" + ConvertToWString((double)uchAlpha / 255., 3) + L'"';
+
+			wsStops += L"/>";
+		}
+
+		return wsStops;
+	}
+
+	static std::wstring CreateRadialGradientGeometry(const IBrush* pBrush)
+	{
+		const CEmfPlusBrush* pEmfPlusBrush = dynamic_cast<const CEmfPlusBrush*>(pBrush);
+
+		if (NULL == pEmfPlusBrush)
+			return std::wstring();
+
+		double dLeft, dTop, dWidth, dHeight;
+		pEmfPlusBrush->GetBounds(dLeft, dTop, dWidth, dHeight);
+
+		if (dWidth <= 0. || dHeight <= 0.)
+			return std::wstring();
+
+		double dCenterX, dCenterY;
+		pEmfPlusBrush->GetCenterPoint(dCenterX, dCenterY);
+
+		TXForm oTransform((std::max)(dCenterX - dLeft, dLeft + dWidth - dCenterX), 0., 0., (std::max)(dCenterY - dTop, dTop + dHeight - dCenterY), dCenterX, dCenterY);
+		double dFocusX = 0., dFocusY = 0.;
+
+		if (pEmfPlusBrush->bEllipticalBoundary)
+		{
+			const double dRadiusX = dWidth  / 2.;
+			const double dRadiusY = dHeight / 2.;
+			const double dOffsetX = (dCenterX - dLeft - dRadiusX) / dRadiusX;
+			const double dOffsetY = (dCenterY - dTop  - dRadiusY) / dRadiusY;
+
+			if (dOffsetX * dOffsetX + dOffsetY * dOffsetY < 1.)
+			{
+				oTransform = TXForm(dRadiusX, 0., 0., dRadiusY, dLeft + dRadiusX, dTop + dRadiusY);
+				dFocusX = dOffsetX;
+				dFocusY = dOffsetY;
+			}
+		}
+
+		oTransform.Multiply(pEmfPlusBrush->oTransform, MWT_RIGHTMULTIPLY);
+
+		std::wstring wsGeometry{L" gradientUnits=\"userSpaceOnUse\" cx=\"0\" cy=\"0\" r=\"1\""};
+
+		if (0. != dFocusX || 0. != dFocusY)
+			wsGeometry += L" fx=\"" + ConvertToWString(dFocusX) + L"\" fy=\"" + ConvertToWString(dFocusY) + L'"';
+
+		return wsGeometry + L" gradientTransform=\"matrix(" + ConvertToWString(oTransform.M11) + L',' +
+		                                                     ConvertToWString(oTransform.M12) + L',' +
+		                                                     ConvertToWString(oTransform.M21) + L',' +
+		                                                     ConvertToWString(oTransform.M22) + L',' +
+		                                                     ConvertToWString(oTransform.Dx)  + L',' +
+		                                                     ConvertToWString(oTransform.Dy)  + L")\"";
+	}
+
 	std::wstring CInterpretatorSvgBase::CreateGradient(const IBrush* pBrush)
 	{
 		if (pBrush == NULL)
@@ -1302,17 +1413,7 @@ namespace MetaFile
 		{
 			wsStyleId = L"LINEARGRADIENT_" + ConvertToWString(++m_unNumberDefs, 0);
 
-			m_wsDefs += L"<linearGradient id=\"" + wsStyleId + L"\">";
-
-			std::vector<long> arColors;
-			std::vector<double> arPositions;
-			pBrush->GetGradientColors(arColors, arPositions);
-
-			for (unsigned int unIndex = 0; unIndex < arColors.size(); ++unIndex)
-				m_wsDefs += L"<stop offset=\"" + ConvertToWString(arPositions[unIndex], 2) +
-				            L"\" stop-color=\"" + CalculateColor(arColors[unIndex]) +  L"\"/>";
-
-			m_wsDefs += L"</linearGradient>";
+			m_wsDefs += L"<linearGradient id=\"" + wsStyleId + L"\">" + CreateGradientStops(pBrush) + L"</linearGradient>";
 
 			return wsStyleId;
 		}
@@ -1321,31 +1422,7 @@ namespace MetaFile
 		{
 			wsStyleId = L"RADIALGRADIENT_" + ConvertToWString(++m_unNumberDefs, 0);
 
-			double dX = MININT32, dY = MININT32;
-
-			pBrush->GetCenterPoint(dX, dY);
-
-			std::wstring wsIndlude;
-
-			if (dX != MININT32 || dY != MININT32)
-			{
-				double dLeft, dTop, dWidth, dHeight;
-
-				pBrush->GetBounds(dLeft, dTop, dWidth, dHeight);
-
-				if (0 != dWidth && 0 != dHeight)
-				{
-					dX = ((dX - dLeft) / dWidth);
-					dY = ((dY - dTop)  / dHeight);
-
-					wsIndlude = L" cx=\"" + ConvertToWString(dX) + L"\" cy=\"" + ConvertToWString(dY) + L"\" r=\"1\"";
-				}
-			}
-
-			m_wsDefs += L"<radialGradient id=\"" + wsStyleId + L"\"" + wsIndlude + L">" +
-			            L"<stop offset=\"0%\" stop-color=\""   + CalculateColor(pBrush->GetColor(),  pBrush->GetAlpha() ) + L"\"/>" +
-			            L"<stop offset=\"100%\" stop-color=\"" + CalculateColor(pBrush->GetColor2(), pBrush->GetAlpha2()) + L"\"/>" +
-			            L"</radialGradient>";
+			m_wsDefs += L"<radialGradient id=\"" + wsStyleId + L"\"" + CreateRadialGradientGeometry(pBrush) + L">" + CreateGradientStops(pBrush) + L"</radialGradient>";
 
 			return wsStyleId;
 		}

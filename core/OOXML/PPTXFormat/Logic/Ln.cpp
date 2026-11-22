@@ -1,30 +1,40 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "Ln.h"
-
+#include "Colors/SchemeClr.h"
 #include "../../../MsBinaryFile/XlsFile/Format/Logic/Biff_records/LineFormat.h"
 
 namespace PPTX
@@ -313,15 +323,16 @@ namespace PPTX
 		XLS::BaseObjectPtr Ln::toXLS()
 		{
 			auto ptr = new XLS::LineFormat;
+			ptr->fAuto = false;
 			if(w.IsInit())
 			{
-				switch(w.get())
-				{
-					case 3175:		ptr->we = 0xFFFF;	break; //Hairline
-					case 12700:		ptr->we = 0;	break; //single
-					case 25400:		ptr->we = 1;	break; //double
-					case 38100:		ptr->we = 2;	break; //triple
-				}
+
+					if(w.get() <= 3175)		ptr->we = 0xFFFF; //Hairline
+					else if (w.get() <= 12700)		ptr->we = 0; //single
+					else if (w.get() <=  25400)	ptr->we = 1; //double
+					else ptr->we = 2;//triple
+
+
 			}
 			if(Fill.is_init())
 			{
@@ -329,13 +340,39 @@ namespace PPTX
 					ptr->lns = 5;
 				else if(prstDash.IsInit() && prstDash->val.IsInit())
 				{
+					ptr->fAutoCo = false;
 					if(Fill.m_type == UniFill::Type::solidFill)
 					{
 						auto solid = dynamic_cast<PPTX::Logic::SolidFill*>(Fill.Fill.GetPointer());
-						auto rgba = solid->Color.Color->GetRGBA(0);
-						ptr->rgb.red = GETBITS(rgba, 0, 1);
-						ptr->rgb.green = GETBITS(rgba, 2, 3);
-						ptr->rgb.blue = GETBITS(rgba, 4, 5);
+						if(solid->Color.Color.IsInit() && solid->Color.is<PPTX::Logic::SchemeClr>())
+						{
+							auto scheme = static_cast<PPTX::Logic::SchemeClr*>( solid->Color.Color.GetPointer());
+							if(scheme->val.get() == L"tx1")
+							{
+								ptr->icv = 12;
+							}
+							else if(scheme->val.get() == L"bg1")
+							{
+								ptr->icv= 0x4E;
+								ptr->rgb.blue = 0xff;
+								ptr->rgb.red = 0xff;
+								ptr->rgb.green = 0xff;
+							}
+							else if(scheme->val.get() == L"accent1")
+							{
+								ptr->icv = 0x30;
+								ptr->rgb.blue = 0xC4;
+								ptr->rgb.red = 0x44;
+								ptr->rgb.green = 0x72;
+							}
+							else if(scheme->val.get() == L"accent2")
+							{
+								ptr->icv = 0x35;
+								ptr->rgb.red = 0xed;
+								ptr->rgb.green = 0x7d;
+								ptr->rgb.blue = 0x31;
+							}
+						}
 					}
 					if(prstDash->val->get() == L"dash")
 						ptr->lns = 1;
@@ -351,6 +388,10 @@ namespace PPTX
 				else
 					ptr->lns = 0;
 			}
+			if(ptr->icv == 77)
+				ptr->fAutoCo = true;
+			else
+				ptr->fAutoCo = false;
 			return XLS::BaseObjectPtr(ptr);
 		}
 		void Ln::Merge(nullable<Ln>& line)const

@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "Xlsx.h"
 
@@ -207,58 +217,45 @@ bool OOX::Spreadsheet::CXlsx::WriteXLS(const CPath& oFilePath)
 		auto cacheNum = 0;
 		for(auto cacheHeader : m_pWorkbook->m_oPivotCaches->m_arrItems)
 		{
-			if(!cacheHeader->m_oCacheId.IsInit())
+			if(!cacheHeader->m_oCacheId.IsInit() || !cacheHeader->m_oRid.IsInit() || !m_pWorkbook->IsExist(cacheHeader->m_oRid->GetValue()))
 				continue;
+			auto cacheFilePtr = m_pWorkbook->Find(cacheHeader->m_oRid->GetValue());
+			auto CachePtr = static_cast<CPivotCacheDefinitionFile*>(cacheFilePtr.GetPointer());
 			cacheHeader->m_oCacheId = cacheHeader->m_oCacheId->GetValue() + 1;
-			writer.globalInfoPtr->mapPivotCacheIndex.emplace(cacheHeader->m_oCacheId->GetValue(), cacheNum);
-			cacheNum++;
+			if(CachePtr->m_oPivotCashDefinition.IsInit() && CachePtr->m_oPivotCashDefinition->m_oCacheSource.IsInit()
+				&& CachePtr->m_oPivotCashDefinition->m_oCacheSource->m_oType.IsInit()
+				&& CachePtr->m_oPivotCashDefinition->m_oCacheSource->m_oType->GetValue() == SimpleTypes::Spreadsheet::ESourceCacheType::typeSourceWorksheet)
+				{
+					writer.globalInfoPtr->mapPivotCacheIndex.emplace(cacheHeader->m_oCacheId->GetValue(), cacheNum);
+					cacheNum++;
+				}
 		}
 	}
 	workbookStream->m_GlobalsSubstream = m_pWorkbook->toXLS();
 	auto CastedGlobalsStram = static_cast<XLS::GlobalsSubstream*>(workbookStream->m_GlobalsSubstream.get());
 	CastedGlobalsStram->global_info_ = writer.globalInfoPtr;
-	for(auto i : m_arWorksheets)
-		workbookStream->m_arWorksheetSubstream.push_back(i->toXLS());
-	CastedGlobalsStram->m_arSUPBOOK.push_back(m_pWorkbook->WriteXtiRefsXLS());
-	if(m_pSharedStrings != nullptr)
-		m_pSharedStrings->toXLS(workbookStream->m_GlobalsSubstream);
+
 	auto themesPtr = m_pWorkbook->Find(OOX::FileTypes::Theme);
 	if(!(themesPtr->type() == OOX::FileTypes::Unknown))
 	{	auto counter = 0;
 		auto theme = static_cast<PPTX::Theme*>(themesPtr.GetPointer());
-		for(auto themeColor : theme->themeElements.clrScheme.Scheme)
+		CastedGlobalsStram->m_THEME = theme->toXLS(oFilePath);
+	}
+
+	for(auto i : m_arWorksheets)
+		workbookStream->m_arWorksheetSubstream.push_back(i->toXLS(workbookStream->m_GlobalsSubstream));
+	CastedGlobalsStram->m_arSUPBOOK.push_back(m_pWorkbook->WriteXtiRefsXLS());
+	{
+		auto functionsVector = m_pWorkbook->m_oDefinedNames->AddFutureFunctions(CastedGlobalsStram->m_arLBL.size(), true);
+		if(!functionsVector.empty())
 		{
-			if(themeColor.first == L"lt1")
-				counter = 0;
-			else if(themeColor.first == L"dk1")
-				counter = 1;
-			else if(themeColor.first == L"lt2")
-				counter = 2;
-			else if(themeColor.first == L"dk2")
-				counter = 3;
-			else if(themeColor.first == L"accent1")
-				counter = 4;
-			else if(themeColor.first == L"accent2")
-				counter = 5;
-			else if(themeColor.first == L"accent3")
-				counter = 6;
-			else if(themeColor.first == L"accent4")
-				counter = 7;
-			else if(themeColor.first == L"accent5")
-				counter = 8;
-			else if(themeColor.first == L"accent6")
-				counter = 9;
-			else if(themeColor.first == L"hlink")
-				counter = 10;
-			else if(themeColor.first == L"folHlink")
-				counter = 11;
-			else continue;
-			auto tempcolor = themeColor.second;
-			std::wstringstream sStream;
-			sStream << std::hex  << std::setw(6) << std::setfill(L'0')<< tempcolor.Color->GetARGB(0);
-			writer.globalInfoPtr->RegisterPaletteColor(counter, sStream.str());
+			std::copy(functionsVector.begin(), functionsVector.end(), std::back_inserter(CastedGlobalsStram->m_arLBL));
 		}
 	}
+
+	if(m_pSharedStrings != nullptr)
+		m_pSharedStrings->toXLS(workbookStream->m_GlobalsSubstream);
+
 	if(m_pStyles != nullptr)
 		m_pStyles->toXLS(workbookStream->m_GlobalsSubstream);
 
@@ -273,6 +270,8 @@ bool OOX::Spreadsheet::CXlsx::WriteXLS(const CPath& oFilePath)
 				continue;
 			auto cacheFilePtr = m_pWorkbook->Find(cacheHeader->m_oRid->GetValue());
 			auto CachePtr = static_cast<CPivotCacheDefinitionFile*>(cacheFilePtr.GetPointer());
+			if(!CachePtr->m_oPivotCashDefinition.IsInit())
+				continue;
 			auto XLSBinCache = CachePtr->m_oPivotCashDefinition->toXLS(cacheHeader->m_oCacheId->GetValue());
 			auto castedCache = static_cast<XLS::PIVOTCACHE*>(XLSBinCache.get());
 			auto cacheRecordsPtr = CachePtr->Find(OOX::SpreadsheetBin::FileTypes::PivotCacheRecordsBin);
@@ -401,7 +400,7 @@ void OOX::Spreadsheet::CXlsx::PrepareWorkbook()
 		
 		m_pWorkbook->m_oBookViews->m_arrItems.push_back(pWorkbookView);
 	}
-	//add sheet if there is none
+	//add sheet if there isn't one
 	if (m_arWorksheets.empty())
 	{
 		OOX::Spreadsheet::CWorksheet* pWorksheet = new OOX::Spreadsheet::CWorksheet(this);
@@ -450,7 +449,7 @@ void OOX::Spreadsheet::CXlsx::PrepareWorkbook()
 		
 		m_pWorkbook->m_oSheets->m_arrItems.push_back(pSheet);
 	}
-	//Make sure that there are always zero styles and the first font always has the font and size
+	//ensure that there are always zero styles and the first font always has font name and size
 	if( m_pStyles )
 	{
 		//Fonts
@@ -531,12 +530,12 @@ void OOX::Spreadsheet::CXlsx::PrepareWorkbook()
 			pXfs->m_oNumFmtId->SetValue(0);
 		}
 	}
-	//Transfer <is> tags and cells with type str to sharedString if they weren't transferred when read
+	//move <is> tags and cells with str type to sharedString if they weren't moved during reading
 	for (size_t i = 0; i < m_arWorksheets.size(); ++i)
 	{
 		PrepareWorksheet(m_arWorksheets[i]);
 	}
-	//todo parses dates in iso 8601 format
+	//todo parse dates in iso 8601 format
 }
 void OOX::Spreadsheet::CXlsx::PrepareWorksheet(CWorksheet* pWorksheet)
 {
@@ -570,7 +569,7 @@ void OOX::Spreadsheet::CXlsx::PrepareWorksheet(CWorksheet* pWorksheet)
 						if(NULL != pSi)
 						{
 							int nIndex = m_pSharedStrings->AddSi(pSi);
-							//change the cell value
+							//change cell value
 							pCell->m_oValue.Init();
                             pCell->m_oValue->m_sText = std::to_wstring(nIndex);
 							//change cell type
@@ -591,7 +590,7 @@ void OOX::Spreadsheet::CXlsx::PrepareWorksheet(CWorksheet* pWorksheet)
 							pSi->m_arrItems.push_back(pText);
 
 							int nIndex = m_pSharedStrings->AddSi(pSi);
-							//change the cell value
+							//change cell value
 							pCell->m_oValue.Init();
 							pCell->m_oValue->m_sText = std::to_wstring(nIndex);
 							//change cell type
@@ -609,7 +608,7 @@ void OOX::Spreadsheet::CXlsx::PrepareWorksheet(CWorksheet* pWorksheet)
 					}
 					else if(SimpleTypes::Spreadsheet::celltypeBool == pCell->m_oType->GetValue())
 					{
-						//Usually it is written 1/0, but sometimes it is written true/false
+						//usually written as 1/0, but sometimes true/false is encountered
 						if(pCell->m_oValue.IsInit())
 						{
 							SimpleTypes::COnOff oOnOff;

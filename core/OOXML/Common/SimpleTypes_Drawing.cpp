@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "SimpleTypes_Drawing.h"
@@ -128,7 +138,7 @@ namespace SimpleTypes
 		}
 		else
 		{
-			// Don't check the last two characters
+			// Don't check last two characters
 			for ( size_t nIndex = 0; nIndex < sValue.length() - 2; nIndex++ )
 			{
 				if ( !iswdigit( sValue[nIndex] ) && sValue[nIndex] != '.' && sValue[nIndex] != '-' )
@@ -148,7 +158,7 @@ namespace SimpleTypes
 		else
 		{
 			this->m_eValue = adjcoordinateCoord;
-			// The value is stored in m_dValue
+			// Value is stored in m_dValue
 		}
 	}
 
@@ -858,7 +868,7 @@ namespace SimpleTypes
 
 	void CGeomGuideFormula::Parse()
 	{
-		// TO DO: Parse formulas. See page 3244 Part1.
+		// TO DO: Implement formula parsing. See p.3244 Part1.
 	}
 
 	//--------------------------------------------------------------------------------
@@ -1386,7 +1396,7 @@ namespace SimpleTypes
 
 	double CPercentage::FromString(const std::wstring &sValue)
 	{
-		//todo it's strange that if a value is received from 0 to 1, then m_dValue is from 0 to 1. In other cases, from 0 to 100
+		//todo strange that if value is from 0 to 1, then m_dValue is from 0 to 1. Otherwise from 0 to 100
 		int nPos = (int)sValue.find( '%' );
 		int nLen = (int)sValue.length();
 		if ( -1 == nPos || nPos != (int)sValue.length() - 1 || nLen <= 0  )
@@ -4390,7 +4400,7 @@ namespace SimpleTypes
 
 } // SimpleTypes
 
-// Here are all the simple Drawing-Word types from the Office Open Xml specification (20.4.3)
+// All simple Drawing-Word types from Office Open Xml specification (20.4.3) are presented here
 namespace SimpleTypes
 {
 	//--------------------------------------------------------------------------------
@@ -4679,19 +4689,19 @@ namespace SimpleTypes
 
 } // SimpleTypes
 
-// Here are all the simple Drawing-Spreadsheet types from the Office Open Xml specification (20.5.3)
+// All simple Drawing-Spreadsheet types from Office Open Xml specification (20.5.3) are presented here
 namespace SimpleTypes
 {
 
 } // SimpleTypes
 
-// Here are all the simple Drawing-Charts types from the Office Open Xml specification (21.2.3, 21.3.3)
+// All simple Drawing-Charts types from Office Open Xml specification (21.2.3, 21.3.3) are presented here
 namespace SimpleTypes
 {
 
 } // SimpleTypes
 
-// Here are all the simple Drawing-Diagrams types from the Office Open Xml specification (21.4.7)
+// All simple Drawing-Diagrams types from Office Open Xml specification (21.4.7) are presented here
 namespace SimpleTypes
 {	
 	EHueDirType CHueDirType::FromString(const std::wstring &sValue)

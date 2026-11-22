@@ -1,30 +1,41 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "Path.h"
 #include "File.h"
-#include <stack>
+#include <vector>
+#include <cwctype>
 
 #if defined(_WIN32) || defined (_WIN64)
 #include <tchar.h>
@@ -186,65 +197,172 @@ namespace NSSystemPath
 		return NormalizePathTemplate<wchar_t>(strFileName, canHead);
 	}
 
-	std::wstring ShortenPath(const std::wstring &strPath, const bool& bRemoveExternalPath)
+	static bool IsPathSeparator(const wchar_t& wchSymbol)
 	{
-		std::stack<std::wstring> arStack;
+		return L'/' == wchSymbol || L'\\' == wchSymbol;
+	}
+
+	static bool IsDriveLetter(const wchar_t& wchSymbol)
+	{
+		return (L'a' <= wchSymbol && wchSymbol <= L'z') || (L'A' <= wchSymbol && wchSymbol <= L'Z');
+	}
+
+	static size_t GetRootLength(const std::wstring& wsPath)
+	{
+		const size_t nLength = wsPath.length();
+
+		if (0 == nLength)
+			return 0;
+
+		if (nLength > 1 && L':' == wsPath[1] && IsDriveLetter(wsPath[0]))
+			return (nLength > 2 && IsPathSeparator(wsPath[2])) ? 3 : 2;
+
+		if (IsPathSeparator(wsPath[0]))
+			return (nLength > 1 && IsPathSeparator(wsPath[1])) ? 2 : 1;
+
+		return 0;
+	}
+
+	struct TNormalizedPath
+	{
+		std::wstring              m_wsRoot;
+		std::vector<std::wstring> m_arParts;
+		size_t                    m_nLeadingUp;
+		bool                      m_bAbsolute;
+
+		TNormalizedPath() : m_nLeadingUp(0), m_bAbsolute(false) {}
+	};
+
+	static TNormalizedPath SplitNormalized(const std::wstring& wsPath)
+	{
+		TNormalizedPath oResult;
+
+		const size_t nRootLength = GetRootLength(wsPath);
+
+		for (size_t i = 0; i < nRootLength; ++i)
+			oResult.m_wsRoot += IsPathSeparator(wsPath[i]) ? L'/' : wsPath[i];
+
+		oResult.m_bAbsolute = !oResult.m_wsRoot.empty() &&
+		                      IsPathSeparator(oResult.m_wsRoot[oResult.m_wsRoot.length() - 1]);
+
 		std::wstring wsToken;
 
-		for (size_t i = 0; i < strPath.size(); ++i) 
+		for (size_t i = nRootLength; i <= wsPath.length(); ++i)
 		{
-			if (L'/' == strPath[i] || L'\\' == strPath[i])
+			if (i < wsPath.length() && !IsPathSeparator(wsPath[i]))
 			{
-				if (L".." == wsToken)
-				{
-					if (!arStack.empty() && L".." != arStack.top())
-						arStack.pop();
-					else
-						arStack.push(wsToken);
-				}
-				else if (L"." != wsToken && !wsToken.empty())
-					arStack.push(wsToken);
-	
-				wsToken.clear();
+				wsToken += wsPath[i];
+				continue;
 			}
-			else
-				wsToken += strPath[i];
+
+			if (L".." == wsToken)
+			{
+				if (!oResult.m_arParts.empty())
+					oResult.m_arParts.pop_back();
+				else if (!oResult.m_bAbsolute)
+					++oResult.m_nLeadingUp;
+			}
+			else if (L"." != wsToken && !wsToken.empty())
+				oResult.m_arParts.push_back(wsToken);
+
+			wsToken.clear();
 		}
 
-		if (L".." == wsToken)
-		{
-			if (!arStack.empty() && L".." == arStack.top())
-				arStack.pop();
-			else
-				arStack.push(wsToken);
-		}
-		else if (L"." != wsToken && !wsToken.empty())
-			arStack.push(wsToken);
+		return oResult;
+	}
 
-		wsToken.clear();
+	static bool EqualComponent(const std::wstring& wsFirst, const std::wstring& wsSecond)
+	{
+		#if defined(_WIN32) || defined(_WIN64)
+		if (wsFirst.length() != wsSecond.length())
+			return false;
 
-		if (arStack.empty())
-			return std::wstring();
+		for (size_t i = 0; i < wsFirst.length(); ++i)
+			if (towlower(wsFirst[i]) != towlower(wsSecond[i]))
+				return false;
 
-		std::wstring wsNewPath;
-
-		while (!arStack.empty()) 
-		{
-			if (bRemoveExternalPath && L".." == arStack.top())
-				break;
-
-			wsNewPath = arStack.top() + L'/' + wsNewPath;
-			arStack.pop();
-		}
-
-		wsNewPath.pop_back();
-
-		#if !defined(_WIN32) && !defined(_WIN64)
-		if (L'/' == strPath[0] || L'\\' == strPath[0])
-			return L'/' + wsNewPath;
+		return true;
+		#else
+		return wsFirst == wsSecond;
 		#endif
+	}
+
+	std::wstring ShortenPath(const std::wstring &wsPath, const bool& bRemoveExternalPath)
+	{
+		const TNormalizedPath oPath{SplitNormalized(wsPath)};
+
+		std::wstring wsNewPath = oPath.m_wsRoot;
+		size_t nWritten = 0;
+
+		if (!bRemoveExternalPath)
+		{
+			for (size_t i = 0; i < oPath.m_nLeadingUp; ++i)
+			{
+				if (0 != nWritten++)
+					wsNewPath += L'/';
+
+				wsNewPath += L"..";
+			}
+		}
+
+		for (size_t i = 0; i < oPath.m_arParts.size(); ++i)
+		{
+			if (0 != nWritten++)
+				wsNewPath += L'/';
+
+			wsNewPath += oPath.m_arParts[i];
+		}
 
 		return wsNewPath;
+	}
+
+	bool IsPathInDirectory(const std::wstring& wsDirectory, const std::wstring& wsPath)
+	{
+		if (wsDirectory.empty())
+			return false;
+
+		const TNormalizedPath oDirectory{SplitNormalized(wsDirectory)};
+		const TNormalizedPath oPath     {SplitNormalized(wsPath)};
+
+		if (oDirectory.m_bAbsolute != oPath.m_bAbsolute)
+			return false;
+
+		if (!EqualComponent(oDirectory.m_wsRoot, oPath.m_wsRoot))
+			return false;
+
+		if (0 != oDirectory.m_nLeadingUp || 0 != oPath.m_nLeadingUp)
+			return false;
+
+		if (oPath.m_arParts.size() < oDirectory.m_arParts.size())
+			return false;
+
+		for (size_t i = 0; i < oDirectory.m_arParts.size(); ++i)
+			if (!EqualComponent(oDirectory.m_arParts[i], oPath.m_arParts[i]))
+				return false;
+
+		return true;
+	}
+
+	std::wstring ResolveInDirectory(const std::wstring& wsBoundaryDirectory, const std::wstring& wsBaseDirectory, const std::wstring& wsRelativePath)
+	{
+		if (wsBoundaryDirectory.empty() || wsRelativePath.empty())
+			return std::wstring();
+
+		size_t nStart = 0;
+		while (nStart < wsRelativePath.length() && IsPathSeparator(wsRelativePath[nStart]))
+			++nStart;
+
+		const std::wstring wsDocumentPath = wsRelativePath.substr(nStart);
+
+		if (wsDocumentPath.empty() || 0 != GetRootLength(wsDocumentPath))
+			return std::wstring();
+
+		const std::wstring wsFullPath{ShortenPath(Combine(wsBaseDirectory, wsDocumentPath))};
+
+		if (!IsPathInDirectory(wsBoundaryDirectory, wsFullPath))
+			return std::wstring();
+
+		return wsFullPath;
 	}
 	
 }

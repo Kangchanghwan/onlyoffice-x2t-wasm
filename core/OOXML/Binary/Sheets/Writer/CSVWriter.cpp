@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "CSVWriter.h"
 #include "../Reader/CellFormatController/LocalInfo.h"
@@ -30,6 +40,7 @@
 #include "../../../../DesktopEditor/common/StringExt.h"
 
 #include "../../../../DesktopEditor/common/File.h"
+#include "../../../../DesktopEditor/common/Directory.h"
 #include "../../../XlsxFormat/Xlsx.h"
 
 #include "../../../XlsxFormat/Workbook/Workbook.h"
@@ -55,6 +66,7 @@ public:
 	~Impl();
 
 	bool Start(const std::wstring &sFileDst);
+	void StartSheet(int nIndex, const std::wstring& sName);
 	void WriteSheetStart(OOX::Spreadsheet::CWorksheet* pWorksheet);
 	void WriteRowStart(OOX::Spreadsheet::CRow *pRow);
 	void WriteCell(OOX::Spreadsheet::CCell *pCell);
@@ -64,7 +76,13 @@ public:
 	void Close();
 
 	int m_nColStartBeginning = 1;
+	bool m_bAllSheets = false;
+	std::wstring m_sSheetsExt = L"csv";
 private:
+	bool OpenFile(const std::wstring &sFileDst);
+	void EndFile();
+
+	std::wstring m_sSheetsDir;
 
 	NSFile::CFileBinary m_oFile;
 	OOX::Spreadsheet::CXlsx& m_oXlsx;
@@ -84,7 +102,7 @@ private:
 
 	int m_nColDimension;
 
-	bool m_bIsWriteCell; // Only needed for writing JSON
+	bool m_bIsWriteCell; // Only needed for JSON writing
 	bool m_bStartRow;
 	bool m_bStartCell;
 
@@ -131,9 +149,9 @@ void CSVWriter::Xlsx2Csv(const std::wstring &sFileDst, OOX::Spreadsheet::CXlsx &
 	if (oXlsx.m_pWorkbook)
 	{
 		LONG lActiveSheet = oXlsx.m_pWorkbook->GetActiveSheetIndex();
-		std::wstring sSheetRId = _T("Sheet1"); // Read not by rId, but by sheet name
-											   // Get active sheet rId (to convert to CSV need to use name, because this is our binary from js scripts and there is no rId yet
-											   // For JSON, rId must be used, because when opened they are used
+		std::wstring sSheetRId = _T("Sheet1"); // Read by sheet name, not by rId
+											   // Get active sheet rId (for CSV conversion need to use name, since this is our binary from js-scripts and there's no rId yet
+											   // For json need to use rId, since they are used on opening
 		if (oXlsx.m_pWorkbook->m_oSheets.IsInit() && !oXlsx.m_pWorkbook->m_oSheets->m_arrItems.empty())
 		{
 			OOX::Spreadsheet::CSheet* pSheet = NULL;
@@ -177,6 +195,23 @@ bool CSVWriter::Start(const std::wstring &sFileDst)
 	if (impl_)
 		return impl_->Start(sFileDst);
 	return false;
+}
+void CSVWriter::SetAllSheets(bool val, const std::wstring& sExt)
+{
+	if (impl_)
+	{
+		impl_->m_bAllSheets = val;
+		impl_->m_sSheetsExt = sExt;
+	}
+}
+bool CSVWriter::IsAllSheets() const
+{
+	return impl_ ? impl_->m_bAllSheets : false;
+}
+void CSVWriter::StartSheet(int nIndex, const std::wstring& sName)
+{
+	if (impl_)
+		impl_->StartSheet(nIndex, sName);
 }
 void CSVWriter::WriteSheetStart(OOX::Spreadsheet::CWorksheet* pWorksheet)
 {
@@ -398,12 +433,12 @@ std::wstring CSVWriter::Impl::convert_date_time(const std::wstring & sValue, std
 
                 }
 
-                //currentTime->tm_year = date_.year() - 1900;  // Set the year
-                //currentTime->tm_mon = date_.month() - 1;     // Set the month (from 0 to 11)
-                //currentTime->tm_mday = date_.day();          // Set the day
+                //currentTime->tm_year = date_.year() - 1900;  // Set year
+                //currentTime->tm_mon = date_.month() - 1;     // Set month (from 0 to 11)
+                //currentTime->tm_mday = date_.day();          // Set day
 
 
-                //wss << std::put_time(currentTime, L"%x");  // Format "%x" - date format for the current locale
+                //wss << std::put_time(currentTime, L"%x");  // Format "%x" - date format for current locale
 
                 //date_str = wss.str();
 			}
@@ -414,12 +449,12 @@ std::wstring CSVWriter::Impl::convert_date_time(const std::wstring & sValue, std
 
 				std::time_t now = std::time(nullptr);
 				std::tm* currentTime = std::localtime(&now);
-				currentTime->tm_hour = hours;     // Setting the hours
-				currentTime->tm_min = minutes;    // Setting the minutes
-				currentTime->tm_sec = sec;    // Setting the seconds
+				currentTime->tm_hour = hours;     // Set hours
+				currentTime->tm_min = minutes;    // Set minutes
+				currentTime->tm_sec = sec;    // Set seconds
 
 				wss.imbue(loc_);
-				wss << std::put_time(currentTime, L"%X");  // Format "%X" - time format for the current locale
+				wss << std::put_time(currentTime, L"%X");  // Format "%X" - time format for current locale
 
 				time_str = wss.str();
 			}
@@ -666,8 +701,8 @@ void WriteFile(NSFile::CFileBinary *pFile, wchar_t **pWriteBuffer, int &nCurrent
 
 	if (nCountChars + nCurrentIndex > c_nSize || bIsEnd)
 	{
-		// The buffer is full, write
-		if (nCodePage == 48 && 2 == sizeof(wchar_t))//todo 48 temporary CP_UTF16
+		// Buffer is full, write
+		if (nCodePage == 48 && 2 == sizeof(wchar_t))//todo 48 temporarily CP_UTF16
 		{
 			pFile->WriteFile((BYTE*)*pWriteBuffer, sizeof(wchar_t) * nCurrentIndex);
 		}
@@ -711,36 +746,102 @@ CSVWriter::Impl::~Impl()
 }
 bool CSVWriter::Impl::Start(const std::wstring &sFileDst)
 {
+	if (m_bAllSheets)
+	{
+		// A directory: StartSheet opens a file in it for each sheet
+		m_sSheetsDir = sFileDst;
+		if (!NSDirectory::Exists(m_sSheetsDir))
+			NSDirectory::CreateDirectories(m_sSheetsDir);
+		return NSDirectory::Exists(m_sSheetsDir);
+	}
+	return OpenFile(sFileDst);
+}
+bool CSVWriter::Impl::OpenFile(const std::wstring &sFileDst)
+{
 	bool res = m_oFile.CreateFileW(sFileDst);
 	if (!res) return false;
 
-	// Need to write the header
+	// Need to write header
 	if (46 == m_nCodePage)//todo 46 temporarily CP_UTF8
 	{
 		BYTE arUTF8[3] = { 0xEF, 0xBB, 0xBF };
 		m_oFile.WriteFile(arUTF8, 3);
 	}
-	else if (48 == m_nCodePage)//todo 48 temporary CP_UTF16
+	else if (48 == m_nCodePage)//todo 48 temporarily CP_UTF16
 	{
 		BYTE arUTF16[2] = { 0xFF, 0xFE };
 		m_oFile.WriteFile(arUTF16, 2);
 	}
-	else if (49 == m_nCodePage)//todo 49 temporary CP_unicodeFFFE
+	else if (49 == m_nCodePage)//todo 49 temporarily CP_unicodeFFFE
 	{
 		BYTE arBigEndian[2] = { 0xFE, 0xFF };
 		m_oFile.WriteFile(arBigEndian, 2);
 	}
 	return true;
 }
+// The sheet's name as part of a file name - safe on every system rather than exact. White space becomes
+// '_'; control and invisible formatting characters, halves of surrogate pairs and, of ASCII, everything
+// but letters, digits, '_' and '-' are dropped. That is more than a file name forbids, which costs nothing:
+// the number in front of the name keeps the files apart. 64 characters at most, empty when nothing is left.
+static std::wstring SheetFileNamePart(const std::wstring& sName)
+{
+	const size_t c_nMax = 64;
+	std::wstring sOut;
+	for (size_t i = 0; i < sName.length() && sOut.length() < c_nMax; ++i)
+	{
+		unsigned int c = (unsigned int)sName[i];
+		if (c >= 0xD800 && c <= 0xDFFF)
+		{
+			// a UTF-16 pair is kept whole; half of one, or a surrogate in a 32-bit string, is not a character
+			if (2 == sizeof(wchar_t) && c <= 0xDBFF && i + 1 < sName.length() &&
+				(unsigned int)sName[i + 1] >= 0xDC00 && (unsigned int)sName[i + 1] <= 0xDFFF)
+			{
+				if (sOut.length() + 2 > c_nMax)
+					break;
+				sOut += sName[i];
+				sOut += sName[i + 1];
+				++i;
+			}
+			continue;
+		}
+		if (0x20 == c || 0x09 == c || 0xA0 == c || 0x1680 == c || (c >= 0x2000 && c <= 0x200A) ||
+			0x202F == c || 0x205F == c || 0x3000 == c)
+		{
+			sOut += L'_';
+			continue;
+		}
+		if (c < 0x20 || (c >= 0x7F && c <= 0x9F))
+			continue; // control characters
+		if ((c >= 0x200B && c <= 0x200F) || (c >= 0x2028 && c <= 0x202E) || (c >= 0x2060 && c <= 0x206F) ||
+			0xFEFF == c || c >= 0xFFF0)
+			continue; // invisible formatting, line and paragraph separators, byte order mark, specials
+		if (c < 0x80 && !((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || '_' == c || '-' == c))
+			continue; // ASCII punctuation
+		sOut += (wchar_t)c;
+	}
+	return sOut;
+}
+void CSVWriter::Impl::StartSheet(int nIndex, const std::wstring& sName)
+{
+	if (!m_bAllSheets)
+		return;
+	Close();
+	std::wstring sNamePart = SheetFileNamePart(sName);
+	OpenFile(m_sSheetsDir + FILE_SEPARATOR_STR + L"sheet" + std::to_wstring(nIndex) +
+			 (sNamePart.empty() ? L"" : L"." + sNamePart) + L"." + m_sSheetsExt);
+}
 void CSVWriter::Impl::WriteSheetStart(OOX::Spreadsheet::CWorksheet* pWorksheet)
 {
 	m_nColDimension = 1;
 	m_nRowCurrent = 1;
+	// A sheet after the first one (all sheets) starts from its own first row and its own view
+	m_bStartRow = true;
+	m_bShowFormulas = false;
 	if (m_bJSON)
 	{
 		WriteFile(&m_oFile, &m_pWriteBuffer, m_nCurrentIndex, g_sBkt, m_nCodePage);
 	}
-	
+
 	if (pWorksheet && pWorksheet->m_oSheetViews.IsInit() && false == pWorksheet->m_oSheetViews->m_arrItems.empty())
 	{
 		if (pWorksheet->m_oSheetViews->m_arrItems[0]->m_oShowFormulas.IsInit() &&
@@ -791,7 +892,7 @@ void CSVWriter::Impl::WriteCell(OOX::Spreadsheet::CCell *pCell)
 	{
 		if (m_bJSON && false == m_bIsWriteCell)
 		{
-			// Write empty lines (for JSON)
+			// Write empty rows (for JSON)
 			WriteFile(&m_oFile, &m_pWriteBuffer, m_nCurrentIndex, g_sDoubleQuote, m_nCodePage);
 		}
 		// Write delimiter
@@ -873,7 +974,7 @@ void CSVWriter::Impl::WriteCell(OOX::Spreadsheet::CCell *pCell)
 									}
 								}
 							}
-							else if(formatTypeIsDateTime) // if the date format isn't set explicitly, delete it and write the date in the local format
+							else if(formatTypeIsDateTime) // if date format is not explicitly set, remove it and write date in local format
 							{
 								format_code = L"";
 							}
@@ -918,7 +1019,7 @@ void CSVWriter::Impl::WriteRowEnd(OOX::Spreadsheet::CRow* pWorksheet, bool bLast
 		WriteFile(&m_oFile, &m_pWriteBuffer, m_nCurrentIndex, g_sEndJson, m_nCodePage);
 	else
 	{
-		while (m_nColDimension > m_nColCurrent && !bLast) // TODO - write dimension in binary - and take data from there
+		while (m_nColDimension > m_nColCurrent && !bLast) // todo - write dimension in binary - and take data from there
 		{
 			// Write delimiter
 			++m_nColCurrent;
@@ -934,15 +1035,24 @@ void CSVWriter::Impl::WriteSheetEnd(OOX::Spreadsheet::CWorksheet* pWorksheet)
 		WriteFile(&m_oFile, &m_pWriteBuffer, m_nCurrentIndex, g_sEndJson, m_nCodePage);
 		WriteFile(&m_oFile, &m_pWriteBuffer, m_nCurrentIndex, g_sEndJson, m_nCodePage, true);
 	}
+	else if (m_bAllSheets)
+	{
+		// The sheet's own file ends here, the same way the one file of the active sheet ends in End
+		EndFile();
+		Close();
+	}
+}
+void CSVWriter::Impl::EndFile()
+{
+	// Now we write like MS Excel (write new line to file)
+	WriteFile(&m_oFile, &m_pWriteBuffer, m_nCurrentIndex, g_sNewLineN, m_nCodePage);
+	WriteFile(&m_oFile, &m_pWriteBuffer, m_nCurrentIndex, g_sNewLineN, m_nCodePage, true);
 }
 void CSVWriter::Impl::End()
 {
-	// Now write like MS Excel (write a new line to the file)
-	if (!m_bJSON)
-	{
-		WriteFile(&m_oFile, &m_pWriteBuffer, m_nCurrentIndex, g_sNewLineN, m_nCodePage);
-		WriteFile(&m_oFile, &m_pWriteBuffer, m_nCurrentIndex, g_sNewLineN, m_nCodePage, true);
-	}
+	// With all sheets every file was already ended by WriteSheetEnd
+	if (!m_bJSON && !m_bAllSheets)
+		EndFile();
 	Close();
 }
 void CSVWriter::Impl::Close()
@@ -1034,7 +1144,7 @@ void CSVWriter::Impl::GetDefaultFormatCode(int numFmt, std::wstring & format_cod
 	case 47:	format_code = L"mmss.0";		format_type = SimpleTypes::Spreadsheet::celltypeTime; break;
 
 	default:
-		////////////////////////////////// with undefined format_code .. it is set in the file
+		/////////////////////////////////// with undefined format_code .. it is set in file
 		if (numFmt >= 5 && numFmt <= 8)		format_type = SimpleTypes::Spreadsheet::celltypeCurrency;
 		if (numFmt >= 41 && numFmt <= 44)	format_type = SimpleTypes::Spreadsheet::celltypeCurrency;
 
@@ -1060,7 +1170,7 @@ std::wstring CSVWriter::Impl::ConvertValueCellToString(const std::wstring &value
 {
 	if (false == format_code.empty())
 	{
-		format_code.erase(std::remove(format_code.begin(), format_code.end(), L'"'), format_code.end());//remove escape quotes from format
+		format_code.erase(std::remove(format_code.begin(), format_code.end(), L'"'), format_code.end());//remove escaping quotes from format
 		std::vector<std::wstring> format_codes;
 		boost::algorithm::split(format_codes, format_code, boost::algorithm::is_any_of(L";"), boost::algorithm::token_compress_on);
 
@@ -1121,12 +1231,31 @@ std::wstring CSVWriter::Impl::ConvertValueCellToString(const std::wstring &value
 
 				size_t pos_comma = format_code.find(L",", pos_start);
 				size_t pos_dot = format_code.find(L".", pos_start);
+				size_t real_dot = format_code.find(L".");
+
 
 				if (std::wstring::npos != pos_dot)
 				{
 					numberFormat.bFloat = true;
 					numberFormat.count_float = (pos_zero_end != std::wstring::npos) ? (pos_zero_end - pos_dot) : 0;
 					numberFormat.count_int = (pos_zero_start != std::wstring::npos) ? (pos_dot - pos_zero_start) : 0;
+				}
+				else if (real_dot != std::wstring::npos)
+				{
+					numberFormat.bFloat = true;
+					// calculating fraction part
+					numberFormat.count_float = (pos_zero_end != std::wstring::npos && pos_zero_end > real_dot)
+											? (pos_zero_end - real_dot) : 0;
+					// calculating digits before dot
+					if (pos_zero_start != std::wstring::npos && pos_zero_start < real_dot)
+					{
+						numberFormat.count_int = real_dot - pos_zero_start;
+					}
+					else
+					{
+						pos_start = 0;
+						numberFormat.count_int = 0;
+					}
 				}
 				else
 				{

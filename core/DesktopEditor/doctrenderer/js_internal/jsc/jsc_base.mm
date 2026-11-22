@@ -6,7 +6,7 @@ using namespace NSJSBase;
 class CGlobalContext
 {
 private:
-	// Assume the vector will be small, so it should be faster than a map
+	// assuming vector will be small, so it will be faster than map
 	std::vector<std::pair<ASC_THREAD_ID, CJSContextPrivate*>> m_contexts;
 	bool m_bIsOldVersion;
 

@@ -1,26 +1,36 @@
 /*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #ifndef _PDF_FILE_H
 #define _PDF_FILE_H
@@ -33,6 +43,7 @@
 #endif
 
 #include "../DesktopEditor/graphics/IRenderer.h"
+#include "../DesktopEditor/graphics/MetafileToRenderer.h"
 #include "../DesktopEditor/graphics/pro/Image.h"
 #include "../DesktopEditor/graphics/pro/officedrawingfile.h"
 #include "../DesktopEditor/xmlsec/src/include/Certificate.h"
@@ -68,14 +79,14 @@ namespace PdfFile
 		errorNone          = 0, // No errors
 		errorOpenFile      = 1, // Error opening PDF file
 		errorBadCatalog    = 2, // Couldn't read the page catalog
-		errorDamaged       = 3, // The PDF file has been damaged and can't be recovered.
-		errorEncrypted     = 4, // The file is encrypted, authorization failed
+		errorDamaged       = 3, // PDF file was damaged and cannot be recovered
+		errorEncrypted     = 4, // File is encrypted, authorization failed
 		errorHighlightFile = 5, // Nonexistent or invalid highlight file
-		errorBadPrinter    = 6, // Invalid printer
+		errorBadPrinter    = 6, // Bad printer
 		errorPrinting      = 7, // Error during printing
 		errorPermission    = 8, // Error related to file restrictions
-		errorBadPageNum    = 9, // Invalid number of pages
-		errorFileIO        = 10,// Read/write error
+		errorBadPageNum    = 9, // Invalid page number
+		errorFileIO        = 10,// Error reading/writing
 		errorMemory        = 11 // Memory exceed
 	} EError;
 }
@@ -86,21 +97,22 @@ public:
 	CPdfFile(NSFonts::IApplicationFonts* pAppFonts);
 	virtual ~CPdfFile();
 	NSFonts::IFontManager* GetFontManager();
-	// In reading mode, closing the reader, it is possible to open a new one
-	// In editing mode, closing writer, it is possible to use reader
+	// In read mode closes reader, allows opening a new one
+	// In edit mode closes writer, allows using reader
 	virtual void Close();
 
 	// --- EDIT ---
-	// Switches to editing mode. Pdf should already be open for reading - LoadFromFile/LoadFromMemory
+	// Switches to edit mode. Pdf must already be opened for reading - LoadFromFile/LoadFromMemory
 	bool EditPdf(const std::wstring& wsDstFile = L"");
 	void EditClose();
 	void SetEditType(int nType);
-	// Manipulations with pages are possible in editing mode
+	void RedactInfo(int nFlag, const std::vector<IAdvancedCommand*>& arrForms);
+	// Page manipulations are possible in edit mode
 	bool EditPage  (int nPageIndex);
 	bool DeletePage(int nPageIndex);
 	bool AddPage   (int nPageIndex);
 	bool MovePage  (int nPageIndex, int nPos);
-	bool MergePages(const std::wstring& wsPath, int nMaxID = 0, const std::wstring& wsPrefixForm = L"");
+	bool MergePagesEdit(BYTE* data, DWORD length, int nMaxID = 0, const std::wstring& wsPrefixForm = L"");
 	bool PrintPages(const std::vector<bool>& arrPages, int nFlag);
 	HRESULT ChangePassword(const std::wstring& wsPath, const std::wstring& wsPassword = L"");
 
@@ -111,6 +123,7 @@ public:
 	void SetCMapMemory(BYTE* pData, DWORD nSizeData);
 	void SetCMapFolder(const std::wstring& sFolder);
 	void SetCMapFile(const std::wstring& sFile);
+	void SetDrawOnlyText(bool bDraw);
 	void ToXml(const std::wstring& sFile, bool bSaveStreams = false);
 
 	static bool GetMetaData(const std::wstring& sFile, const std::wstring& sMetaName, BYTE** pMetaData, DWORD& nMetaLength);
@@ -122,6 +135,7 @@ public:
 
 	virtual std::wstring GetTempDirectory();
 	virtual void SetTempDirectory(const std::wstring& wsPath);
+	void SetCorrector(IMetafileToRenderter* pCorrector);
 
 	virtual int GetPagesCount();
 	virtual void GetPageInfo(int nPageIndex, double* pdWidth, double* pdHeight, double* pdDpiX, double* pdDpiY);
@@ -129,9 +143,10 @@ public:
 	virtual std::wstring GetInfo();
 	virtual BYTE* GetStructure();
 	virtual BYTE* GetLinks(int nPageIndex);
+	virtual void SetPainter(IOfficeDrawingFilePainter* pPainter);
 
 	bool ValidMetaData();
-	// Captures the received memory malloc data
+	// Takes ownership of malloc data memory
 	bool MergePages(BYTE* data, DWORD length, int nMaxID = 0, const std::string& sPrefixForm = "");
 	bool UnmergePages();
 	bool RedactPage(int nPageIndex, double* arrRedactBox, int nLengthX8, BYTE* pChanges = NULL, int nLength = 0);
@@ -141,15 +156,18 @@ public:
 	int GetRotate(int nPageIndex);
 	int GetMaxRefID();
 	void SetPageFonts(int nPageIndex);
+	BYTE* GetMacros();
 	BYTE* GetWidgets();
 	BYTE* GetAnnotEmbeddedFonts();
 	BYTE* GetAnnotStandardFonts();
+	BYTE* GetAllFonts(int* arrPageIndex, int nLength, bool bCheck = true);
 	BYTE* GetAnnots    (int nPageIndex = -1);
 	BYTE* SplitPages   (const int* arrPageIndex, unsigned int unLength, BYTE* pChanges = NULL, DWORD nLength = 0);
 	BYTE* VerifySign   (const std::wstring& sFile, ICertificate* pCertificate, int nWidget = -1);
 	BYTE* GetAPWidget  (int nRasterW, int nRasterH, int nBackgroundColor, int nPageIndex, int nWidget  = -1, const char* sView  = NULL, const char* sBView = NULL);
 	BYTE* GetAPAnnots  (int nRasterW, int nRasterH, int nBackgroundColor, int nPageIndex, int nAnnot   = -1, const char* sView  = NULL);
 	BYTE* GetButtonIcon(int nBackgroundColor, int nPageIndex, bool bBase64 = false, int nBWidget = -1, const char* sIView = NULL);
+	BYTE* EditPdfToMemory(BYTE* pChanges = NULL, DWORD nLength = 0, const wchar_t* sPassword = NULL);
 	BYTE* GetGIDByUnicode(const std::wstring& wsFontName);
 	std::wstring GetFontPath(const std::wstring& wsFontName);
 	std::wstring GetEmbeddedFontPath(const std::wstring& wsFontName);
@@ -158,6 +176,7 @@ public:
 
 	void CreatePdf    (bool isPDFA = false);
 	int  SaveToFile   (const std::wstring& wsPath);
+	int  SaveToMemory (BYTE** pData, int* pLength, bool bForWasm = false);
 	void RotatePage   (int nRotate);
 	void SetPassword  (const std::wstring& wsPassword);
 	void SetDocumentID(const std::wstring& wsDocumentID);
@@ -169,6 +188,7 @@ public:
 
 	HRESULT OnlineWordToPdf          (const std::wstring& wsSrcFile, const std::wstring& wsDstFile, CConvertFromBinParams* pParams = NULL);
 	HRESULT OnlineWordToPdfFromBinary(const std::wstring& wsSrcFile, const std::wstring& wsDstFile, CConvertFromBinParams* pParams = NULL);
+	HRESULT CommandsToPdfFromBinary(BYTE* pBuffer, unsigned int nLen, CConvertFromBinParams* pParams = NULL);
 	HRESULT AddToPdfFromBinary(BYTE* pBuffer, unsigned int nLen, CConvertFromBinParams* pParams = NULL);
 	HRESULT DrawImageWith1bppMask(IGrObject* pImage, NSImages::CPixJbig2* pMaskBuffer, const unsigned int& unMaskWidth, const unsigned int& unMaskHeight, const double& dX, const double& dY, const double& dW, const double& dH);
 	HRESULT DrawImage1bpp(NSImages::CPixJbig2* pImageBuffer, const unsigned int& unWidth, const unsigned int& unHeight, const double& dX, const double& dY, const double& dW, const double& dH);
@@ -180,7 +200,7 @@ public:
 	//----------------------------------------------------------------------------------------
 	virtual HRESULT get_Type(LONG* lType);
 	//----------------------------------------------------------------------------------------
-	// Functions for working with the page
+	// Functions for working with page
 	//----------------------------------------------------------------------------------------
 	virtual HRESULT NewPage();
 	virtual HRESULT get_Height(double* dHeight);
@@ -190,7 +210,7 @@ public:
 	virtual HRESULT get_DpiX(double* dDpiX);
 	virtual HRESULT get_DpiY(double* dDpiY);
 	//----------------------------------------------------------------------------------------
-	// Pen functions
+	// Functions for working with Pen
 	//----------------------------------------------------------------------------------------
 	virtual HRESULT get_PenColor(LONG* lColor);
 	virtual HRESULT put_PenColor(const LONG& lColor);
@@ -276,7 +296,7 @@ public:
 	virtual HRESULT BeginCommand(const DWORD& lType);
 	virtual HRESULT EndCommand(const DWORD& lType);
 	//----------------------------------------------------------------------------------------
-	// Functions for working with paths
+	// Functions for working with path
 	//----------------------------------------------------------------------------------------
 	virtual HRESULT PathCommandMoveTo(const double& dX, const double& dY);
 	virtual HRESULT PathCommandLineTo(const double& dX, const double& dY);
@@ -294,12 +314,12 @@ public:
 	virtual HRESULT PathCommandText      (const std::wstring& wsUnicodeText,                                                           const double& dX, const double& dY, const double& dW, const double& dH);
 	virtual HRESULT PathCommandTextEx    (const std::wstring& wsUnicodeText, const unsigned int* pGids, const unsigned int nGidsCount, const double& dX, const double& dY, const double& dW, const double& dH);
 	//----------------------------------------------------------------------------------------
-	// Functions for displaying images
+	// Functions for image output
 	//----------------------------------------------------------------------------------------
 	virtual HRESULT DrawImage(IGrObject* pImage, const double& dX, const double& dY, const double& dW, const double& dH);
 	virtual HRESULT DrawImageFromFile(const std::wstring& wsImagePath, const double& dX, const double& dY, const double& dW, const double& dH, const BYTE& nAlpha = 255);
 	//----------------------------------------------------------------------------------------
-	// Functions for setting conversion
+	// Functions for setting transformation
 	//----------------------------------------------------------------------------------------
 	virtual HRESULT SetTransform(const double& dM11, const double& dM12, const double& dM21, const double& dM22, const double& dX, const double& dY);
 	virtual HRESULT GetTransform(double* dM11, double* dM12, double* dM21, double* dM22, double* dX, double* dY);
@@ -310,7 +330,7 @@ public:
 	virtual HRESULT get_ClipMode(LONG* lMode);
 	virtual HRESULT put_ClipMode(const LONG& lMode);
 	//----------------------------------------------------------------------------------------
-	// Additional features
+	// Additional functions
 	//----------------------------------------------------------------------------------------
 	virtual HRESULT CommandLong(const LONG& lType, const LONG& lCommand);
 	virtual HRESULT CommandDouble(const LONG& lType, const double& dCommand);

@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "ApplicationFonts.h"
 #include "../common/File.h"
@@ -424,11 +434,11 @@ namespace NSCharsets
 
 	static void GetCodePageByCharset(unsigned char unCharset, unsigned int *pulBit, unsigned int *punLongIndex)
 	{
-		// This function returns the parameters to pass as input to
-		// AVSFontManager::IsUnicodeRangeAvailable
+		// This function returns parameters to be passed to
+		// AVSFontManager::IsUnicodeRangeAvailable function
 
 
-		// Corresponding Charset -> Codepage: http://support.microsoft.com/kb/165478
+		// Charset -> Codepage mapping: http://support.microsoft.com/kb/165478
 		// http://msdn.microsoft.com/en-us/library/cc194829.aspx
 
 		//  Charset Name       Charset Value(hex)  Codepage number
@@ -454,7 +464,7 @@ namespace NSCharsets
 		//  VIETNAMESE_CHARSET      163 (xA3)            1258
 		//  MAC_CHARSET              77 (x4D)
 
-		// Match CodePage -> ulCodePageRange1 : http://www.microsoft.com/Typography/otspec/os2.htm#cpr
+		// CodePage -> ulCodePageRange1 mapping: http://www.microsoft.com/Typography/otspec/os2.htm#cpr
 
 		if ( punLongIndex )
 			*punLongIndex = 4;
@@ -562,8 +572,8 @@ int CFontList::GetSigPenalty(UINT ulCandRanges[6], UINT ulReqRanges[6], double d
 {
 	double dPenalty = 0;
 
-	// First, count how many distinct spaces are needed.
-	// Use the total count to calculate the weight of one missing space.
+	// First we check how many different ranges are needed.
+	// Based on the total count, we find the weight of 1 missing range.
 
 	bool isSuferflouous = (dRangeWeightSuferflouous < 1) ? false : true;
 	int nRangesCount = 0;
@@ -598,8 +608,8 @@ int CFontList::GetFixedPitchPenalty(INT bCandFixed, INT bReqFixed)
 {
 	int nPenalty = 0;
 
-	// If the request is monospace and the candidate isn't monospace, then the weight is 15000
-	// If the request isn't monospace, but the candidate is monospace, then the weight is 350
+	// If monospace is requested but candidate is not monospace, weight is 15000
+	// If non-monospace is requested but candidate is monospace, weight is 350
 	if ( bReqFixed && !bCandFixed )
 		nPenalty = 15000;
 	if ( !bReqFixed && bCandFixed )
@@ -733,13 +743,13 @@ int CFontList::GetBoldPenalty(INT bCandBold, INT bReqBold)
 
 int CFontList::GetFontFormatPenalty(NSFonts::EFontFormat eCandFormat, NSFonts::EFontFormat eReqFormat)
 {
-	// MSDN only mentions TrueType, but compare
-	// all format types and assign weight = 4 on mismatch. If the format isn't specified
-	// treat it as TrueType by default.
+	// MSDN documentation only mentions TrueType. But we will compare
+	// all format types and give weight = 4 on mismatch. If format is not specified
+	// we assume it's TrueType by default.
 
 	if ( eReqFormat == NSFonts::fontUnknown )
 	{
-		// If the format is unknown, assume it is definitely not TrueType.
+		// We assume that when format is unknown, it's 100% not TrueType.
 		if ( eCandFormat == NSFonts::fontTrueType )
 			return 4;
 		else
@@ -953,12 +963,12 @@ NSFonts::CFontInfo* CFontList::GetByParams(NSFonts::CFontSelectFormat& oSelect, 
 
 	if (bIsDictionaryUse)
 	{
-		// Don't create a duplicate; the caller creates this object only for selection and doesn't use it afterwards
+		// don't make a duplicate!!! The object is created only for selection and not used afterwards
 		NSFontDictionary::CorrectParamsFromDictionary(oSelect);
 	}
 
-	int nMinIndex   = 0; // Font number in the list with minimum weight
-	int nMinPenalty = -1; // Minimum weight
+	int nMinIndex   = 0; // Index of font with minimum penalty in the list
+	int nMinPenalty = -1; // Minimum penalty
 
 	int nDefPenalty = 2147483647;
 	NSFonts::CFontInfo* pInfoMin = NULL;
@@ -1033,7 +1043,7 @@ NSFonts::CFontInfo* CFontList::GetByParams(NSFonts::CFontSelectFormat& oSelect, 
 			//if ( NULL != oSelect.bItalic )
 			//  nCurPenalty += GetItalicPenalty( pInfo->m_bItalic, *oSelect.bItalic );
 
-			// Always check; otherwise bold may be selected by name only, making the result depend on font order
+			// always check!!! otherwise bold may be selected by name only, creating dependency on font order
 			nCurPenalty += GetBoldPenalty( pInfo->m_bBold, (NULL != oSelect.bBold) ? *oSelect.bBold : FALSE );
 			nCurPenalty += GetItalicPenalty( pInfo->m_bItalic, (NULL != oSelect.bItalic) ? *oSelect.bItalic : FALSE );
 
@@ -1074,7 +1084,7 @@ NSFonts::CFontInfo* CFontList::GetByParams(NSFonts::CFontSelectFormat& oSelect, 
 				nMinPenalty = nCurPenalty;
 			}
 
-			// A font satisfying all parameters was found; there is no need to keep searching
+			// Found a font satisfying all parameters, no need to search further
 			if ( 0 == nCurPenalty )
 				break;
 		}
@@ -1128,10 +1138,9 @@ void CFontList::Add(FT_Library pLibrary, FT_Parameter* pParams, const std::wstri
 	if (FT_Open_Face( pLibrary, &oOpenArgs, 0, &pFace ))
 		return;
 
-	// TO DO: Fonts that can't be scaled (i.e. resized
-	// arbitrarily) aren't loaded. This may be needed in the future
-	// Make sure this option works too. (in Word these fonts are
-	// not used)
+	// TO DO: Fonts that cannot be scaled (i.e. resize arbitrarily)
+	// are not loaded. In the future we may need to support such fonts
+	// as well. (Word does not use such fonts)
 	if ( !( pFace->face_flags & FT_FACE_FLAG_SCALABLE ) )
 	{
 		FT_Done_Face( pFace );
@@ -1206,8 +1215,8 @@ void CFontList::Add(FT_Library pLibrary, FT_Parameter* pParams, const std::wstri
 
 		if ( true )
 		{
-			// Special branch for cases when charset can be specified not through values
-			// ulCodePageRange, but directly through the Cmap type.
+			// Special branch for cases when charset can be specified not through
+			// ulCodePageRange values, but directly through Cmap type.
 
 			//  Charset Name       Charset Value(hex)  Codepage number   Platform_ID   Encoding_ID   Description
 			//  -------------------------------------------------------------------------------------------------
@@ -1448,7 +1457,7 @@ void CFontList::LoadFromArrayFiles(std::vector<std::wstring>& oArray, int nFlag)
 	pParams[3].tag  = FT_PARAM_TAG_IGNORE_PREFERRED_SUBFAMILY;
 	pParams[3].data = NULL;
 
-	// determine the size of the buffer so as not to allocate many pieces, but to make do with one
+	// determine buffer size to avoid allocating many chunks, use a single one instead
 	int nMaxFontSize = 0;
 	for (size_t nIndex = 0; nIndex < nCount; ++nIndex)
 	{
@@ -1458,7 +1467,7 @@ void CFontList::LoadFromArrayFiles(std::vector<std::wstring>& oArray, int nFlag)
 			int nSizeTmp = (int)oFile.GetFileSize();
 			if (nSizeTmp > 100000000)
 			{
-				// such huge fonts aren't taken into account
+				// skip such huge fonts
 				oArray.erase(oArray.begin() + nIndex, oArray.begin() + nIndex + 1);
 				nIndex--;
 				nCount--;
@@ -1736,7 +1745,7 @@ static long GetNextNameValue(HKEY key, const std::wstring& sSubkey, std::wstring
 std::vector<std::wstring> CApplicationFonts::GetSetupFontFiles(const bool& bIsUseUserFonts)
 {
 #if defined(_WIN32) || defined (_WIN64)
-	// Find the directory with fonts (usually C:\Windows\Fonts)
+	// Find the fonts directory (usually C:\Windows\Fonts)
 	wchar_t wsWinFontDir[MAX_PATH];
 	wsWinFontDir[0] = (wchar_t)'\0';
 

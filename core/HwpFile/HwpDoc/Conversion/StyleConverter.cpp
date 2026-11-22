@@ -1,3 +1,38 @@
+/*
+ * Copyright (C) Ascensio System SIA, 2009-2026
+ *
+ * This program is a free software product. You can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License (AGPL)
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
+ * Section 5 of the GNU AGPL version 3.
+ *
+ * No trademark rights are granted under this License.
+ *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 #include "StyleConverter.h"
 #include "../Common/WriterContext.h"
 #include "Transform.h"
@@ -67,6 +102,10 @@ std::wstring CStyleConverter::CreateStyle(short shParaShapeId, short shParaStyle
 
 	const std::wstring wsStyleName = GenerateUniqueID(wsParaStyleName);
 
+	const CHWPRecordCharShape *pCharShapeRecord = dynamic_cast<const CHWPRecordCharShape*>(oContext.GetCharShape(pParaStyle->GetCharShapeId()));
+
+	const int nStyleCharHeight = (nullptr != pCharShapeRecord) ? pCharShapeRecord->GetHeight() : 0;
+
 	m_oStylesXml.WriteString(L"<w:style w:type=\"paragraph\" w:customStyle=\"1\" w:styleId=\"");
 	m_oStylesXml.WriteEncodeXmlString(wsStyleName);
 	m_oStylesXml.WriteString(L"\">");
@@ -75,10 +114,8 @@ std::wstring CStyleConverter::CreateStyle(short shParaShapeId, short shParaStyle
 	m_oStylesXml.WriteString(L"\"/>");
 	m_oStylesXml.WriteString(L"<w:qFormat/>");
 	m_oStylesXml.WriteString(L"<w:pPr>");
-	WriteParagraphProperties(GenerateParagraphStyle(*pParaShapeRecord), m_oStylesXml);
+	WriteParagraphProperties(GenerateParagraphStyle(*pParaShapeRecord, nStyleCharHeight), m_oStylesXml);
 	m_oStylesXml.WriteString(L"</w:pPr>");
-
-	const CHWPRecordCharShape *pCharShapeRecord = dynamic_cast<const CHWPRecordCharShape*>(oContext.GetCharShape(pParaStyle->GetCharShapeId()));
 
 	if (nullptr != pCharShapeRecord)
 	{
@@ -97,7 +134,7 @@ std::wstring CStyleConverter::CreateStyle(short shParaShapeId, short shParaStyle
 	return wsStyleName;
 }
 
-bool CStyleConverter::WriteDifferenceParagraphStyles(short shFirtsParaShapeId, short shSecondParaShapeId, CWriterContext& oContext, NSStringUtils::CStringBuilder& oBuilder)
+bool CStyleConverter::WriteDifferenceParagraphStyles(short shFirtsParaShapeId, int nFirstCharHeight, short shSecondParaShapeId, int nSecondCharHeight, CWriterContext& oContext, NSStringUtils::CStringBuilder& oBuilder)
 {
 	const CHWPRecordParaShape* pFirstParaShape = dynamic_cast<const CHWPRecordParaShape*>(oContext.GetParaShape(shFirtsParaShapeId));
 
@@ -109,8 +146,8 @@ bool CStyleConverter::WriteDifferenceParagraphStyles(short shFirtsParaShapeId, s
 	if (nullptr == pSecondParaShape)
 		return false;
 
-	CParagraphsStyle oFirstParagraphStyle {GenerateParagraphStyle(*pFirstParaShape )};
-	CParagraphsStyle oSecondParagraphStyle{GenerateParagraphStyle(*pSecondParaShape)};
+	CParagraphsStyle oFirstParagraphStyle {GenerateParagraphStyle(*pFirstParaShape,  nFirstCharHeight )};
+	CParagraphsStyle oSecondParagraphStyle{GenerateParagraphStyle(*pSecondParaShape, nSecondCharHeight)};
 
 	oSecondParagraphStyle -= oFirstParagraphStyle;
 
@@ -164,7 +201,7 @@ std::wstring CStyleConverter::GenerateUniqueID(const std::wstring& wsName)
 	return wsName + std::to_wstring(++m_mUsedStyleNames[wsName]);
 }
 
-CParagraphsStyle CStyleConverter::GenerateParagraphStyle(const CHWPRecordParaShape& oParaShape)
+CParagraphsStyle CStyleConverter::GenerateParagraphStyle(const CHWPRecordParaShape& oParaShape, int nCharHeight)
 {
 	CParagraphsStyle oParagraphsStyle;
 
@@ -198,21 +235,32 @@ CParagraphsStyle CStyleConverter::GenerateParagraphStyle(const CHWPRecordParaSha
 	{
 		case 0x0:
 		{
-			oParagraphsStyle.SetSpacingLineRule(ELineRule::Auto);
-			oParagraphsStyle.SetSpacing(static_cast<int>(2.4 * (double)oParaShape.GetLineSpacing())); // 240 / 100
+			const int nExactLine = (0 < nCharHeight) ? nCharHeight * oParaShape.GetLineSpacing() / 500 : 0;
+
+			if (0 < nExactLine)
+			{
+				oParagraphsStyle.SetSpacingLineRule(ELineRule::Exact);
+				oParagraphsStyle.SetSpacing(nExactLine);
+			}
+			else
+			{
+				oParagraphsStyle.SetSpacingLineRule(ELineRule::Auto);
+				oParagraphsStyle.SetSpacing(static_cast<int>(2.4 * (double)oParaShape.GetLineSpacing())); // 240 / 100
+			}
+
 			break;
 		}
 		case 0x01:
 		{
 			oParagraphsStyle.SetSpacingLineRule(ELineRule::Exact);
-			oParagraphsStyle.SetSpacing(static_cast<int>((double)oParaShape.GetLineSpacing() / 10.)); /*0.352778*/; //(1pt=0.352778mm) //TODO:: verify when a test file is found
+			oParagraphsStyle.SetSpacing(static_cast<int>((double)oParaShape.GetLineSpacing() / 10.)); /*0.352778*/; //(1pt=0.352778mm) //TODO:: verify when an example is found
 			break;
 		}
 		case 0x02:
 		case 0x03:
 		{
 			oParagraphsStyle.SetSpacingLineRule(ELineRule::AtLeast);
-			oParagraphsStyle.SetSpacing(static_cast<int>((double)oParaShape.GetLineSpacing() / 10.)); //TODO:: verify when a test file is found
+			oParagraphsStyle.SetSpacing(static_cast<int>((double)oParaShape.GetLineSpacing() / 10.)); //TODO:: verify when an example is found
 			break;
 		}
 		default:
@@ -220,10 +268,10 @@ CParagraphsStyle CStyleConverter::GenerateParagraphStyle(const CHWPRecordParaSha
 	}
 
 	if (0 != oParaShape.GetMarginPrev())
-		oParagraphsStyle.SetSpacingBefore(static_cast<int>((double)oParaShape.GetMarginPrev() / 10.));
+		oParagraphsStyle.SetSpacingBefore(Transform::HWPUINT2Twips(oParaShape.GetMarginPrev()));
 
 	if (0 != oParaShape.GetMarginNext())
-		oParagraphsStyle.SetSpacingAfter(static_cast<int>((double)oParaShape.GetMarginNext() / 10.));
+		oParagraphsStyle.SetSpacingAfter(Transform::HWPUINT2Twips(oParaShape.GetMarginNext()));
 
 	return oParagraphsStyle;
 }
@@ -320,24 +368,24 @@ void CStyleConverter::WriteParagraphProperties(const CParagraphsStyle& oParagrap
 		{
 			if (oParagraphsStyle.GetFirstLine() > 0)
 			{
-				oBuilder.WriteString(L" w:firstLine=\"" + std::to_wstring(static_cast<int>(std::round(oParagraphsStyle.GetFirstLine() / 10.))) + L"\"");
+				oBuilder.WriteString(L" w:firstLine=\"" + std::to_wstring(Transform::HWPUINT2Twips(oParagraphsStyle.GetFirstLine())) + L"\"");
 
 				if (0 != nLeftInd)
-					oBuilder.WriteString(L" w:left=\"" + std::to_wstring(static_cast<int>(std::round(nLeftInd / 10.))) + L"\"");
+					oBuilder.WriteString(L" w:left=\"" + std::to_wstring(Transform::HWPUINT2Twips(nLeftInd)) + L"\"");
 			}
 			else
 			{
-				const int nHanging{static_cast<int>(std::round(-oParagraphsStyle.GetFirstLine() / 10.))};
+				const int nHanging{Transform::HWPUINT2Twips(-oParagraphsStyle.GetFirstLine())};
 
 				oBuilder.WriteString(L" w:hanging=\"" + std::to_wstring(nHanging) + L"\"");
-				oBuilder.WriteString(L" w:left=\"" + std::to_wstring(static_cast<int>(std::round(nLeftInd / 10.)) + nHanging) + L"\"");
+				oBuilder.WriteString(L" w:left=\"" + std::to_wstring(Transform::HWPUINT2Twips(nLeftInd) + nHanging) + L"\"");
 			}
 		}
 		else if (0 != nLeftInd)
-			oBuilder.WriteString(L" w:left=\"" + std::to_wstring(static_cast<int>(std::round(oParagraphsStyle.GetLeftInd() / 10.))) + L"\"");
+			oBuilder.WriteString(L" w:left=\"" + std::to_wstring(Transform::HWPUINT2Twips(oParagraphsStyle.GetLeftInd())) + L"\"");
 
 		if (oParagraphsStyle.RightIndIsSet() && 0 != oParagraphsStyle.GetRightInd())
-			oBuilder.WriteString(L" w:right=\"" + std::to_wstring(static_cast<int>(std::round(oParagraphsStyle.GetRightInd() / 10.))) + L"\"");
+			oBuilder.WriteString(L" w:right=\"" + std::to_wstring(Transform::HWPUINT2Twips(oParagraphsStyle.GetRightInd())) + L"\"");
 
 		oBuilder.WriteString(L"/>");
 	}
@@ -366,21 +414,26 @@ void CStyleConverter::WriteParagraphProperties(const CParagraphsStyle& oParagrap
 
 	if (oParagraphsStyle.SpacingLineRuleIsSet() || oParagraphsStyle.SpacingIsSet() || oParagraphsStyle.SpacingBeforeIsSet() || oParagraphsStyle.SpacingAfterIsSet())
 	{
-		oBuilder.WriteString(L"<w:spacing w:lineRule=\"");
+		oBuilder.WriteString(L"<w:spacing");
 
-		if (oParagraphsStyle.SpacingLineRuleIsSet())
+		if (oParagraphsStyle.SpacingLineRuleIsSet() || oParagraphsStyle.SpacingIsSet())
 		{
-			switch (oParagraphsStyle.GetSpacingLineRule())
-			{
-				case ELineRule::Auto: oBuilder.WriteString(L"auto"); break;
-				case ELineRule::Exact:  oBuilder.WriteString(L"exact"); break;
-				case ELineRule::AtLeast: oBuilder.WriteString(L"atLeast"); break;
-			}
-		}
-		else
-			oBuilder.WriteString(L"auto");
+			oBuilder.WriteString(L" w:lineRule=\"");
 
-		oBuilder.WriteString(L"\" w:line=\"" + std::to_wstring((oParagraphsStyle.SpacingIsSet()) ? oParagraphsStyle.GetSpacing() : DEFAULT_SPACING) + L"\"");
+			if (oParagraphsStyle.SpacingLineRuleIsSet())
+			{
+				switch (oParagraphsStyle.GetSpacingLineRule())
+				{
+					case ELineRule::Auto: oBuilder.WriteString(L"auto"); break;
+					case ELineRule::Exact:  oBuilder.WriteString(L"exact"); break;
+					case ELineRule::AtLeast: oBuilder.WriteString(L"atLeast"); break;
+				}
+			}
+			else
+				oBuilder.WriteString(L"auto");
+
+			oBuilder.WriteString(L"\" w:line=\"" + std::to_wstring((oParagraphsStyle.SpacingIsSet()) ? oParagraphsStyle.GetSpacing() : DEFAULT_SPACING) + L"\"");
+		}
 
 		if (oParagraphsStyle.SpacingBeforeIsSet())
 			oBuilder.WriteString(L" w:before=\"" + std::to_wstring(oParagraphsStyle.GetSpacingBefore()) + L"\"");
@@ -428,10 +481,13 @@ void CStyleConverter::WriteRunnerProperties(const CRunnerStyle& oRunnerStyle, NS
 		oBuilder.WriteString(L"<w:rFonts");
 
 		if (!wsAScii.empty())
-			oBuilder.WriteString(L" w:ascii=\"" + wsAScii +  L"\" w:hAnsi=\"" + wsAScii + L"\" w:cs=\"" + wsAScii + L'"');
+		{
+			const std::wstring wsEncodedAScii{EncodeXmlString(wsAScii)};
+			oBuilder.WriteString(L" w:ascii=\"" + wsEncodedAScii +  L"\" w:hAnsi=\"" + wsEncodedAScii + L"\" w:cs=\"" + wsEncodedAScii + L'"');
+		}
 
 		if (!wsEastAsia.empty())
-			oBuilder.WriteString(L" w:eastAsia=\"" + wsEastAsia + L'"');
+			oBuilder.WriteString(L" w:eastAsia=\"" + EncodeXmlString(wsEastAsia) + L'"');
 
 		oBuilder.WriteString(L"/>");
 	}
@@ -799,10 +855,19 @@ EHighlightColors NormalizeHighlightColor(const TColor& oCurrentColor)
 
 TLineSpacing& TLineSpacing::operator-=(const TLineSpacing& oLineSpacing)
 {
+	const CProperty<ELineRule> oLineRule{m_eLineRule};
+	const CProperty<int> oLine{m_nLine};
+
 	m_eLineRule -= oLineSpacing.m_eLineRule;
 	m_nLine     -= oLineSpacing.m_nLine;
 	m_nAfter    -= oLineSpacing.m_nAfter;
 	m_nBefore   -= oLineSpacing.m_nBefore;
+
+	if (m_eLineRule.IsSet() != m_nLine.IsSet())
+	{
+		m_eLineRule = oLineRule;
+		m_nLine     = oLine;
+	}
 
 	return *this;
 }

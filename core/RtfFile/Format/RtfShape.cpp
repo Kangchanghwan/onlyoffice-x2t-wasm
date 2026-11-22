@@ -1,30 +1,41 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "RtfShape.h"
 #include "../OOXml/Writer/OOXWriter.h"
 #include "RtfOle.h"
+#include "DumpHrWmf.h"
 
 #include "../../UnicodeConverter/UnicodeConverter.h"
 
@@ -180,6 +191,10 @@ void RtfShape::SetDefault()
 	DEFAULT_PROPERTY( m_nGeoRight)
 	DEFAULT_PROPERTY( m_nGeoBottom)
 	DEFAULT_PROPERTY( m_nShapePath)
+	DEFAULT_PROPERTY( m_nInscribeLeft)
+	DEFAULT_PROPERTY( m_nInscribeTop)
+	DEFAULT_PROPERTY( m_nInscribeRight)
+	DEFAULT_PROPERTY( m_nInscribeBottom)
 //Picture Effects
 	DEFAULT_PROPERTY( m_nCropFromTop )
 	DEFAULT_PROPERTY( m_nCropFromBottom )
@@ -233,6 +248,10 @@ void RtfShape::SetDefault()
 	DEFAULT_PROPERTY( m_nLineEndArrowLength )
 	DEFAULT_PROPERTY( m_nLineWidth )
 	DEFAULT_PROPERTY( m_nLineDashing )
+    DEFAULT_PROPERTY( m_nHrAlign )
+    DEFAULT_PROPERTY( m_nHrPct )
+    DEFAULT_PROPERTY( m_nHrHeight )
+    DEFAULT_PROPERTY( m_nHrWeight )
 
 	DEFAULT_PROPERTY( m_nGtextSize )
 	DEFAULT_PROPERTY( m_bGtext )
@@ -251,6 +270,9 @@ void RtfShape::SetDefault()
 	m_bInGroup		= false;
 	m_bIsGroup		= false;
 	m_bIsOle		= false;
+    m_bHr           = false;
+    m_bHrNoShade    = false;
+    m_bHrStd        = false;
 	
 	m_oCharProperty.SetDefault();
 }
@@ -261,7 +283,7 @@ std::wstring RtfShape::RenderToRtf(RenderParameter oRenderParameter)
 	if ( PROP_DEF == m_nShapeType) return L"";
 	
     std::wstring sResult;
-	//save the coordinates and rotate if necessary
+	//save coordinates and rotate if needed
 	int nLeft		= m_nLeft;
 	int nTop		= m_nTop;
 	int nRight		= m_nRight;
@@ -337,13 +359,52 @@ std::wstring RtfShape::RenderToRtf(RenderParameter oRenderParameter)
 				sResult += L"}";
 			}
 		}
+        else if (m_bHr)
+        {
+            int nHrWidth  = (PROP_DEF != m_nRelRight)  ? m_nRelRight  : m_nRight;
+            int nHrHeight = (PROP_DEF != m_nRelBottom) ? m_nRelBottom : m_nBottom;
+
+            sResult+=L"{\\pict";
+            sResult+=L"{\\*\\picprop";
+            RENDER_RTF_INT( m_nID, sResult, L"shplid" );
+            if (nHrHeight != PROP_DEF)
+            {
+                sResult += L"{\\sp{\\sn dxHeightHR}{\\sv " + std::to_wstring(nHrHeight) + L"}}";
+            }
+            if (nHrWidth != PROP_DEF)
+            {
+                sResult += L"{\\sp{\\sn dxWidthHR}{\\sv " + std::to_wstring(nHrWidth) + L"}}";
+            }
+            sResult +=  RenderToRtfShapeProperty( oRenderParameter );
+            sResult += L"}";
+
+            int nHrColor = (PROP_DEF != m_nFillColor) ? m_nFillColor : 0x00A0A0A0;
+            unsigned char nR = (unsigned char)( nHrColor        & 0xFF);
+            unsigned char nG = (unsigned char)((nHrColor >> 8)  & 0xFF);
+            unsigned char nB = (unsigned char)((nHrColor >> 16) & 0xFF);
+
+            int nGoalW = (PROP_DEF != nHrWidth)  ? nHrWidth  : 1440;
+            int nGoalH = (PROP_DEF != nHrHeight) ? nHrHeight : 20;
+            int nPicW = (int)((long long)nGoalW * 2540 / 1440);
+            int nPicH = (int)((long long)nGoalH * 2540 / 1440);
+
+            sResult += L"\\picscalex100\\picscaley100\\piccropl0\\piccropr0\\piccropt0\\piccropb0";
+            sResult += L"\\picw"     + std::to_wstring(nPicW);
+            sResult += L"\\pich"     + std::to_wstring(nPicH);
+            sResult += L"\\picwgoal" + std::to_wstring(nGoalW);
+            sResult += L"\\pichgoal" + std::to_wstring(nGoalH);
+            sResult += L"\\wmetafile8\n";
+            sResult += WMF::GenerateHrWmfHex(nR, nG, nB);
+
+            sResult += L"}";
+        }
 		else
 		{
 			if (m_bBackground)
 				sResult += L"{\\*\\background";
 
-			sResult += L"{\\shp";
-			sResult += L"{\\*\\shpinst";
+            sResult += L"{\\shp";
+            sResult += L"{\\*\\shpinst";
 			
 			if (!m_bInGroup)
 			{
@@ -485,7 +546,7 @@ std::wstring RtfShape::RenderToRtf(RenderParameter oRenderParameter)
 		}
 		sResult += L"}";
 	}
-	//restore the coordinates and rotate if necessary
+	//restore coordinates and rotate if needed
 	m_nLeft			= nLeft;
 	m_nTop			= nTop;
 	m_nRight		= nRight;
@@ -619,6 +680,23 @@ std::wstring RtfShape::RenderToRtfShapeProperty(RenderParameter oRenderParameter
             sResult += L";" + std::to_wstring( m_aPSegmentInfo[i] );
         sResult += L"}}";
     }
+	if ( PROP_DEF != m_nInscribeLeft && PROP_DEF != m_nInscribeTop && PROP_DEF != m_nInscribeRight && PROP_DEF != m_nInscribeBottom )
+	{
+		std::wstring sHex = L"010001001000";
+		int rect[4] = { m_nInscribeLeft, m_nInscribeTop, m_nInscribeRight, m_nInscribeBottom };
+		const wchar_t hexd[] = L"0123456789abcdef";
+		for (int n = 0; n < 4; n++)
+		{
+			unsigned int u = (unsigned int)rect[n];
+			for (int byte = 0; byte < 4; byte++)
+			{
+				unsigned int b = (u >> (byte * 8)) & 0xFF;
+				sHex += hexd[(b >> 4) & 0xF];
+				sHex += hexd[b & 0xF];
+			}
+		}
+		sResult += L"{\\sp{\\sn pInscribe}{\\sv 16;1;" + sHex + L"}}";
+	}
 //Connectors
     RENDER_RTF_SHAPE_PROP(L"cxk",			sResult,		m_nConnectionType );
     RENDER_RTF_SHAPE_PROP(L"cxstyle",		sResult,		m_nConnectorStyle );
@@ -639,7 +717,7 @@ std::wstring RtfShape::RenderToRtfShapeProperty(RenderParameter oRenderParameter
     RENDER_RTF_SHAPE_PROP(L"relRotation",	sResult,   	m_nRelRotation );
     RENDER_RTF_SHAPE_PROP(L"dhgt",			sResult,	m_nRelZOrder );
 //Fill
-	if ( 0 == m_bFilled)
+	if ( 0 == m_bFilled && !(m_bHr && PROP_DEF != m_nFillColor))
 		sResult += L"{\\sp{\\sn fFilled}{\\sv 0}}";
 	RENDER_RTF_SHAPE_PROP(L"fillType",		sResult,	m_nFillType );
     RENDER_RTF_SHAPE_PROP(L"fillColor",		sResult,	m_nFillColor );
@@ -685,6 +763,14 @@ std::wstring RtfShape::RenderToRtfShapeProperty(RenderParameter oRenderParameter
     RENDER_RTF_SHAPE_PROP(L"lineEndArrowLength",    sResult,    m_nLineEndArrowLength );
     RENDER_RTF_SHAPE_PROP(L"lineWidth",             sResult,   	m_nLineWidth );
     RENDER_RTF_SHAPE_PROP(L"lineDashing",           sResult,   	m_nLineDashing );
+    RENDER_RTF_SHAPE_PROP(L"alignHR",               sResult,    m_nHrAlign);
+
+    if (m_bHr)
+        sResult += L"{\\sp{\\sn fHorizRule}{\\sv 1}}";
+    if (m_bHrStd)
+        sResult += L"{\\sp{\\sn fStandardHR}{\\sv 1}}";
+    if (m_bHrNoShade)
+        sResult += L"{\\sp{\\sn fNoshadeHR}{\\sv 1}}";
 
 //pWrapPolygonVertices	Points of the text wrap polygon.
 	if ( !m_aWrapPoints.empty())
@@ -803,7 +889,7 @@ std::wstring RtfShape::RenderToOOX(RenderParameter oRenderParameter)
 							poCurParagraph->GetItem( piCurIDocumentElement, j );
 							if ( NULL != piCurIDocumentElement && TYPE_RTF_OLE == piCurIDocumentElement->GetType() )
 							{
-								//render only the Ole part
+								//render only Ole part
 								RenderParameter oNewParam = oRenderParameter;
 								oNewParam.nType = RENDER_TO_OOX_PARAM_OLE_ONLY;
 								oNewParam.nValue = m_nID;
@@ -826,7 +912,7 @@ std::wstring RtfShape::RenderToOOX(RenderParameter oRenderParameter)
 					}
 				}
 			}
-			//return the text box to its place
+			//return text box to its place
 			m_aTextItems = aTempTextItems;
 		}
 	}
@@ -842,7 +928,10 @@ std::wstring RtfShape::GetShapeNodeName()
 {
 	if (m_bBackground)	return L"v:background";
 	if (m_bIsOle)		return L"v:rect";
-	
+
+	if (!m_aPVerticles.empty() || !m_aPSegmentInfo.empty())
+		return L"v:shape";
+
 	switch(m_nShapeType)
 	{
 		case ODRAW::sptRectangle:			return L"v:rect";
@@ -934,7 +1023,7 @@ std::wstring RtfShape::RenderToOOXBegin(RenderParameter oRenderParameter)
 
 	if (!m_bIsGroup)
 	{
-		if (PROP_DEF != m_nShapeType && 0 != m_nShapeType)
+		if (PROP_DEF != m_nShapeType && 0 != m_nShapeType && m_aPVerticles.empty() && m_aPSegmentInfo.empty())
 		{
 			sShapeStart += L" type=\"#_x0000_t" + std::to_wstring(m_nShapeType) + L"\"";
 			sShapeStart += L" o:spt=\"" + std::to_wstring(m_nShapeType) + L"\"";
@@ -943,7 +1032,7 @@ std::wstring RtfShape::RenderToOOXBegin(RenderParameter oRenderParameter)
         if (1 == m_bFilled || m_nFillColor != PROP_DEF || m_nFillColor2 != PROP_DEF || m_nFillType != PROP_DEF)
             sShapeStart += L" filled=\"t\"";
         else
-            sShapeStart += L" filled=\"f\""; //сф_850000158725_R7_M194_МО_Q194.rtf
+            sShapeStart += L" filled=\"f\""; //invoice_850000158725_R7_M194_MO_Q194.rtf
 
 		if (PROP_DEF == m_bLine)
 		{
@@ -992,7 +1081,7 @@ std::wstring RtfShape::RenderToOOXBegin(RenderParameter oRenderParameter)
 			m_eXAnchor = RtfShape::ax_margin;
 			m_eYAnchor = RtfShape::ay_margin; 
 		}
-		//Don't write if inline
+		//don't write if inline
 		if ( 3 != m_nPositionHRelative || 3 != m_nPositionVRelative )
 		{
             sStyle += L"position:absolute;";
@@ -1249,6 +1338,29 @@ std::wstring RtfShape::RenderToOOXBegin(RenderParameter oRenderParameter)
 	else
 	{
 	}
+    if (m_bHr)
+    {
+        sShapeStart += L" o:hr=\"t\"";
+
+        if (m_bHrStd)
+            sShapeStart += L" o:hrstd=\"t\"";
+
+        if (m_nHrAlign != PROP_DEF)
+        {
+            switch (m_nHrAlign)
+            {
+            case 0: sShapeStart += L" o:hralign=\"left\""; break;
+            case 1: sShapeStart += L" o:hralign=\"center\""; break;
+            case 2: sShapeStart += L" o:hralign=\"right\""; break;
+            }
+        }
+
+        if (m_bHrNoShade)
+            sShapeStart += L" o:hrnoshade=\"t\"";
+
+        if (m_nHrPct != PROP_DEF && m_nHrPct > 0)
+            sShapeStart += L" o:hrpct=\"" + std::to_wstring(m_nHrPct) + L"\"";
+    }
 
 	if (oRenderParameter.nType !=  RENDER_TO_OOX_PARAM_SHAPE_CHILD)
 	{
@@ -1286,7 +1398,7 @@ std::wstring RtfShape::RenderToOOXBegin(RenderParameter oRenderParameter)
 		//Custom
 		if (!m_aPVerticles.empty() || !m_aPSegmentInfo.empty())
 		{
-			CBaseShapePtr base_shape = CPPTShape::CreateByType((PPTShapes::ShapeType)m_nShapeType);
+			CBaseShapePtr base_shape = CPPTShape::CreateByType((PPTShapes::ShapeType)SimpleTypes::Vml::sptNotPrimitive);
 			CPPTShape *custom_shape = dynamic_cast<CPPTShape*>(base_shape.get());
 			if (custom_shape)
 			{
@@ -1438,6 +1550,10 @@ std::wstring RtfShape::RenderToOOXBegin(RenderParameter oRenderParameter)
 		}
 	}
 
+	if ( PROP_DEF != m_nInscribeLeft && PROP_DEF != m_nInscribeTop && PROP_DEF != m_nInscribeRight && PROP_DEF != m_nInscribeBottom )
+		sShapeNodes += L"<v:path textboxrect=\"" + std::to_wstring(m_nInscribeLeft) + L"," + std::to_wstring(m_nInscribeTop)
+					+ L"," + std::to_wstring(m_nInscribeRight) + L"," + std::to_wstring(m_nInscribeBottom) + L"\"/>";
+
 	if ( 0 != m_aTextItems && !m_bIsOle && !m_bIsGroup)
 	{
 		RenderParameter oNewParam = oRenderParameter;
@@ -1484,7 +1600,7 @@ std::wstring RtfShape::RenderToOOXBegin(RenderParameter oRenderParameter)
 		
 		if (m_nShapeType == PROP_DEF || m_nShapeType == 75 || m_bIsOle)
 		{
-            if ( sPicture.empty() )//if the image isn't saved, then the entire shape-picture will be useless
+            if ( sPicture.empty() )//if the image wasn't saved, the entire shape-picture will be useless
 				return L"";
 
  			int nCropLeft	= PROP_DEF;
@@ -1568,7 +1684,7 @@ std::wstring RtfShape::RenderToOOXBegin(RenderParameter oRenderParameter)
 			case 7:	sShapeNodes += L" type=\"gradient\"";	break;
 			case 8:	sShapeNodes += L" type=\"gradient\"";	break;
 			case 9:	sShapeNodes += L" type=\"gradient\"";	break;
-		}//TODO center radial ...
+		}//todooo center radial ...
 
 		if ( PROP_DEF != m_nFillOpacity)
 		{
@@ -1600,7 +1716,7 @@ std::wstring RtfShape::RenderToOOXBegin(RenderParameter oRenderParameter)
 			std::wstring sColors;
 			for (size_t i = 0; i < m_aFillShadeColors.size(); i++)
 			{
-				sColors += std::to_wstring(m_aFillShadeColors[i].second) + L" #" + XmlUtils::ToString(m_aFillShadeColors[i].first, L"%06X") + L";";
+				sColors += std::to_wstring(m_aFillShadeColors[i].second) + L" #" + RtfColor(m_aFillShadeColors[i].first).ToHexColor(true) + L";";
 			}
 			sShapeNodes += L" colors=\"" + sColors.substr(0, sColors.length() - 1) + L"\"";
 		}
@@ -1616,7 +1732,7 @@ std::wstring RtfShape::RenderToOOXBegin(RenderParameter oRenderParameter)
 
         if ( !m_sGtextFont.empty() )
 		{
-			sTextStyle += L"font-family:" + XmlUtils::EncodeXmlString(m_sGtextFont) + L";";//TODO values can be quoted or unquoted - check the unquoted case
+			sTextStyle += L"font-family:" + XmlUtils::EncodeXmlString(m_sGtextFont) + L";";//todooo values both with and without quotes - check without
 		}
 
         if (!sTextStyle.empty())
@@ -1691,7 +1807,7 @@ std::wstring RtfShape::RenderToOOXEnd(RenderParameter oRenderParameter)
 std::wstring RtfShape::GroupRenderToRtf(RenderParameter oRenderParameter)
 {
     std::wstring sResult;
-	//save the coordinates and rotate if necessary
+	//save coordinates and rotate if needed
 	int nLeft		= m_nLeft;
 	int nTop		= m_nTop;
 	int nRight		= m_nRight;
@@ -1797,7 +1913,7 @@ std::wstring RtfShape::GroupRenderToRtf(RenderParameter oRenderParameter)
 		sResult += L"}";
 		sResult += L"}";
 	}
-	//restore the coordinates and rotate if necessary
+	//restore coordinates and rotate if needed
 	m_nLeft			= nLeft;
 	m_nTop			= nTop;
 	m_nRight		= nRight;
@@ -1858,17 +1974,17 @@ void RtfShape::SetNotSupportShape()
 void RtfShape::ToRtfRotation( int nAngel , int &nLeft, int &nTop, int& nRight, int& nBottom )
 {
 	nAngel = nAngel/ 65536;
-	//rotate 45 degrees
+	//rotate by 45 degrees
 	nAngel -= 45;
-	//make an angle from 0 to 360
+	//make angle from 0 to 360
 	nAngel = nAngel % 360;
 
 	if ( nAngel < 0 )	nAngel += 360;
 
-	int nQuater = nAngel / 90; // define a quarter
+	int nQuater = nAngel / 90; // determine the quadrant
 	if ( 0 == nQuater || 2 == nQuater )
 	{
-		//rotate it 90 degrees relative to the center
+		//rotate back 90 degrees relative to center
 		int nCenterX	= ( nLeft + nRight ) / 2;
 		int nCenterY	= ( nTop + nBottom ) / 2;
 		int nWidth		= nRight - nLeft;

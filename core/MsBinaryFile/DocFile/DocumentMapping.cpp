@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "DocumentMapping.h"
 #include "ParagraphPropertiesMapping.h"
@@ -138,7 +148,7 @@ namespace DocFileFormat
 
 	std::vector<std::pair<int, int>> DocumentMapping::get_subsequence( int cpStart, int cpEnd, int fcStars, int fcEnd )
 	{
-		std::vector<std::pair<int, int>> outptu;
+		std::vector<std::pair<int, int>> output;
 
 		int currentFc      = fcStars;
 		int currentCp      = cpStart;
@@ -148,27 +158,28 @@ namespace DocFileFormat
 
 		while ( cpEnd > currentCp)
 		{
+			int lastCp = currentCp;
+
 			currentCp ++;
 			currentFc = m_document->FindFileCharPos(currentCp);
-			if (currentFc < oldElem)
+
+
+			if (currentFc != oldElem + m_document->GetCharSize(lastCp))
 			{
 				currentStart = currentFc;
-				outptu.emplace_back(currentStartcp, currentCp - 1);
+
+				output.emplace_back(currentStartcp, currentCp);
 				currentStartcp = currentCp;
 			}
-			/*else if (currentFc > oldElem)
-			{
-			}
-			else
-			{
-				// -1 //write something in the log
-			}*/
 
 			oldElem = currentFc;
 		}
-		outptu.emplace_back(currentStartcp, currentCp);
+		if ((currentCp > currentStartcp) || output.empty())
+		{
+			output.emplace_back(currentStartcp, currentCp);
+		}
 
-		return outptu;
+		return output;
 	}
 
 	// Writes a Paragraph that starts at the given cp and 
@@ -261,9 +272,8 @@ namespace DocFileFormat
 	int DocumentMapping::writeParagraph( int initialCp, int cpEnd, bool sectionEnd, bool lastBad, int paragraphState )
 	{
 		int		cp							=	initialCp;
-		int		fc							=	m_document->FindFileCharPos(cp); 
-		int		fcEnd						=	m_document->FindFileCharPos(cpEnd);
-        bool    PBookmark                   = false;
+		int		fc							=	m_document->FindFileCharPos(cp);
+		int		fcEnd						=	(cpEnd > initialCp) ? m_document->FindFileCharPosEnd(cpEnd) : m_document->FindFileCharPos(cpEnd);
 
 		ParagraphPropertyExceptions* papx	=	findValidPapx(fc);
 
@@ -329,7 +339,7 @@ namespace DocFileFormat
 			}
 		}
 
-		if ((chpxs != NULL) && (chpxFcs != NULL) && !chpxFcs->empty())//? second
+		if ((chpxs != NULL) && (chpxFcs != NULL) && !chpxFcs->empty())//? the second
 		{
 			size_t i = 0;
 
@@ -354,7 +364,7 @@ namespace DocFileFormat
 
 				//it's the last chpx and it exceeds the paragraph
 
-				if ( ( i == ( chpxs->size() - 1 ) ) && ( fcChpxEnd > fcEnd ) )//TODO remove the call to size() !!!
+				if ( ( i == ( chpxs->size() - 1 ) ) && ( fcChpxEnd > fcEnd ) )//todooo remove call to size() !!!
 				{
 					//so use the FC of the paragraph
 					fcChpxEnd = fcEnd;
@@ -390,17 +400,13 @@ namespace DocFileFormat
 						{
 							for (std::vector<std::vector<wchar_t> >::iterator iter = runs->begin(); iter != runs->end(); ++iter)
 							{
-                                if (writeBookmarks(cp, PBookmark))
-								{
-									cp = writeRun(&(*iter), chpxs->at(it), cp);
-								}
-                                PBookmark = true;
-                                if (cp == m_document->FIB->m_RgLw97.ccpText - 1)
-                                    writeBookmarks(cp, PBookmark);
+							
+								writeBookmarks(cp);
+
+								cp = writeRun(&(*iter), chpxs->at(it), cp);
 							}
 
 							RELEASEOBJECT(runs);
-                            PBookmark = false;
 						}
 					}
 					else
@@ -436,12 +442,20 @@ namespace DocFileFormat
 			}
 
 			//end paragraph
-			if ( paragraphState & END_PARAGRAPH ) m_pXmlWriter->WriteNodeEnd( L"w:p" );
+			if ( paragraphState & END_PARAGRAPH )
+			{
+				closeBookmarks( initialCp, cp );
+				m_pXmlWriter->WriteNodeEnd( L"w:p" );
+			}
 		}
 		else
 		{
 			//end paragraph
-			if ( paragraphState & END_PARAGRAPH ) m_pXmlWriter->WriteNodeEnd( L"w:p" );
+			if ( paragraphState & END_PARAGRAPH )
+			{
+				closeBookmarks( initialCp, cp );
+				m_pXmlWriter->WriteNodeEnd( L"w:p" );
+			}
 		}
 
 		RELEASEOBJECT(chpxFcs);
@@ -824,7 +838,7 @@ namespace DocFileFormat
 
 				if (!oVmlMapper.m_isEmbedded && oVmlMapper.m_isEquation)
 				{
-					//oMath can't be written in Run
+					//cannot write oMath inside Run
 					//m_pXmlWriter->WriteString(oVmlMapper.m_equationXml);
 					_writeAfterRun = oVmlMapper.m_equationXml;
 				}
@@ -903,7 +917,7 @@ namespace DocFileFormat
 					}
 				}
 				XMLTools::XMLElement elem(L"w:br");
-				//СЗ в МРФ Техноград о предоставлении ТП 1 квартал 2019_MO_Q31.doc
+				//test files: СЗ в МРФ Техноград о предоставлении ТП 1 квартал 2019_MO_Q31.doc
 				//Документ на бланке 2.doc
                 elem.AppendAttribute(L"w:type", L"textWrapping");
                 elem.AppendAttribute(L"w:clear", L"all");
@@ -1008,7 +1022,7 @@ namespace DocFileFormat
 
 				//<w:sym w:font="Symbol" w:char="F062"/>
 
-				if (false == s.HexValue.empty()) //09FluGuide.doc - damaged
+				if (false == s.HexValue.empty()) //09FluGuide.doc - corrupted
 				{
 					m_pXmlWriter->WriteNodeBegin(L"w:sym", true);
 					if (false == s.FontName.empty()) // ??? default
@@ -1090,7 +1104,7 @@ namespace DocFileFormat
                         if (oPicture.shapeContainer)
                         {
                             if (oPicture.shapeContainer->m_nShapeType != msosptPictureFrame)
-                                bPicture = false;//шаблон 1.doc image in the footer
+                                bPicture = false;//template 1.doc image in header/footer
 
                             m_bSkip = oPicture.shapeContainer->m_bSkip;
                         }
@@ -1118,7 +1132,7 @@ namespace DocFileFormat
                                 }
                                 else if (oVmlMapper.m_isEquation)
                                 {
-                                    //oMath can't be written in Run
+                                    //cannot write oMath inside Run
                                     //m_pXmlWriter->WriteString(oVmlMapper.m_equationXml);
                                     _writeAfterRun = oVmlMapper.m_equationXml;
                                     bFormula = true;
@@ -1218,7 +1232,7 @@ namespace DocFileFormat
 			cp++;
 		}
 		if (std::wstring::npos != text.find(L"EMBED"))
-		{//if there is a field end marker and a replacement image marker and there is no start marker
+		{//if there is field end marker and substitute image marker but no start marker
 			//О реорганизации территориальных органов ПФР с 01.11.2018.doc
 			int cpFieldStart	= initialCp;
 			int cpPic			= searchNextTextMark(m_document->Text, cpFieldStart, TextMark::Picture);
@@ -1954,79 +1968,49 @@ namespace DocFileFormat
 		}
 		return true;
 	}
-    bool DocumentMapping::writeBookmarks(int cp, bool para)
+	void DocumentMapping::writeBookmarks(int cp)
 	{
-		bool result =	true;
-        static std::vector<int> openedInThisPara;
-        static std::set<int> allClosedIds;
-        static int nextIdForSequence = 0;
+		for (size_t b = 0; b < m_document->BookmarkStartEndCPs.size(); ++b)
+		{
+			if (m_document->BookmarkStartEndCPs[b].start != cp) continue;
 
-        for (size_t b = 0; b < m_document->BookmarkStartEndCPs.size(); ++b)
-        {
-            if (m_document->BookmarkStartEndCPs[b].start == cp)
-            {
-                int xmlId = b;
+			if (m_document->openedBookmarks.find(b) != m_document->openedBookmarks.end()) continue;
 
-                result = writeBookmarkStart(xmlId);
-                openedInThisPara.push_back(xmlId);
-            }
-        }
+			if (writeBookmarkStart((short)b))
+			{
+				m_document->openedBookmarks.insert(b);
+			}
+		}
 
-        bool hasPositionClosings = false;
-        int positionClosingCount = 0;
+		for (size_t b = 0; b < m_document->BookmarkStartEndCPs.size(); ++b)
+		{
+			if (m_document->BookmarkStartEndCPs[b].end == cp)
+			{
+				writeBookmarkEndOnce(b);
+			}
+		}
+	}
+	void DocumentMapping::closeBookmarks(int cpStart, int cpEnd)
+	{
+		for (size_t b = 0; b < m_document->BookmarkStartEndCPs.size(); ++b)
+		{
+			int cpBookmarkEnd = m_document->BookmarkStartEndCPs[b].end;
 
-        for (size_t b = 0; b < m_document->BookmarkStartEndCPs.size(); ++b)
-        {
-            if (m_document->BookmarkStartEndCPs[b].end == cp)
-            {
-                hasPositionClosings = true;
-                positionClosingCount++;
-            }
-        }
+			if ((cpBookmarkEnd >= cpStart) && (cpBookmarkEnd <= cpEnd))
+			{
+				writeBookmarkEndOnce(b);
+			}
+		}
+	}
 
-        if (hasPositionClosings)
-        {
+	bool DocumentMapping::writeBookmarkEndOnce(size_t index)
+	{
+		if (m_document->openedBookmarks.find(index) == m_document->openedBookmarks.end()) return false;
+		if (m_document->closedBookmarks.find(index) != m_document->closedBookmarks.end()) return false;
 
-            for (int i = 0; i < positionClosingCount; i++)
-            {
-                if (!openedInThisPara.empty())
-                {
-                    int idToClose = openedInThisPara[0];
-                    result = writeBookmarkEnd(idToClose);
-                    allClosedIds.insert(idToClose);
-                    openedInThisPara.erase(openedInThisPara.begin());
-                }
-                else
-                {
-                    while (allClosedIds.find(nextIdForSequence) != allClosedIds.end())
-                    {
-                        nextIdForSequence++;
-                    }
+		m_document->closedBookmarks.insert(index);
 
-                    result = writeBookmarkEnd(nextIdForSequence);
-                    allClosedIds.insert(nextIdForSequence);
-                    nextIdForSequence++;
-                }
-            }
-        }
-        else if (para)
-        {
-            while (allClosedIds.find(nextIdForSequence) != allClosedIds.end())
-            {
-                nextIdForSequence++;
-            }
-
-            result = writeBookmarkEnd(nextIdForSequence);
-            allClosedIds.insert(nextIdForSequence);
-            nextIdForSequence++;
-        }
-
-        if (para)
-        {
-            openedInThisPara.clear();
-        }
-
-		return result;
+		return writeBookmarkEnd((short)index);
 	}
 	bool DocumentMapping::writeAnnotations(int cp)
 	{

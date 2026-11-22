@@ -1,26 +1,36 @@
 /*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "../DocxFlat.h"
@@ -297,7 +307,7 @@ namespace OOX
 		}
 		void CColorMenu::ReadAttributes(XmlUtils::CXmlLiteReader& oReader)
 			{
-				// Setting default values
+				// Set default values
 				m_oExtrusionColor = L"#000000";
 				m_oFillColor      = L"#0000FF";
 				m_oShadowColor    = L"#80800C";
@@ -364,10 +374,10 @@ namespace OOX
 		}
 		void CColorMru::ReadAttributes(XmlUtils::CXmlLiteReader& oReader)
 			{
-				// Setting default values
+				// Set default values
 				std::wstring sColors;
 
-				// Reading the attributes
+				
 				WritingElement_ReadAttributes_Start( oReader )
 				WritingElement_ReadAttributes_Read_if     ( oReader, L"v:ext",  m_oExt )
 				WritingElement_ReadAttributes_Read_else_if( oReader, L"colors", sColors )
@@ -481,7 +491,7 @@ namespace OOX
 		}
 		void CRelation::ReadAttributes(XmlUtils::CXmlLiteReader& oReader)
 			{
-				// Reading the attributes
+				
 				WritingElement_ReadAttributes_Start( oReader )
 				WritingElement_ReadAttributes_Read_if     ( oReader, L"v:ext",  m_oExt )
 				WritingElement_ReadAttributes_Read_else_if( oReader, L"idcntr", m_sIdCntr )
@@ -701,7 +711,7 @@ namespace OOX
 			{
 				std::wstring sName = oReader.GetName();
 
-				// TO DO: Make reading OOMML and Wc3MathML formulas
+				// TO DO: Implement reading of OOMML and Wc3MathML formulas
 			}
 		}
 		std::wstring CEquationXml::toXML() const
@@ -858,7 +868,7 @@ namespace OOX
 		}
 		void CExtrusion::ReadAttributes(XmlUtils::CXmlLiteReader& oReader)
 			{
-				// Setting default values
+				// Set default values
 
 				m_oBackDepth.SetValue( 36 );
 				m_oBrightness.SetValue( 0.3 );
@@ -1451,7 +1461,7 @@ namespace OOX
 		}
 		void CR::ReadAttributes(XmlUtils::CXmlLiteReader& oReader)
 			{
-				// Reading the attributes
+				
 				WritingElement_ReadAttributes_Start( oReader )
 				WritingElement_ReadAttributes_Read_if     ( oReader, L"how",   m_oHow )
 				WritingElement_ReadAttributes_Read_else_if( oReader, L"id",    m_sId )
@@ -1523,7 +1533,7 @@ namespace OOX
 		}
 		void CRegroupTable::ReadAttributes(XmlUtils::CXmlLiteReader& oReader)
 			{
-				// Reading the attributes
+				
 				WritingElement_ReadAttributes_Start( oReader )
 				WritingElement_ReadAttributes_ReadSingle( oReader, L"v:ext", m_oExt )
 				WritingElement_ReadAttributes_End( oReader )
@@ -1592,7 +1602,7 @@ namespace OOX
 		}
 		void CRules::ReadAttributes(XmlUtils::CXmlLiteReader& oReader)
 		{
-			// Reading the attributes
+			
 			WritingElement_ReadAttributes_Start( oReader )
 			WritingElement_ReadAttributes_ReadSingle( oReader, L"v:ext", m_oExt )
 			WritingElement_ReadAttributes_End( oReader )
@@ -1658,7 +1668,7 @@ namespace OOX
 		}
 		void CShapeLayout::ReadAttributes(XmlUtils::CXmlLiteReader& oReader)
 		{
-			// Reading the attributes
+			
 			WritingElement_ReadAttributes_Start( oReader )
 			WritingElement_ReadAttributes_ReadSingle( oReader, L"v:ext", m_oExt )
 			WritingElement_ReadAttributes_End( oReader )
@@ -1864,7 +1874,7 @@ namespace OOX
 		}
 		void CSignatureLine::ReadAttributes(XmlUtils::CXmlLiteReader& oReader)
 			{
-				// Reading the attributes
+				
 				WritingElement_ReadAttributes_Start( oReader )
 				WritingElement_ReadAttributes_Read_if     ( oReader, L"o:addlxml",              m_sAddXml )
 				WritingElement_ReadAttributes_Read_else_if( oReader, L"allowcomments",          m_oAllowComments )
@@ -1927,7 +1937,7 @@ namespace OOX
 		}
 		void CSkew::ReadAttributes(XmlUtils::CXmlLiteReader& oReader)
 			{
-				// Reading the attributes
+				
 				WritingElement_ReadAttributes_Start( oReader )
 				WritingElement_ReadAttributes_Read_if     ( oReader, L"v:ext",  m_oExt )
 				WritingElement_ReadAttributes_Read_else_if( oReader, L"id",     m_sId )
@@ -1937,7 +1947,7 @@ namespace OOX
 				WritingElement_ReadAttributes_Read_else_if( oReader, L"origin", m_sOrigin )
 				WritingElement_ReadAttributes_End( oReader )
 
-				// TO DO: OOX::Vml::CSkew make a normal parameter parser
+				// TO DO: OOX::Vml::CSkew implement proper parameter parser
 			}
 
 	} // namespace Vml

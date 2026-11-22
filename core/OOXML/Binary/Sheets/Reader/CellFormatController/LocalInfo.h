@@ -1,26 +1,36 @@
 /*
- * (c) Copyright Ascensio System SIA 2010-2024
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #pragma once
@@ -33,32 +43,32 @@
 namespace lcInfo
 {
 
-/// @brief class containing information about the locale and the standards used in it
+/// @brief class containing locale information and standards used in it
 class LocalInfo
 {
 public:
 
-    /// @brief collect short date format from template
-    /// @return a pattern of numbers that determine the order of date elements where 0-1 days 2-3 months 4-5 years
+    /// @brief build short date format from template
+    /// @return template with numbers defining date element order where 0-1 days 2-3 months 4-5 years
     std::wstring GetShortDateFormat();
 
-    /// @brief get the month names in this locale
-    /// @param index number from the list of months
-    /// @param shortName whether a short name is requested
-    /// @return vector of names of months starting with January
+    /// @brief get month names in this locale
+    /// @param index number from month list
+    /// @param shortName whether abbreviated name is requested
+    /// @return vector of month names starting from January
     std::vector<std::wstring> GetMonthNames(const _INT16 &index, const bool isShortName = false);
 
-    /// @brief collect short date format from template
-    /// @return month number starting from zero if successful, negative number if unsuccessful
+    /// @brief build short date format from template
+    /// @return month number starting from zero on success, negative number on failure
     _INT16 GetMonthNumber(const std::wstring &monthName,  const bool isShortName = false);
 
-    /// @brief get the string name of the month in this locale
-    /// @param index number of the requested month
-    /// @param shortName whether a short name is requested
+    /// @brief get string month name in this locale
+    /// @param index requested month number
+    /// @param shortName whether abbreviated name is requested
     /// @return month name
     std::wstring GetLocMonthName(const _INT16 &index, bool shortName = false);
 
-    /// @brief id of locale
+    /// @brief locale id
     _INT32 lcid;
 
     /// @brief locale name
@@ -67,17 +77,17 @@ public:
     /// @brief date separator
     std::wstring DateSeparator;
 
-    /// @brief abbreviated date
+    /// @brief short date
     std::wstring ShortDatePattern;
 
     /// @brief local month names
     _INT16 MonthNamesIndex;
 
-    /// @brief maximum characters in shortened month length
+    /// @brief maximum characters in abbreviated month length
     _INT16 MonthAbrvLen;
 };
 
-/// @brief getting information about a locale by its id
+/// @brief get locale information by its id
 LocalInfo getLocalInfo(const _INT32 lcid);
 
 }

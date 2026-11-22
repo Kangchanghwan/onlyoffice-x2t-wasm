@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "oox_drawing_fills.h"
@@ -103,19 +113,25 @@ void oox_serialize_solid_fill(std::wostream & strm, const _oox_fill & val, const
 
 	}
 }
+static std::wstring vml_opacity(double opacity)
+{
+	if (opacity < 0.) opacity = 0.;
+	return std::to_wstring((int)(opacity + 0.5)) + L"%";
+}
+static bool vml_opacity_needed(const _CP_OPT(double) & opacity)
+{
+	return (opacity) && (*opacity < 100.);
+}
 void vml_serialize_solid_fill(std::wostream & strm, const _oox_fill & val)
 {
 	if (!val.solid)	return;
-	if (!val.opacity) return;
-	
+	if (!vml_opacity_needed(val.opacity)) return;
+
 	CP_XML_WRITER(strm)
 	{
 		CP_XML_NODE(L"v:fill")
 		{
-			if (val.opacity)
-			{
-				CP_XML_ATTR(L"opacity",	(int)(*val.opacity));
-			}
+			CP_XML_ATTR(L"opacity", vml_opacity(*val.opacity));
 		}
 
 	}
@@ -131,10 +147,10 @@ void vml_serialize_bitmap_fill(std::wostream & strm, const _oox_fill & val)
 		{	
 			CP_XML_ATTR(L"r:id", val.bitmap->rId );
 
-			if (val.opacity)
+			if (vml_opacity_needed(val.opacity))
 			{
-				CP_XML_ATTR(L"opacity",(int)(*val.opacity));
-			}		
+				CP_XML_ATTR(L"opacity", vml_opacity(*val.opacity));
+			}
 			
 			if (val.bitmap->bTile)
 			{
@@ -253,7 +269,7 @@ void oox_serialize_bitmap_fill(std::wostream & strm, const _oox_fill & val, cons
 						CP_XML_NODE(ns + L":fillRect")
 						{
 							if (val.bitmap->sx && val.bitmap->sy)
-							{ //TODO focus
+							{ //todooo focus
 								CP_XML_ATTR2(ns_att + L"l", (int)((100 - *val.bitmap->sx) / 2 * 1000));
 								CP_XML_ATTR2(ns_att + L"t", (int)((100 - *val.bitmap->sy) / 2 * 1000));
 								CP_XML_ATTR2(ns_att + L"r", (int)((100 - *val.bitmap->sx) / 2 * 1000));
@@ -389,7 +405,7 @@ void oox_serialize_hatch_fill(std::wostream & strm, const _oox_fill & val, const
 		CP_XML_NODE(ns + L":pattFill")
 		{
 			CP_XML_ATTR2(ns_att + L"prst", val.hatch->preset);
-			CP_XML_NODE(ns + L":fgClr")//again for ms it is important that this color is before back
+			CP_XML_NODE(ns + L":fgClr")//again for MS it's important that this color comes before back
 			{
 				oox_serialize_srgb(CP_XML_STREAM(), val.hatch->color_ref, val.opacity);
 			}	

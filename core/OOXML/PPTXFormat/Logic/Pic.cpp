@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "Pic.h"
@@ -283,7 +293,7 @@ namespace PPTX
 						ooxml_file = ole_file->filename().GetPath() + (bMacro ? L".docm" : L".docx");
 					}
 					else if (checker.nFileType == AVS_OFFICESTUDIO_FILE_PRESENTATION_PPT)
-					{//TODO
+					{//todooo
 					}
 					if (0 == nRes)
 					{
@@ -461,7 +471,7 @@ namespace PPTX
 						delete pXlsxEmbedded;
 					}
 					//else if (office_checker.nFileType == AVS_OFFICESTUDIO_FILE_PRESENTATION_PPTX)
-					//{ TODO
+					//{ todooo
 					// embedded_type = 3;
 					//}
 					else if (office_checker.nFileType == AVS_OFFICESTUDIO_FILE_DRAW_VSDX ||
@@ -865,7 +875,7 @@ namespace PPTX
 																		
 									if (!sIdImageFileCache.empty())
 									{
-										//looking for a physical file (rId relative to vml_drawing)
+										//looking for physical file (rId relative to vml_drawing)									
 										smart_ptr<OOX::File> pFile = pVml->Find(sIdImageFileCache);
 										
 										if (pFile.IsInit() && (	OOX::FileTypes::Image == pFile->type()))
@@ -928,7 +938,8 @@ namespace PPTX
 						pWriter->WriteString1(0, mediaFile->filename().GetPath());
 
 					pWriter->WriteBool1(1, mediaFile->IsExternal());
-				//TODO start, end positions ..
+					pWriter->WriteDoubleReal2(2, mediaFile->start);
+					pWriter->WriteDoubleReal2(3, mediaFile->end);
 
 				pWriter->WriteBYTE(NSBinPptxRW::g_nodeAttributeEnd);
 				pWriter->EndRecord();
@@ -1129,6 +1140,8 @@ namespace PPTX
 					{
 						bool isExternal = false;
 						std::wstring strMediaFileMask;
+						nullable_double start;
+						nullable_double end;
 
 						LONG _end_rec1 = pReader->GetPos() + pReader->GetRecordSize() + 4;
 						pReader->Skip(1); // start attributes
@@ -1138,21 +1151,22 @@ namespace PPTX
 							if (_at == NSBinPptxRW::g_nodeAttributeEnd)
 								break;
 
-							if (0 == _at)		
+							switch(_at)
 							{
-								strMediaFileMask = pReader->GetString2();
-							}
-							else if (1 == _at)		
-							{
-								isExternal = pReader->GetBool();
-							}
-							else
+							case 0:strMediaFileMask = pReader->GetString2(); break;
+							case 1: isExternal = pReader->GetBool(); break;
+							case 2: start = pReader->GetDoubleReal(); break;
+							case 3: end = pReader->GetDoubleReal(); break;
+							default:
 								break;
+							}
 						}
 						smart_ptr<OOX::Media> mediaFile = blipFill.additionalFiles.back().smart_dynamic_cast<OOX::Media>();
 						if (mediaFile.IsInit())
 						{
 							mediaFile->set_filename(strMediaFileMask, isExternal);
+							mediaFile->start = start;
+							mediaFile->end = end;
 						}
 						pReader->Seek(_end_rec1);
 					}break;
@@ -1207,6 +1221,8 @@ namespace PPTX
 								additionalFile->type() == OOX::FileTypes::Video)
 							{
 								ext.link_media = OOX::RId(blipFill.blip->mediaRid);
+								ext.st = mediaFile->start;
+								ext.end = mediaFile->end;
 								nvPicPr.nvPr.extLst.push_back(ext);
 
 								if (nvPicPr.cNvPr.hlinkClick.IsInit() == false)
@@ -1344,8 +1360,14 @@ namespace PPTX
 					
 					if ( (mediaFile.IsInit() == false || mediaFile->filename().GetPath() == L"NULL") && !nvPicPr.nvPr.extLst.empty())
 					{
-						//TODO - why is it zero everywhere? - search all uris
+						//todo - why is it always zero? - implement search through all URIs
 						file = pRels->Find(nvPicPr.nvPr.extLst[0].link_media.get());
+						smart_ptr<OOX::Media> mediaFileUpdate = file.smart_dynamic_cast<OOX::Media>();
+						if (mediaFileUpdate.IsInit())
+						{
+							mediaFileUpdate->start = nvPicPr.nvPr.extLst[0].st;
+							mediaFileUpdate->end = nvPicPr.nvPr.extLst[0].end;
+						}
 					}		
 				}
 
@@ -1393,62 +1415,6 @@ namespace PPTX
 			if (spPr.ln.IsInit())
 				spPr.ln->Merge(line);
 			return BGRA;
-		}
-		double Pic::GetStTrim () const
-		{
-			double trim = 0.0;
-			
-			if (parentFileIs<FileContainer>())
-			{
-				if (nvPicPr.nvPr.media.is<MediaFile>())
-				{
-					if ((nvPicPr.nvPr.media.as<MediaFile>().name == _T("videoFile")) ||
-						(nvPicPr.nvPr.media.as<MediaFile>().name == _T("quickTimeFile")) ||
-						(nvPicPr.nvPr.media.as<MediaFile>().name == _T("audioFile")) )
-					{
-						if (std::wstring (_T("NULL")) == parentFileAs<FileContainer>().GetLinkFromRId(nvPicPr.nvPr.media.as<MediaFile>().link.get()) )	//	HAVE TRIM
-						{
-							if (nvPicPr.nvPr.extLst.size())
-							{
-								if (nvPicPr.nvPr.extLst[0].st.is_init())
-									trim = nvPicPr.nvPr.extLst[0].st.get();
-							}
-						}		
-					}
-				}
-			}
-
-			return trim;
-		}
-		double Pic::GetEndTrim () const
-		{
-			double trim = -1.0;
-			
-			if (nvPicPr.nvPr.media.is<MediaFile>())
-			{
-				if ((nvPicPr.nvPr.media.as<MediaFile>().name == _T("videoFile")) ||
-					(nvPicPr.nvPr.media.as<MediaFile>().name == _T("quickTimeFile")) ||
-					(nvPicPr.nvPr.media.as<MediaFile>().name == _T("audioFile")) )
-				{
-					if (parentFileIs<FileContainer>())
-					{
-						if (std::wstring (_T("NULL")) == parentFileAs<FileContainer>().GetLinkFromRId(nvPicPr.nvPr.media.as<MediaFile>().link.get()))	//	HAVE TRIM
-						{
-							if (nvPicPr.nvPr.extLst.size())
-							{
-								if (nvPicPr.nvPr.extLst[0].end.is_init())
-									trim = nvPicPr.nvPr.extLst[0].end.get();
-							}
-						}		
-					}
-				}
-			}
-
-			return trim;
-		}
-		long Pic::GetRefId() const
-		{
-			return (long) nvPicPr.cNvPr.id;
 		}
 		std::wstring CorrentCropString(const std::wstring val)
 		{
@@ -1507,10 +1473,11 @@ namespace PPTX
 				oStylesWriter.WriteAttributeCSS (L"position", L"absolute");
 				if (in_group)
 				{
-					oStylesWriter.WriteAttributeCSS_int(L"left",	dL / 100);
-					oStylesWriter.WriteAttributeCSS_int(L"top",		dT / 100);
-					oStylesWriter.WriteAttributeCSS_int(L"width",	dW / 100);
-					oStylesWriter.WriteAttributeCSS_int(L"height",	dH / 100);
+					const int nDivider = pWriter->m_nGroupCoordDivider;
+					oStylesWriter.WriteAttributeCSS_int(L"left",	dL / nDivider);
+					oStylesWriter.WriteAttributeCSS_int(L"top",		dT / nDivider);
+					oStylesWriter.WriteAttributeCSS_int(L"width",	dW / nDivider);
+					oStylesWriter.WriteAttributeCSS_int(L"height",	dH / nDivider);
 				}
 				else
 				{
@@ -1889,7 +1856,7 @@ namespace PPTX
 		bool COLEObject::ReadXlsxBin(NSBinPptxRW::CBinaryFileReader* pReader, const std::wstring& sDstEmbedded, BYTE* pData, long length)
 		{
 			m_OleObjectFile = new OOX::OleObject(NULL, true, pReader->m_nDocumentType == XMLWRITER_DOC_TYPE_DOCX);
-			int id = pReader->m_nCountEmbedded++; //TODO -> countEmbeddedObjects
+			int id = pReader->m_nCountEmbedded++; //todoooo -> countEmbeddedObjects
 			
 			std::wstring sDstEmbeddedTemp = sDstEmbedded + FILE_SEPARATOR_STR + L"Temp";
 			NSDirectory::CreateDirectory(sDstEmbeddedTemp);
@@ -1941,7 +1908,7 @@ namespace PPTX
 		bool COLEObject::ReadVsdxBin(NSBinPptxRW::CBinaryFileReader* pReader, const std::wstring& sDstEmbedded, BYTE* pData, long length)
 		{
 			m_OleObjectFile = new OOX::OleObject(NULL, true, pReader->m_nDocumentType == XMLWRITER_DOC_TYPE_DOCX);
-			int id = pReader->m_nCountEmbedded++; //TODO -> countEmbeddedObjects
+			int id = pReader->m_nCountEmbedded++; //todoooo -> countEmbeddedObjects
 
 			std::wstring sDstEmbeddedTemp = sDstEmbedded + FILE_SEPARATOR_STR + L"Temp";
 			NSDirectory::CreateDirectory(sDstEmbeddedTemp);

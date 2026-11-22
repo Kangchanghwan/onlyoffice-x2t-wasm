@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "DocxSerializer.h"
  
@@ -120,7 +130,7 @@ namespace BinDocxRW
 					std::wstring data = oReader.GetInnerXml();
 					XmlUtils::replace_all(data, L"&#xA;", L"");
 					XmlUtils::replace_all(data, L"&#x9;", L"");
-					//TODO remove the "pretty" xml markup
+					//todo remove "pretty" xml formatting
 					WriteXmlFile(*name, data);
 				}
 				if (L"pkg:binaryData" == sName)
@@ -193,6 +203,14 @@ BinDocxRW::CDocxSerializer::~CDocxSerializer()
 }
 bool BinDocxRW::CDocxSerializer::saveToFile(const std::wstring& sDstFileName, const std::wstring& sSrcPath, const std::wstring& sTempPath)
 {
+	return saveToBinary(sDstFileName, sSrcPath, NULL, sTempPath);
+}
+bool BinDocxRW::CDocxSerializer::saveToFile(const std::wstring& sDstFileName, IDocumentContentProvider& oContentProvider, const std::wstring& sTempPath)
+{
+	return saveToBinary(sDstFileName, L"", &oContentProvider, sTempPath);
+}
+bool BinDocxRW::CDocxSerializer::saveToBinary(const std::wstring& sDstFileName, const std::wstring& sSrcPath, IDocumentContentProvider* pContentProvider, const std::wstring& sTempPath)
+{
 	OOX::CPath pathMain(sDstFileName);
     
 	OOX::CPath pathMedia = pathMain.GetDirectory() + FILE_SEPARATOR_STR + _T("media");
@@ -217,10 +235,10 @@ bool BinDocxRW::CDocxSerializer::saveToFile(const std::wstring& sDstFileName, co
 
 		pEmbeddedFontsManager = pFontPicker->GetNativeCutter();
 
-		//adding the entire Latin alphabet for lists.
+		//add entire latin alphabet for lists.
         pEmbeddedFontsManager->CheckString(std::wstring(_T("abcdefghijklmnopqrstuvwxyz")));
 
-		//add a mega font
+		//add mega font
 		pEmbeddedFontsManager->CheckFont(_T("Wingdings 3"), fp.getFontManager());
 		pEmbeddedFontsManager->CheckFont(_T("Arial"), fp.getFontManager());
 		//pEmbeddedFontsManager adds all digits
@@ -242,7 +260,10 @@ bool BinDocxRW::CDocxSerializer::saveToFile(const std::wstring& sDstFileName, co
 	{
 		oBufferedStream.WriteStringUtf8(oBinaryFileWriter.WriteFileHeader(0, g_nFormatVersionNoBase64));
 	}
-	oBinaryFileWriter.intoBindoc(sSrcPath);
+	if (pContentProvider)
+		oBinaryFileWriter.intoBindoc(*pContentProvider);
+	else
+		oBinaryFileWriter.intoBindoc(sSrcPath);
 	
 	BYTE* pbBinBuffer = oBufferedStream.GetBuffer();
 	int nBinBufferLen = oBufferedStream.GetPosition();
@@ -324,7 +345,7 @@ bool BinDocxRW::CDocxSerializer::loadFromFile(const std::wstring& sSrcFileName, 
 	oFile.ReadFile(pBase64Data, oFile.GetFileSize(), nBase64DataSize);
 	oFile.CloseFile();
 
-	//checking the format
+	//check format
 	bool bValidFormat = false;
 	std::wstring sSignature(g_sFormatSignature);
 	int nSigLength = (int)sSignature.length();
@@ -339,7 +360,7 @@ bool BinDocxRW::CDocxSerializer::loadFromFile(const std::wstring& sSrcFileName, 
 	}
 	if (bValidFormat)
 	{
-		//Read the base64 version and length from the file
+		//Read version and base64 length from file
 		int nIndex = nSigLength;
 		int nType = 0;
 		std::string version = "";

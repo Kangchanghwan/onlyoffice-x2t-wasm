@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include <iostream>
@@ -782,42 +792,45 @@ void odf_document::Impl::parse_styles(office_element *element)
 		if(document)
 		{
 			office_master_styles * master_style = dynamic_cast<office_master_styles *>( document->office_master_styles_.get() );
-			if (!master_style)
-				break;
-			unsigned int elements_master_page = master_style->style_master_page_.size();
-			if(master_style->style_master_page_.size() > 1)
+			// if (!master_style)
+			// 	break;
+			if(master_style)
 			{
-				for (size_t i = 1; i < master_style->style_master_page_.size(); i++)
+				unsigned int elements_master_page = master_style->style_master_page_.size();
+				if(master_style->style_master_page_.size() > 1)
 				{
-					
-					office_element_ptr & elm = master_style->style_master_page_[i];
-			
-					style_master_page * master_page = dynamic_cast<style_master_page *>(elm.get());
-					if (!master_page)
-						continue;
-					
-					 std::wstring ws_style_name = master_page->attlist_.style_name_.get_value_or(L"");
-					
-					for(unsigned int t = 0; t < i;t++)
+					for (size_t i = 1; i < master_style->style_master_page_.size(); i++)
 					{
-						office_element_ptr& elm_prev = master_style->style_master_page_[t];
-						style_master_page* master_page_prev = dynamic_cast<style_master_page*>(elm_prev.get());
-						if(!master_page_prev)
+
+						office_element_ptr & elm = master_style->style_master_page_[i];
+
+						style_master_page * master_page = dynamic_cast<style_master_page *>(elm.get());
+						if (!master_page)
 							continue;
-						if(ws_style_name == master_page_prev->attlist_.style_name_.get_value_or(L""))
+
+						 std::wstring ws_style_name = master_page->attlist_.style_name_.get_value_or(L"");
+
+						for(unsigned int t = 0; t < i;t++)
 						{
-							master_page->attlist_.style_name_ = ws_style_name + L"_" + std::to_wstring(elements_master_page++);
-							context_->styleContainer().set_new_name_master_page(L"",master_page->attlist_.style_name_.get_value_or(L""));
-							break;
+							office_element_ptr& elm_prev = master_style->style_master_page_[t];
+							style_master_page* master_page_prev = dynamic_cast<style_master_page*>(elm_prev.get());
+							if(!master_page_prev)
+								continue;
+							if(ws_style_name == master_page_prev->attlist_.style_name_.get_value_or(L""))
+							{
+								master_page->attlist_.style_name_ = ws_style_name + L"_" + std::to_wstring(elements_master_page++);
+								context_->styleContainer().set_new_name_master_page(L"",master_page->attlist_.style_name_.get_value_or(L""));
+								break;
+							}
+
 						}
-						
 					}
 				}
 			}
 		}
 		
-        // parse automatic styles - these styles use objects that are in the oasis in the same document
-		//Redefine the name - otherwise a collision may occur during the search.
+        // parse automatic styles - these styles are used by objects that in OASIS are located in the same document
+		//redefine the name - otherwise a collision may occur during search.
         do
         {
             office_automatic_styles * automaticStyles = dynamic_cast<office_automatic_styles *>( document->office_automatic_styles_.get() );
@@ -861,9 +874,11 @@ void odf_document::Impl::parse_styles(office_element *element)
 						false,
 						styleInst->style_parent_style_name_.get_value_or(L""),
 						styleInst->style_next_style_name_.get_value_or(L""),
+						styleInst->loext_linked_style_name_.get_value_or(L""),
 						styleInst->style_data_style_name_.get_value_or(L""),
 						styleInst->style_percentage_data_style_name_.get_value_or(L""),
 						styleInst->style_class_.get_value_or(L""),
+						styleInst->loext_primary_format_,
 						styleInst->style_list_style_name_,
 						styleInst->style_list_level_,
 						styleInst->style_default_outline_level_
@@ -950,10 +965,11 @@ void odf_document::Impl::parse_styles(office_element *element)
                     &(styleInst->content_),
                     false,
                     true,
+					L"",
+					L"",
                     L"",
                     L"",
 					L"",
-                    L"",
 					L"default");                                            
             }
 			for (size_t i = 0; i < docStyles->style_presentation_page_layout_.size(); i++)
@@ -990,9 +1006,11 @@ void odf_document::Impl::parse_styles(office_element *element)
                     false,
                     styleInst->style_parent_style_name_.get_value_or(L""),
                     styleInst->style_next_style_name_.get_value_or(L""),
-                    styleInst->style_data_style_name_.get_value_or(L""),
+					styleInst->loext_linked_style_name_.get_value_or(L""),
+					styleInst->style_data_style_name_.get_value_or(L""),
 					styleInst->style_percentage_data_style_name_.get_value_or(L""),
 					styleInst->style_class_.get_value_or(L""),
+					styleInst->loext_primary_format_,
 					styleInst->style_list_style_name_,
 					styleInst->style_list_level_,
 					styleInst->style_default_outline_level_
@@ -1163,16 +1181,18 @@ void odf_document::Impl::parse_styles(office_element *element)
                 if (styleInst->style_master_page_name_/* && !styleInst->style_master_page_name_->empty()*/)
                     context_->styleContainer().add_master_page_name(styleInst->style_name_, *styleInst->style_master_page_name_);
 
-                context_->styleContainer().add_style(styleInst->style_name_,
+				context_->styleContainer().add_style(styleInst->style_name_,
 					styleInst->style_display_name_.get_value_or(L""),
-                    &(styleInst->content_),
-                    true,
-                    false,
-                    styleInst->style_parent_style_name_.get_value_or(L""),
-                    styleInst->style_next_style_name_.get_value_or(L""),
-                    styleInst->style_data_style_name_.get_value_or(L""),
+					&(styleInst->content_),
+					true,
+					false,
+					styleInst->style_parent_style_name_.get_value_or(L""),
+					styleInst->style_next_style_name_.get_value_or(L""),
+					styleInst->loext_linked_style_name_.get_value_or(L""),
+					styleInst->style_data_style_name_.get_value_or(L""),
 					styleInst->style_percentage_data_style_name_.get_value_or(L""),
 					styleInst->style_class_.get_value_or(L""),
+					styleInst->loext_primary_format_,
 					styleInst->style_list_style_name_,
 					styleInst->style_list_level_,
 					styleInst->style_default_outline_level_
@@ -1226,9 +1246,9 @@ bool odf_document::Impl::docx_convert(oox::docx_conversion_context & Context)
    
 	Context.end_document();
 
-    // Process the list styles after the document is converted,
-    // since during the document conversion process we can add styles -
-    // if text:start-value is used (start numbering again)
+    // we process list styles after we have converted the document,
+    // because during document conversion styles may be added —
+    // in case text:start-value is used (restart numbering)
     Context.process_list_styles();
 
 	Context.add_jsaProject(jsaProject_bin_);

@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "./MetafileToGraphicsRenderer.h"
 #include "./MetafileToRendererCheck.h"
@@ -41,17 +51,17 @@ namespace NSOnlineOfficeBinToPdf
 		// saveFlags = (save_type & 0xF0) >> 1
 		// saveType:
 		// 0 - stretch
-		// 1 - make the largest possible image with an aspect similar to the page and fit into [m_nRasterW x m_nRasterH]
+		// 1 - create largest image with page aspect ratio fitting within [m_nRasterW x m_nRasterH]
 		// 2 - nRasterW = (int)((pageW * m_internal->m_dDpiX / 25.4) + 0.5);
 		//     nRasterH = (int)((pageH * m_internal->m_dDpiY / 25.4) + 0.5);
 		// 3 - special mode for clouds (see code)
 		//
 		// saveFlags & 1: change w/h by orientation
 		int m_nSaveType;
-		bool m_bIsOnlyFirst;
 		std::wstring m_sFileName;
 		int m_nRasterW;
 		int m_nRasterH;
+		int m_nSavePage;
 
 		double m_dDpiX;
 		double m_dDpiY;
@@ -63,8 +73,8 @@ namespace NSOnlineOfficeBinToPdf
 
 			m_nRasterFormat = 4;
 			m_nSaveType = 2;
-			m_bIsOnlyFirst = true;
 			m_sFileName = L"";
+			m_nSavePage = -1;
 
 			m_nRasterW = 100;
 			m_nRasterH = 100;
@@ -91,7 +101,7 @@ namespace NSOnlineOfficeBinToPdf
 	{
 		std::wstring sMain = m_internal->m_sFileName;
 		std::wstring sExt = L"";
-		if (!m_internal->m_bIsOnlyFirst)
+		if (m_internal->m_nSavePage == -1)
 		{
 			std::wstring::size_type pos = m_internal->m_sFileName.find_last_of('.');
 			if (std::wstring::npos == pos)
@@ -107,9 +117,6 @@ namespace NSOnlineOfficeBinToPdf
 		int nPagesCount = oInfo.PagesCount;
 		if (0 == nPagesCount)
 			return false;
-
-		if (m_internal->m_bIsOnlyFirst)
-			nPagesCount = 1;
 
 		NSFonts::IFontManager* pFontManager = m_internal->appFonts->GenerateFontManager();
 		NSFonts::IFontsCache* pFontsCache = NSFonts::NSFontCache::Create();
@@ -203,6 +210,7 @@ namespace NSOnlineOfficeBinToPdf
 			oRenderer.CreateFromBgraFrame(&oFrame);
 			oRenderer.SetTileImageDpi(96.0);
 			oRenderer.SetSwapRGB(false);
+			oRenderer.CommandLong(c_nPenWidth0As1px, 1);
 
 			this->m_pRenderer = &oRenderer;
 			BYTE* pBufferPage = oInfo.arSizes[nPageIndex].data;
@@ -239,7 +247,7 @@ namespace NSOnlineOfficeBinToPdf
 				RELEASEARRAYOBJECTS(pDataRaster);
 			}
 
-			if (m_internal->m_bIsOnlyFirst)
+			if (m_internal->m_nSavePage != -1)
 				oFrame.SaveFile(sMain + sExt, m_internal->m_nRasterFormat);
 			else
 				oFrame.SaveFile(sMain + std::to_wstring(nPageIndex + 1) + sExt, m_internal->m_nRasterFormat);
@@ -301,14 +309,15 @@ namespace NSOnlineOfficeBinToPdf
 		m_internal->m_nRasterH = value;
 	}
 
-	bool CMetafileToRenderterRaster::GetIsOnlyFirst()
+	int CMetafileToRenderterRaster::GetSavePage()
 	{
-		return m_internal->m_bIsOnlyFirst;
+		return m_internal->m_nSavePage;
 	}
-	void CMetafileToRenderterRaster::SetIsOnlyFirst(const bool& value)
+	void CMetafileToRenderterRaster::SetSavePage(const int& value)
 	{
-		m_internal->m_bIsOnlyFirst = value;
+		m_internal->m_nSavePage = value;
 	}
+
 	void CMetafileToRenderterRaster::SetOutputDpi(const double& dDpiX, const double& dDpiY)
 	{
 		m_internal->m_dDpiX = dDpiX;

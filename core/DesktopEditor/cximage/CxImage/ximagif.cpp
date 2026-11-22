@@ -157,7 +157,7 @@ namespace NSGeneratePalette
     struct SRect3D
     {
         unsigned char MaxWidth; // maximum width
-        unsigned char MaxColor; // maximum width color: 0 - blue, 1 - green, 2 - red, 3 - alpha
+        unsigned char MaxColor; // color of maximum width: 0 - blue, 1 - green, 2 - red, 3 - alpha
 
         SRect3D()
         {
@@ -191,7 +191,7 @@ namespace NSGeneratePalette
 
             ~CBounder()
             {
-                // nothing needs to be deleted because there is no dynamic data
+                // nothing to delete since there is no dynamic data
             }
 
 
@@ -226,7 +226,7 @@ namespace NSGeneratePalette
                     return;
                 }
 
-                // normalize by points, killing unnecessary edges...
+                // normalize by points, removing extra edges...
                 int nMinB, nMaxB;
                 int nMinG, nMaxG;
                 int nMinR, nMaxR;
@@ -303,13 +303,13 @@ namespace NSGeneratePalette
 
             bool CreateNew( CBounder& bound1, CBounder& bound2 ) const
             {
-                // redistribute the points in the array into two parts.
+                // redistribute points in the array into two parts.
                 if( 0 == m_oRect.MaxWidth )
                 {
                     return FALSE;
                 }
 
-                // First determine the longest side...
+                // first determine the longest side...
                 int nColorType = m_oRect.MaxColor;
 
                 unsigned int hist[256];
@@ -439,7 +439,7 @@ namespace NSGeneratePalette
             if( !nCountImages || pDstPalette == NULL )
                 return arDst;
 
-            // creating a palette
+            // create palette
             unsigned int* pPalette = new unsigned int[256];
 
             *pDstPalette = pPalette;
@@ -1216,7 +1216,7 @@ void CxImageGIF::EncodeLoopExtension(CxFile *fp)
 void CxImageGIF::EncodeBody(CxFile *fp, bool bLocalColorMap)
 {
 	curx = 0;
-	cury = head.biHeight - 1;	//because read the image bottom to top
+	cury = head.biHeight - 1;	//because we read the image bottom to top
 	CountDown = (int32_t)head.biWidth * (int32_t)head.biHeight;
 
 	fp->PutC(',');
@@ -1790,7 +1790,7 @@ int16_t CxImageGIF::decoder(CxFile* file, CImageIterator* iter, int16_t linewidt
 	* each code onto the stack.  When the list reaches a single "character"
 	* we push that on the stack too, and then start unstacking each
     * character for output in the correct order.  Special handling is
-	* included for the clear code, and the whole thing ends when get
+	* included for the clear code, and the whole thing ends when we get
     * an ending code.
     */
 	while ((c = get_next_code(file)) != ending) {
@@ -1805,12 +1805,12 @@ int16_t CxImageGIF::decoder(CxFile* file, CImageIterator* iter, int16_t linewidt
 			slot = newcodes;
 			top_slot = (int16_t)(1 << curr_size);
 
-			/* Continue reading codes until get a non-clear code
+			/* Continue reading codes until we get a non-clear code
 			* (Another unlikely, but possible case...)
 			*/
 			while ((c = get_next_code(file)) == clear);
 
-			/* If get an ending code immediately after a clear code
+			/* If we get an ending code immediately after a clear code
 			* (Yet another unlikely case), then break out of the loop.
 			*/
 			if (c == ending) break;

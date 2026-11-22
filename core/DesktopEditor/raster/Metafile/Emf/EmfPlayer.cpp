@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "EmfPlayer.h"
 #include "EmfParser/CEmfParserBase.h"
@@ -204,7 +214,7 @@ namespace MetaFile
 	}
 	void CEmfPlayer::DeleteObject(unsigned int ulIndex)
 	{
-		// TODO: Search for DC_BRUSH and DC_PEN
+		// TODO: Implement search by DC_BRUSH and DC_PEN
 
 		CEmfObjectMap::const_iterator oPos = m_mObjects.find(ulIndex);
 		if (m_mObjects.end() != oPos)
@@ -247,7 +257,7 @@ namespace MetaFile
 		InitStockPen(false, 0xff, 0xff, 0xff, 0x80000006);
 		InitStockPen(false, 0x00, 0x00, 0x00, 0x80000007);
 		InitStockPen(true, 0x00, 0x00, 0x00, 0x80000008);
-		// TODO: Make fonts
+		// TODO: Implement fonts
 
 		// DC_BRUSH and DC_PEN don't need to be set
 	}
@@ -291,6 +301,7 @@ namespace MetaFile
 		m_pBrush    = NULL;
 		m_pPen      = NULL;
 		m_pFont     = NULL;
+		m_pPalette  = NULL;
 		m_oTransform.Init();
 		m_oInverseTransform.Init();
 		m_oTextColor.Set(0, 0, 0);
@@ -301,6 +312,7 @@ namespace MetaFile
 		m_ulMiterLimit  = 0;
 		m_ulFillMode    = WINDING;
 		m_ulStretchMode = 0;
+		m_ulRop2Mode    = R2_COPYPEN;
 		m_oWindow.Init();
 		m_oViewport.Init();
 		m_dPixelHeight = 1;
@@ -460,7 +472,7 @@ namespace MetaFile
 	{
 		m_oTransform.Multiply(oForm, ulMode);
 
-		// Update the inverse matrix
+		// Update inverse matrix
 		TEmfXForm* pT = &m_oTransform;
 		const double dDet = pT->M11 * pT->M22 - pT->M12 * pT->M21;
 		if (Equals(0., dDet, 0.0001))

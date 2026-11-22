@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "RtfChar.h"
 #include "RtfDocument.h"
@@ -231,8 +241,8 @@ std::wstring RtfChar::renderRtfText( std::wstring& sText, void* poDocument, RtfC
 	if (oCharProperty) iFont = oCharProperty->m_nFont;
 
     int nCodePage = -1;
-    //apply the codepage parameters from the current font todo associated fonts.
-    //TODO understand fonts and their selection
+    //apply codepage parameters from the current font todo associated fonts.
+    //todooo figure out fonts and their selection
     RtfFont oFont;
     if( NULL != oCharProperty && true == pDocument->m_oFontTable.GetFont( oCharProperty->m_nFont, oFont ) )
     {
@@ -291,7 +301,7 @@ std::wstring RtfChar::renderRtfText( std::wstring& sText, void* poDocument, int 
         case RtfDocumentProperty::cp_pca: nCodePage = 850;      break;
         }
     }
-    //if there is nothing, set ANSI or the user default
+    //if nothing else, set ANSI or default from user
     if( -1 == nCodePage )
 	{
         nCodePage = CP_ACP;		
@@ -483,7 +493,7 @@ std::wstring RtfCharSpecial::RenderToRtf(RenderParameter oRenderParameter)
 	}
 	if( PROP_DEF != m_nTextWrapBreak )
 		sResult += L"\\par";
-	//switch (m_nTextWrapBreak) //word isn't accepted
+	//switch ( m_nTextWrapBreak ) //not recognized by Word
 	//{
 	//	case 0: sResult += L"\\lbr0";break;
 	//	case 1: sResult += L"\\lbr1";break;

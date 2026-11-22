@@ -17,5 +17,5 @@ then
 fi
 
 rm -rf results build
-$CMD build $PARAMS --target test-output -o results .
-$CMD build $PARAMS --target output -o build .
+$CMD build $PARAMS ${DOCKER_BUILD_EXTRA:-} --target test-output -o results .
+$CMD build $PARAMS ${DOCKER_BUILD_EXTRA:-} --target output -o build .

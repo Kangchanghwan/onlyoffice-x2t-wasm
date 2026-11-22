@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "formulasconvert.h"
 
@@ -449,7 +459,7 @@ namespace formulasconvert {
 	}
 
 
-	// replacing the cell addressing format
+	// replace cell addressing format
 	// [.A1] -> A1
 	// [.A1:.B5] -> A1:B5
 	// [Sheet2.A1:B5] -> Sheet2!A1:B5
@@ -533,7 +543,7 @@ namespace formulasconvert {
 		else   
 			return false;
 	}
-// replace semicolons in all occurrences except those in quotes --* and in curly braces*--
+// replace semicolons in all occurrences except those in quotes --*and in curly braces*--
 	void odf2oox_converter::Impl::replace_semicolons(std::wstring& expr, bool del_quotes)
 	{
 		 const std::wstring res = boost::regex_replace(
@@ -577,7 +587,7 @@ namespace formulasconvert {
 			boost::match_default | boost::format_all);
 		 expr = res;
 	}
-	// replace the space in all occurrences with a comma
+	// replace space with comma in all occurrences
 	void odf2oox_converter::Impl::replace_space(std::wstring& expr)
 	{
 		 const std::wstring res = boost::regex_replace(
@@ -594,7 +604,7 @@ namespace formulasconvert {
 
 		bool isFormula = check_formula(workstr);
 
-//escaping
+// escaping
 		mapReplacements.emplace_back();
 
 		workstr = boost::regex_replace(workstr,
@@ -610,15 +620,15 @@ namespace formulasconvert {
 		if (isFormula)
 		{
 			XmlUtils::replace_all( workstr, L"FDIST(", L"_xlfn.F.DIST(");
-			// ROUNDUP( - there are 2 parameters in oox - the bit width is needed - ,0) - EV Requirements v2.2.3.ods
+			// ROUNDUP( - in oox 2 parameters are needed - precision required - ,0) - EV Requirements v2.2.3.ods
 			
 			if (std::wstring::npos != workstr.find(L"CONCATINATE"))
 			{
 				bool l = true;
-				//ranges can be partially specified
-				//TODO
+				// ranges may be partially specified
+				//todooo
 			}	
-			//TODO INDEX((A1:C6~A8:C11),2,2,2) - ???? - INDEX_emb.ods
+			//todooo INDEX((A1:C6~A8:C11),2,2,2) - ???? - INDEX_emb.ods
 		}
 		else
 		{
@@ -654,7 +664,7 @@ namespace formulasconvert {
 	}
 
 	//Sheet2.C3:Sheet2.C19 Sheet2.L29:Sheet2.L36
-	//in
+	// to
 	//Sheet2!C3:C19,Sheet2!L27:L34
 	std::wstring odf2oox_converter::Impl::convert_list_values(const std::wstring& expr)
 	{
@@ -729,7 +739,7 @@ namespace formulasconvert {
 	}
 	std::wstring odf2oox_converter::Impl::convert_named_ref(const std::wstring& expr, bool withTableName, std::wstring separator, bool bAbsoluteAlways)
 	{
-		boost::wregex complexRef(L"('(?!\\s\\'){0,1}.*?')");// search for what is in apostrophes and replace there
+		boost::wregex complexRef(L"('(?!\\s\\'){0,1}.*?')");// find what's in apostrophes and replace there
 
 		std::wstring workstr = expr;
 
@@ -782,8 +792,8 @@ namespace formulasconvert {
 			size_t res_find = 0;
 			if ((res_find = workstr.find(L"CONCATINATE")) != std::wstring::npos)
 			{
-				//ranges can be partially specified
-				//TODO
+				// ranges may be partially specified
+				//todooo
 
 			}
 			replace_tmp_back(workstr);

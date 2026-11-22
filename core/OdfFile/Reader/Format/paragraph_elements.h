@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #pragma once
 
@@ -707,7 +717,6 @@ private:
     virtual void add_child_element(xml::sax* Reader, const std::wstring& Ns, const std::wstring& Name);
     virtual void add_text(const std::wstring & Text);
 };
-
 CP_REGISTER_OFFICE_ELEMENT2(text_placeholder);
 //-------------------------------------------------------------------------------------------------------------------
 // text:page-number
@@ -739,11 +748,10 @@ private:
 	_CP_OPT(odf_types::Bool)			style_num_letter_sync_;
 	_CP_OPT(odf_types::Bool)			text_fixed_;
 	_CP_OPT(int)						text_page_adjust_;
-	_CP_OPT(std::wstring)				text_select_page_; //TODO to type
+	_CP_OPT(std::wstring)				text_select_page_; //todooo to type
 
-	office_element_ptr					text_;        
+	office_element_ptr text_;        
 };
-
 CP_REGISTER_OFFICE_ELEMENT2(text_page_number);
 //-------------------------------------------------------------------------------------------------------------------
 // text:page-count
@@ -769,14 +777,12 @@ public:
 	_CP_OPT(odf_types::style_numformat)	style_num_format_;
 	_CP_OPT(odf_types::Bool)			style_num_letter_sync_;
   
-	office_element_ptr			text_;    
+	office_element_ptr text_;    
 private:
     virtual void add_attributes( const xml::attributes_wc_ptr & Attributes );
 	virtual void add_child_element( xml::sax * Reader, const std::wstring & Ns, const std::wstring & Name){}
-    virtual void add_text(const std::wstring & Text);
-    
+    virtual void add_text(const std::wstring & Text);    
 };
-
 CP_REGISTER_OFFICE_ELEMENT2(text_page_count);
 //-------------------------------------------------------------------------------------------------------------------
 // text:date 
@@ -798,19 +804,16 @@ public:
  	virtual void xlsx_serialize(std::wostream & _Wostream, oox::xlsx_conversion_context & Context);
 	std::wostream & text_to_stream(std::wostream & _Wostream, bool bXmlEncode = true) const;
 	
-	_CP_OPT(std::wstring)		style_data_style_name_;
-	_CP_OPT(odf_types::Bool)	text_fixed_;
-	_CP_OPT(std::wstring)		text_date_value_;//with format
+	_CP_OPT(std::wstring) style_data_style_name_;
+	_CP_OPT(odf_types::Bool) text_fixed_;
+	_CP_OPT(std::wstring) text_date_value_;//with format
   
-	office_element_ptr			text_;    
-
+    office_element_ptr_array content_;
 private:
     void add_attributes( const xml::attributes_wc_ptr & Attributes );
-	void add_child_element( xml::sax * Reader, const std::wstring & Ns, const std::wstring & Name){}
-    void add_text(const std::wstring & Text);
-    
+    void add_child_element(xml::sax* Reader, const std::wstring& Ns, const std::wstring& Name);
+    void add_text(const std::wstring & Text);    
 };
-
 CP_REGISTER_OFFICE_ELEMENT2(text_date);
 //-------------------------------------------------------------------------------------------------------------------
 // text:modification-date
@@ -833,9 +836,8 @@ public:
 	_CP_OPT(odf_types::Bool)text_fixed_;
 	_CP_OPT(std::wstring)	text_date_value_;//with format
   
-	office_element_ptr		text_;    
+	office_element_ptr text_;    
 };
-
 CP_REGISTER_OFFICE_ELEMENT2(text_modification_date);
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -859,18 +861,16 @@ public:
    
 	std::wostream & text_to_stream(std::wostream & _Wostream, bool bXmlEncode = true) const;
 
-	_CP_OPT(std::wstring)	style_data_style_name_;
-	_CP_OPT(odf_types::Bool)text_fixed_;
-	_CP_OPT(std::wstring)	text_time_value_;//with format
-  
-	office_element_ptr		text_;    
+    _CP_OPT(std::wstring) style_data_style_name_;
+    _CP_OPT(odf_types::Bool) text_fixed_;
+    _CP_OPT(std::wstring) text_time_value_; //with format
 
+    office_element_ptr_array content_;
 private:
     void add_attributes( const xml::attributes_wc_ptr & Attributes );
-	void add_child_element( xml::sax * Reader, const std::wstring & Ns, const std::wstring & Name){}
+    void add_child_element(xml::sax* Reader, const std::wstring& Ns, const std::wstring& Name);
     void add_text(const std::wstring & Text);
 };
-
 CP_REGISTER_OFFICE_ELEMENT2(text_time);
 
 //-------------------------------------------------------------------------------------------------------------------

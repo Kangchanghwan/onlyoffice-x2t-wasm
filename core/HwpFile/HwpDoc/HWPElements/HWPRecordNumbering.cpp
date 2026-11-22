@@ -1,11 +1,74 @@
+/*
+ * Copyright (C) Ascensio System SIA, 2009-2026
+ *
+ * This program is a free software product. You can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License (AGPL)
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
+ * Section 5 of the GNU AGPL version 3.
+ *
+ * No trademark rights are granted under this License.
+ *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 #include "HWPRecordNumbering.h"
 
 #include "../Common/NodeNames.h"
 
 namespace HWP
 {
+ENumberFormat GetNumberFormat(const std::string& sValue, EHanType eType)
+{
+	if (sValue.empty())
+		return ENumberFormat::DIGIT;
+
+	if (GetValueName(EValue::CircledDigit, eType)          == sValue) return ENumberFormat::CIRCLED_DIGIT;
+	if (GetValueName(EValue::RomanCapital, eType)          == sValue) return ENumberFormat::ROMAN_CAPITAL;
+	if (GetValueName(EValue::RomanSmall, eType)            == sValue) return ENumberFormat::ROMAN_SMALL;
+	if (GetValueName(EValue::LatinCapital, eType)          == sValue) return ENumberFormat::LATIN_CAPITAL;
+	if (GetValueName(EValue::LatinSmall, eType)            == sValue) return ENumberFormat::LATIN_SMALL;
+	if (GetValueName(EValue::CircledLatinCapital, eType)   == sValue) return ENumberFormat::CIRCLED_LATIN_CAPITAL;
+	if (GetValueName(EValue::CircledLatinSmall, eType)     == sValue) return ENumberFormat::CIRCLED_LATIN_SMALL;
+	if (GetValueName(EValue::HangulSyllable, eType)        == sValue) return ENumberFormat::HANGUL_SYLLABLE;
+	if (GetValueName(EValue::CircledHangulSyllable, eType) == sValue) return ENumberFormat::CIRCLED_HANGUL_SYLLABLE;
+	if (GetValueName(EValue::HangulJamo, eType)            == sValue) return ENumberFormat::HANGUL_JAMO;
+	if (GetValueName(EValue::CircledHangulJamo, eType)     == sValue) return ENumberFormat::CIRCLED_HANGUL_JAMO;
+	if (GetValueName(EValue::HangulPhonetic, eType)        == sValue) return ENumberFormat::HANGUL_PHONETIC;
+	if (GetValueName(EValue::Ideograph, eType)             == sValue) return ENumberFormat::IDEOGRAPH;
+	if (GetValueName(EValue::CircledIdeograph, eType)      == sValue) return ENumberFormat::CIRCLED_IDEOGRAPH;
+	if (GetValueName(EValue::DecagonCircle, eType)         == sValue) return ENumberFormat::DECAGON_CIRCLE;
+	if (GetValueName(EValue::DecagonCircleHanja, eType)    == sValue) return ENumberFormat::DECAGON_CIRCLE_HANJA;
+	if (GetValueName(EValue::Symbol, eType)                == sValue) return ENumberFormat::SYMBOL;
+	if (GetValueName(EValue::UserChar, eType)              == sValue) return ENumberFormat::USER_CHAR;
+
+	return ENumberFormat::DIGIT;
+}
+
 CHWPRecordNumbering::CHWPRecordNumbering(CHWPDocInfo& oDocInfo, int nTagNum, int nLevel, int nSize, CHWPStream& oBuffer, int nOff, int nVersion)
-    : CHWPRecord(nTagNum, nLevel, nSize), m_pParent(&oDocInfo)
+    : CHWPRecord(nTagNum, nLevel, nSize), m_pParent(&oDocInfo), m_arNumbering{},
+      m_shStart(1), m_arExtLevelStart{}
 {
 	oBuffer.SavePosition();
 
@@ -27,20 +90,20 @@ CHWPRecordNumbering::CHWPRecordNumbering(CHWPDocInfo& oDocInfo, int nTagNum, int
 
 	oBuffer.ReadShort(m_shStart);
 
-	if (nVersion > 5025 && (nSize > oBuffer.GetDistanceToLastPos())) //TODO:: add offset-off < size check
+	if (nVersion > 5025 && (nSize > oBuffer.GetDistanceToLastPos())) //TODO:: Add check offset-off < size
 	{
 		for (int nIndex = 0; nIndex < 7; ++nIndex)
 			oBuffer.ReadInt(m_arNumbering[nIndex].m_nStartNumber);
 	}
 
-	if (nVersion > 5100 && (nSize > oBuffer.GetDistanceToLastPos())) //TODO:: add offset-off < size check
+	if (nVersion > 5100 && (nSize > oBuffer.GetDistanceToLastPos())) //TODO:: Add check offset-off < size
 	{
 		for (int nIndex = 0; nIndex < 3; ++nIndex)
 		{
-			//The content is unknown, but it contains 8 bytes.
+			//Content unknown, but it contains 8 bytes.
 			oBuffer.Skip(8);
 
-			//The content is unknown, but it contains 4 bytes.
+			//Content unknown, but it contains 4 bytes.
 			oBuffer.Skip(4);
 
 			short shLen;
@@ -57,7 +120,8 @@ CHWPRecordNumbering::CHWPRecordNumbering(CHWPDocInfo& oDocInfo, int nTagNum, int
 }
 
 CHWPRecordNumbering::CHWPRecordNumbering(CHWPDocInfo& oDocInfo, CXMLReader& oReader, EHanType eType)
-    : CHWPRecord(EHWPTag::HWPTAG_NUMBERING, 0, 0), m_pParent(&oDocInfo)
+    : CHWPRecord(EHWPTag::HWPTAG_NUMBERING, 0, 0), m_pParent(&oDocInfo), m_arNumbering{},
+      m_shStart(1), m_arExtLevelStart{}
 {
 	m_shStart = oReader.GetAttributeInt(GetAttributeName(EAttribute::Start, eType), 1);
 
@@ -69,9 +133,11 @@ CHWPRecordNumbering::CHWPRecordNumbering(CHWPDocInfo& oDocInfo, CXMLReader& oRea
 	{
 		TO_LOWER(sNodeName);
 
-		if (GetNodeName(ENode::ParaHead, eType) != sNodeName &&
-		    (EHanType::HWPX == eType && "parahead" != sNodeName))
+		if ("hh:parahead" != sNodeName && "parahead" != sNodeName)
 			continue;
+
+		sNumFormat.clear();
+		shLevel = 0;
 
 		START_READ_ATTRIBUTES(oReader)
 		{
@@ -114,7 +180,13 @@ CHWPRecordNumbering::CHWPRecordNumbering(CHWPDocInfo& oDocInfo, CXMLReader& oRea
 		}
 		END_READ_ATTRIBUTES(oReader)
 
-		if (GetValueName(EValue::Digit, eType))
+		m_arNumbering[unIndex].m_eNumFormat = ::HWP::GetNumberFormat(sNumFormat, eType);
+
+		const HWP_STRING sLevelFormat{oReader.GetText()};
+
+		if (!sLevelFormat.empty())
+			m_arNumbering[unIndex].m_sNumFormat = sLevelFormat;
+		else if (GetValueName(EValue::Digit, eType))
 		{
 			if (shLevel > 0 && shLevel < 11)
 				m_arNumbering[unIndex].m_sNumFormat = L'^' + std::to_wstring(shLevel) + L'.';
@@ -221,6 +293,14 @@ HWP_STRING CHWPRecordNumbering::GetNumFormat(unsigned short ushIndex) const
 		return HWP_STRING();
 
 	return m_arNumbering[ushIndex].m_sNumFormat;
+}
+
+ENumberFormat CHWPRecordNumbering::GetNumFormatType(unsigned short ushIndex) const
+{
+	if (ushIndex >= 7)
+		return ENumberFormat::DIGIT;
+
+	return m_arNumbering[ushIndex].m_eNumFormat;
 }
 
 HWP_BYTE CHWPRecordNumbering::GetAlign(unsigned short ushIndex) const

@@ -1,3 +1,38 @@
+/*
+ * Copyright (C) Ascensio System SIA, 2009-2026
+ *
+ * This program is a free software product. You can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License (AGPL)
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
+ * Section 5 of the GNU AGPL version 3.
+ *
+ * No trademark rights are granted under this License.
+ *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 #include "CImage.h"
 
 #include "../CSvgFile.h"
@@ -11,7 +46,8 @@
 namespace SVG
 {
 	CImage::CImage(CSvgReader& oReader, CRenderedObject* pParent)
-		: CRenderedObject(oReader, pParent)
+		: CRenderedObject(oReader, pParent), m_bPreserveRatio(true),
+		  m_bSlice(false), m_dLeadingSpaceRatioX(0.5), m_dLeadingSpaceRatioY(0.5)
 	{}
 
 	void CImage::SetAttribute(const std::string& sName, CSvgReader& oReader)
@@ -25,7 +61,20 @@ namespace SVG
 		else if ("height" == sName)
 			m_oRect.m_oHeight.SetValue(oReader.GetText());
 		else if ("href" == sName || "xlink:href" == sName)
-			m_wsHref = oReader.GetText(); // TODO:: In the future, it might be worth implementing a separate CHref class for all types of links
+			m_wsHref = oReader.GetText(); // TODO:: In the future, it may be worth implementing a separate CHref class for all link types
+		else if ("preserveAspectRatio" == sName)
+		{
+			const std::wstring wsValue{oReader.GetText()};
+
+			m_bPreserveRatio = (std::wstring::npos == wsValue.find(L"none"));
+			m_bSlice         = (std::wstring::npos != wsValue.find(L"slice"));
+
+			if (m_bPreserveRatio)
+			{
+				m_dLeadingSpaceRatioX = (std::wstring::npos != wsValue.find(L"xMin")) ? 0. : ((std::wstring::npos != wsValue.find(L"xMax")) ? 1. : 0.5);
+				m_dLeadingSpaceRatioY = (std::wstring::npos != wsValue.find(L"YMin")) ? 0. : ((std::wstring::npos != wsValue.find(L"YMax")) ? 1. : 0.5);
+			}
+		}
 		else
 			CRenderedObject::SetAttribute(sName, oReader);
 	}
@@ -37,7 +86,7 @@ namespace SVG
 		if (m_wsHref.empty() || !StartPath(pRenderer, pFile, oOldTransform, oMode))
 			return false;
 
-		TBounds oBounds = (NULL != m_pParent) ? m_pParent->GetBounds() : TBounds{0., 0., 0., 0.};
+		TBounds oBounds = (NULL != m_pParent && IsRelativeValue(m_oRect)) ? m_pParent->GetBounds() : TBounds{0., 0., 0., 0.};
 
 		double dParentWidth  = oBounds.m_dRight  - oBounds.m_dLeft;
 		double dParentHeight = oBounds.m_dBottom - oBounds.m_dTop;
@@ -76,16 +125,16 @@ namespace SVG
 		#ifndef METAFILE_DISABLE_FILESYSTEM
 		else
 		{
-			std::wstring wsFilePath = NSSystemPath::ShortenPath(m_wsHref);
-	
 			bool bIsAllowExternalLocalFiles = true;
 			if (NSProcessEnv::IsPresent(NSProcessEnv::Converter::gc_allowPrivateIP))
 				bIsAllowExternalLocalFiles = NSProcessEnv::GetBoolValue(NSProcessEnv::Converter::gc_allowPrivateIP);
 
-			if (!bIsAllowExternalLocalFiles && wsFilePath.length() >= 3 && L"../" == wsFilePath.substr(0, 3))
+			const std::wstring wsWorkingDirectory = pFile->GetWorkingDirectory();
+			const std::wstring wsFilePath = bIsAllowExternalLocalFiles ? NSSystemPath::ShortenPath(NSSystemPath::Combine(wsWorkingDirectory, m_wsHref))
+				                                                       : NSSystemPath::ResolveInDirectory(wsWorkingDirectory, wsWorkingDirectory, m_wsHref);
+
+			if (wsFilePath.empty())
 				return false;
-	
-			wsFilePath = pFile->GetWorkingDirectory() + L'/' + wsFilePath;
 	
 			if (!NSFile::CFileBinary::Exists(wsFilePath) || !NSFile::CFileBinary::ReadAllBytes(wsFilePath, &pBuffer, ulSize))
 				return false;
@@ -98,24 +147,39 @@ namespace SVG
 		CBgraFrame oBgraFrame;
 		oBgraFrame.Decode(pBuffer, ulSize);
 
-		double dImageW = oBgraFrame.get_Width();
-		double dImageH = oBgraFrame.get_Height();
+		const int nImageW = oBgraFrame.get_Width();
+		const int nImageH = oBgraFrame.get_Height();
+
+		int nSrcX = 0, nSrcY = 0, nSrcW = nImageW, nSrcH = nImageH;
+
+		if (m_bPreserveRatio && 0 < nImageW && 0 < nImageH && 0. < dWidth && 0. < dHeight)
+		{
+			const double dImageW = nImageW;
+			const double dImageH = nImageH;
+
+			if (m_bSlice)
+			{
+				const double dScale = (std::max)(dWidth / dImageW, dHeight / dImageH);
+
+				nSrcW = (std::max)(1, (std::min)(nImageW, (int)(dWidth  / dScale + 0.5)));
+				nSrcH = (std::max)(1, (std::min)(nImageH, (int)(dHeight / dScale + 0.5)));
+				nSrcX = (int)((nImageW - nSrcW) * m_dLeadingSpaceRatioX + 0.5);
+				nSrcY = (int)((nImageH - nSrcH) * m_dLeadingSpaceRatioY + 0.5);
+			}
+			else
+			{
+				const double dScale = (std::min)(dWidth / dImageW, dHeight / dImageH);
+
+				dX += (dWidth  - dImageW * dScale) * m_dLeadingSpaceRatioX;
+				dY += (dHeight - dImageH * dScale) * m_dLeadingSpaceRatioY;
+
+				dWidth  = dImageW * dScale;
+				dHeight = dImageH * dScale;
+			}
+		}
 
 		Aggplus::CImage oImage;
-		oImage.Create(oBgraFrame.get_Data(), dImageW, dImageH, -4 * dImageW, true);
-
-		if (dImageW / dWidth > dImageH / dHeight)
-		{
-			double dValue = dImageW / dWidth;
-			dY += (dHeight - (dImageH / dValue)) / 2.;
-			dHeight = dImageH / dValue;
-		}
-		else if (dImageW / dWidth < dImageH / dHeight)
-		{
-			double dValue = dImageH / dHeight;
-			dX += (dWidth - (dImageW / dValue)) / 2.;
-			dWidth = dImageW / dValue;
-		}
+		oImage.Create(oBgraFrame.get_Data() + 4 * (nSrcY * nImageW + nSrcX), nSrcW, nSrcH, -4 * nImageW, true);
 
 		if (CommandeModeClip != oMode)
 			pRenderer->DrawImage(&oImage, dX, dY, dWidth, dHeight);
@@ -148,8 +212,7 @@ namespace SVG
 		{
 			*pTransform += m_oTransformation.m_oTransform.GetMatrix();
 
-			pTransform->GetFinalValue().TransformPoint(oBounds.m_dLeft,  oBounds.m_dTop   );
-			pTransform->GetFinalValue().TransformPoint(oBounds.m_dRight, oBounds.m_dBottom);
+			TransformBounds(oBounds, pTransform->GetFinalValue());
 
 			*pTransform -= m_oTransformation.m_oTransform.GetMatrix();
 		}

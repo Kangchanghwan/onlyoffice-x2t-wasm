@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #pragma once
 
@@ -31,8 +41,8 @@
 #include "../common/StringExt.h"
 #include "GraphicsPath.h"
 
-// this class needs to be rewritten. should work just like in js
-// and not just switch on each character if necessary
+// this class needs to be rewritten. should work the same as in js
+// instead of just switching on each character when needed
 class CMetafileFontPicker
 {
 private:
@@ -272,7 +282,7 @@ std::wstring IMetafileToRenderter::GetImagePath(const std::wstring& sPath)
 				}
 
 				std::wstring wsSvgExt(L".svg");
-				if (0 == sImagePath.compare(sImagePath.length() - wsSvgExt.length(), std::wstring::npos, wsSvgExt))
+				if (sImagePath.length() >= wsSvgExt.length() && 0 == sImagePath.compare(sImagePath.length() - wsSvgExt.length(), std::wstring::npos, wsSvgExt))
 				{
 					std::wstring wsTestPath = sImagePath.substr(0, sImagePath.length() - wsSvgExt.length());
 					if (NSFile::CFileBinary::Exists(wsTestPath + L".emf"))
@@ -287,7 +297,7 @@ std::wstring IMetafileToRenderter::GetImagePath(const std::wstring& sPath)
 
 		if (0 == sImagePath.find(L"file:///"))
 		{
-			// TODO: under linux the code is incorrect
+			// TODO: code is incorrect on linux
 			NSStringExt::Replace(sImagePath, L"file:///", L"");
 			NSStringExt::Replace(sImagePath, L"\\", L"/");
 		}
@@ -883,7 +893,7 @@ namespace NSOnlineOfficeBinToPdf
 			}
 			case ctGradientFill:
 			{
-				// TODO: This command shouldn't be received
+				// TODO: This command should not be received
 				INT32 gradientType = oReader.ReadInt();
 
 				std::wstring sXml, sXmlStop;
@@ -926,7 +936,7 @@ namespace NSOnlineOfficeBinToPdf
 			}
 			case ctGradientFillXML:
 			{
-				// TODO: This command shouldn't be received
+				// TODO: This command should not be received
 				INT32 gradientType = oReader.ReadInt();
 				int nLen = oReader.ReadInt();
 				std::wstring wsTempString = oReader.ReadString16(nLen);
@@ -934,7 +944,7 @@ namespace NSOnlineOfficeBinToPdf
 			}
 			case ctGradientStroke:
 			{
-				// TODO: This command shouldn't be received
+				// TODO: This command should not be received
 				INT32 gradientType = oReader.ReadInt();
 				if (0 == gradientType)	//	linearGradient
 				{
@@ -975,14 +985,14 @@ namespace NSOnlineOfficeBinToPdf
 			}
 			case ctGradientStrokeXML:
 			{
-				// TODO: This command shouldn't be received
+				// TODO: This command should not be received
 				INT32 gradientType = oReader.ReadInt();
 				int nLen = (int)oReader.ReadInt();
 				std::wstring wsTempString = oReader.ReadString16(nLen);
 				break;
 			}
-			// additional commands. Due to version compatibility, we can't change the format.
-			// but all the following must be according to the same scheme
+			// additional commands. cannot change format due to version compatibility.
+			// but all following should use the same schema
 			case ctHyperlink:
 			{
 				if (S_OK == pRenderer->IsSupportAdvancedCommand(IAdvancedCommand::AdvancedCommandType::Hyperlink))
@@ -1052,12 +1062,14 @@ namespace NSOnlineOfficeBinToPdf
 			case ctPageRotate:
 			case ctHeadings:
 			case ctRedact:
+			case ctRedactMeta:
+			case ctMacros:
 			{
 				IAdvancedCommand::AdvancedCommandType eAdvancedCommandType = IAdvancedCommand::AdvancedCommandType::Undefined;
 				switch (eCommand)
 				{
 				case ctFormField:        eAdvancedCommandType = IAdvancedCommand::AdvancedCommandType::FormField;   break;
-				case ctAnnotField:       eAdvancedCommandType = IAdvancedCommand::AdvancedCommandType::Annotaion;   break;
+				case ctAnnotField:       eAdvancedCommandType = IAdvancedCommand::AdvancedCommandType::Annotation;  break;
 				case ctAnnotFieldDelete: eAdvancedCommandType = IAdvancedCommand::AdvancedCommandType::DeleteAnnot; break;
 				case ctWidgetsInfo:      eAdvancedCommandType = IAdvancedCommand::AdvancedCommandType::WidgetsInfo; break;
 				case ctShapeStart:       eAdvancedCommandType = IAdvancedCommand::AdvancedCommandType::ShapeStart;  break;
@@ -1066,6 +1078,8 @@ namespace NSOnlineOfficeBinToPdf
 				case ctPageRotate:       eAdvancedCommandType = IAdvancedCommand::AdvancedCommandType::PageRotate;  break;
 				case ctHeadings:         eAdvancedCommandType = IAdvancedCommand::AdvancedCommandType::Headings;    break;
 				case ctRedact:           eAdvancedCommandType = IAdvancedCommand::AdvancedCommandType::Redact;      break;
+				case ctRedactMeta:       eAdvancedCommandType = IAdvancedCommand::AdvancedCommandType::RedactMeta;  break;
+				case ctMacros:           eAdvancedCommandType = IAdvancedCommand::AdvancedCommandType::Macros;      break;
 				default:
 					break;
 				}
@@ -1366,7 +1380,7 @@ namespace NSOnlineOfficeBinToPdf
 			case ctGradientStroke:
 			case ctGradientStrokeXML:
 			{
-				// TODO: This command shouldn't be received
+				// TODO: This command should not be received
 				return;
 			}
 			case ctHyperlink:
@@ -1402,8 +1416,12 @@ namespace NSOnlineOfficeBinToPdf
 			case ctWidgetsInfo:
 			case ctShapeStart:
 			case ctShapeEnd:
+			case ctPageClear:
 			case ctPageRotate:
 			case ctHeadings:
+			case ctRedact:
+			case ctRedactMeta:
+			case ctMacros:
 			default:
 			{
 				BYTE* cur = oReader.GetCurrentBuffer();

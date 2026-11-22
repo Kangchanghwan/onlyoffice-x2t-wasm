@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #pragma once
 
@@ -108,13 +118,13 @@ namespace NSNetwork
 			virtual int UploadData() = 0;
 
 		public:
-			std::wstring    m_sDownloadFilePath; // Path to the saved file on disk
-			std::wstring    m_sDownloadFileUrl;// File download link
-			std::wstring    m_sUploadFilePath; // Path to the file to upload to the server
-			std::wstring    m_sUploadUrl;      // URL for uploading data
+			std::wstring    m_sDownloadFilePath; // Path to saved file on disk
+			std::wstring    m_sDownloadFileUrl;// Download file URL
+			std::wstring    m_sUploadFilePath; // Path to file for upload to server
+			std::wstring    m_sUploadUrl;      // URL for data upload
 
-			bool            m_bComplete;       // Is the file downloaded or not?
-			bool            m_bDelete;         // Whether to delete the file in the destructor
+			bool            m_bComplete;       // Whether file is downloaded or not
+			bool            m_bDelete;         // Delete file in destructor?
 
 			typedef enum LoadType
 			{
@@ -123,9 +133,9 @@ namespace NSNetwork
 				UPLOADDATA
 			} LoadType;
 
-			LoadType m_eLoadType;              // Data/file upload/download type
+			LoadType m_eLoadType;              // Load/upload type for data/file
 
-			const unsigned char*  m_cData;     // Data in raw form for uploading
+			const unsigned char*  m_cData;     // Raw data for upload
 			int             m_nSize;           // Data size
 
 			std::wstring    m_sResponse = L"";       // Server response
@@ -136,13 +146,13 @@ namespace NSNetwork
 
 			CSession* m_pSession;
 
-			//            std::atomic<bool>* m_bIsExit; // To stop and exit the thread
+			//            std::atomic<bool>*   m_bIsExit; // For stopping and exiting the thread
 		};
 
 		class CFileTransporter_private : public NSThreads::CBaseThread
 		{
 		protected:
-			// create depending on the platform
+			// create depending on platform
 			CFileTransporterBase* m_pInternal;
 
 		public:

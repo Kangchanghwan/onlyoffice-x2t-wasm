@@ -1,7 +1,43 @@
+/*
+ * Copyright (C) Ascensio System SIA, 2009-2026
+ *
+ * This program is a free software product. You can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License (AGPL)
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
+ * Section 5 of the GNU AGPL version 3.
+ *
+ * No trademark rights are granted under this License.
+ *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 #include "CSvgParser.h"
 
 #include <algorithm>
 #include <cctype>
+#include <cwctype>
 
 #include "CSvgFile.h"
 
@@ -24,7 +60,9 @@
 #include "SvgObjects/CMask.h"
 #include "SvgObjects/CUse.h"
 
-#include "../../../../Common/3dParty/html/css/src/StaticFunctions.h"
+#include "html2svg.h"
+
+#include "../../../../UnicodeConverter/UnicodeConverter.h"
 
 namespace SVG
 {
@@ -74,6 +112,100 @@ namespace SVG
 		return std::string(itEncodingValueBegin, itEncodingValueEnd);
 	}
 
+	size_t FindSvgBegin(const std::string& sContent)
+	{
+		size_t unPosition = 0;
+
+		while (unPosition < sContent.length())
+		{
+			while (unPosition < sContent.length() && std::isspace(static_cast<unsigned char>(sContent[unPosition])))
+				++unPosition;
+
+			if (unPosition >= sContent.length() || '<' != sContent[unPosition])
+				return std::string::npos;
+
+			if (0 == sContent.compare(unPosition, 4, "<!--"))
+			{
+				const size_t unEnd = sContent.find("-->", unPosition + 4);
+
+				if (std::string::npos == unEnd)
+					return std::string::npos;
+
+				unPosition = unEnd + 3;
+			}
+			else if (0 == sContent.compare(unPosition, 2, "<?"))
+			{
+				const size_t unEnd = sContent.find("?>", unPosition + 2);
+
+				if (std::string::npos == unEnd)
+					return std::string::npos;
+
+				unPosition = unEnd + 2;
+			}
+			else if (0 == sContent.compare(unPosition, 2, "<!"))
+			{
+				size_t unEnd = unPosition + 2;
+				unsigned int unSubsetDepth = 0;
+
+				while (unEnd < sContent.length())
+				{
+					const char chElement = sContent[unEnd];
+
+					if ('\'' == chElement || '\"' == chElement)
+					{
+						unEnd = sContent.find(chElement, unEnd + 1);
+
+						if (std::string::npos == unEnd)
+							return std::string::npos;
+
+						++unEnd;
+					}
+					else if (0 == sContent.compare(unEnd, 4, "<!--"))
+					{
+						const size_t unCommentEnd = sContent.find("-->", unEnd + 4);
+
+						if (std::string::npos == unCommentEnd)
+							return std::string::npos;
+
+						unEnd = unCommentEnd + 3;
+					}
+					else if (0 == sContent.compare(unEnd, 2, "<?"))
+					{
+						const size_t unInstructionEnd = sContent.find("?>", unEnd + 2);
+
+						if (std::string::npos == unInstructionEnd)
+							return std::string::npos;
+
+						unEnd = unInstructionEnd + 2;
+					}
+					else if ('[' == chElement)
+					{
+						++unSubsetDepth;
+						++unEnd;
+					}
+					else if (']' == chElement && 0 != unSubsetDepth)
+					{
+						--unSubsetDepth;
+						++unEnd;
+					}
+					else if ('>' == chElement && 0 == unSubsetDepth)
+						break;
+					else
+						++unEnd;
+				}
+
+				if (unEnd >= sContent.length())
+					return std::string::npos;
+
+				unPosition = unEnd + 1;
+			}
+			else
+				return (0 == sContent.compare(unPosition, 4, "<svg")) ? unPosition : std::string::npos;
+		}
+
+		return std::string::npos;
+	}
+
 	bool CSvgParser::LoadFromFile(const std::wstring &wsFile, CGraphicsContainer*& pContainer, CSvgFile* pFile) const
 	{
 		if (wsFile.empty() || NULL == pFile)
@@ -83,7 +215,7 @@ namespace SVG
 		if (!NSFile::CFileBinary::ReadAllTextUtf8A(wsFile, sXml))
 			return false;
 
-		size_t unFoundBegin = sXml.find("<svg");
+		size_t unFoundBegin = FindSvgBegin(sXml);
 
 		NSUnicodeConverter::CUnicodeConverter oConverter;
 		std::wstring wsContent;
@@ -155,6 +287,110 @@ namespace SVG
 		return bScanResult;
 	}
 	
+	typedef std::pair<std::wstring, std::wstring> StylePropertie;
+	typedef std::vector<StylePropertie> StyleProperties;
+
+	StyleProperties ParseFontFace(const std::wstring& wsValue)
+	{
+		StyleProperties arResult;
+		size_t unIndex{0};
+		const size_t unMaxSize{wsValue.size()};
+
+		while (unIndex < unMaxSize)
+		{
+			while (unIndex < unMaxSize && std::iswspace(static_cast<unsigned char>(wsValue[unIndex])))
+				++unIndex;
+
+			if (unIndex >= unMaxSize)
+				break;
+
+			size_t unColonPos{std::wstring::npos};
+			int nQuoteType{0}; // 0 - no quotes, 1 - double quotes, 2 - single quotes
+			size_t unKeyStart{unIndex};
+
+			while (unIndex < unMaxSize)
+			{
+				char c = wsValue[unIndex];
+				if (nQuoteType == 0)
+				{
+					if (c == '"')
+						nQuoteType = 1;
+					else if (c == '\'')
+						nQuoteType = 2;
+					else if (c == ':')
+					{
+						unColonPos = unIndex;
+						break;
+					}
+				}
+				else
+				{
+					if ((nQuoteType == 1 && c == '"') || (nQuoteType == 2 && c == '\''))
+						nQuoteType = 0;
+				}
+				++unIndex;
+			}
+
+			if (std::string::npos == unColonPos)
+				break;
+
+			std::wstring wsKey{wsValue.substr(unKeyStart, unColonPos - unKeyStart)};
+
+			wsKey.erase(0, wsKey.find_first_not_of(L" \t\n\r\f\v"));
+			wsKey.erase(wsKey.find_last_not_of(L" \t\n\r\f\v") + 1);
+
+			unIndex = unColonPos + 1;
+			nQuoteType = 0;
+			size_t unValStart{unIndex};
+
+			while (unIndex < unMaxSize)
+			{
+				char c = wsValue[unIndex];
+				if (nQuoteType == 0)
+				{
+					if (c == '"')
+						nQuoteType = 1;
+					else if (c == '\'')
+						nQuoteType = 2;
+					else if (c == ';')
+						break;
+				}
+				else
+				{
+					if ((nQuoteType == 1 && c == '"') || (nQuoteType == 2 && c == '\''))
+						nQuoteType = 0;
+				}
+				++unIndex;
+			}
+
+			std::wstring wsKeyValue{wsValue.substr(unValStart, unIndex - unValStart)};
+
+			wsKeyValue.erase(0, wsKeyValue.find_first_not_of(L" \t\n\r\f\v"));
+			wsKeyValue.erase(wsKeyValue.find_last_not_of (L" \t\n\r\f\v") + 1);
+
+			arResult.emplace_back(std::move(wsKey), std::move(wsKeyValue));
+
+			if (unIndex < unMaxSize && wsValue[unIndex] == ';')
+				++unIndex;
+		}
+
+		return arResult;
+	}
+
+	void TrimQuotes(std::wstring& wsValue)
+	{
+		if (wsValue.size() < 2)
+			return;
+
+		const wchar_t chFirst{wsValue.front()};
+
+		if ((chFirst == L'\'' || chFirst == L'"') && wsValue.back() == chFirst)
+		{
+			wsValue.erase(wsValue.begin());
+			wsValue.pop_back();
+		}
+	}
+
 	void CSvgParser::ParseStyles(const std::wstring &wsStyles, CSvgFile *pFile) const
 	{
 		if (NULL == pFile)
@@ -162,51 +398,59 @@ namespace SVG
 
 		pFile->AddStyles(wsStyles);
 
-		std::wregex oRegex(L"@font-face\\s*(\\{[^}]*\\})");
-		std::wsmatch oMatch;
-		std::wstring::const_iterator oSearchStart(wsStyles.cbegin());
-		
-		while (std::regex_search(oSearchStart, wsStyles.cend(), oMatch, oRegex))
+		const std::wstring wsTag{L"@font-face"};
+		size_t unPos = 0;
+
+		while ((unPos = wsStyles.find(wsTag, unPos)) != std::wstring::npos)
 		{
-			if (oMatch[1].str().empty())
-				continue;
+			size_t unCur{unPos + wsTag.length()};
 
-			std::wstring wsValue{oMatch[1].str()};
+			while (unCur < wsStyles.length() && std::iswspace(wsStyles[unCur]))
+				++unCur;
 
-			std::wstring::const_iterator itStart = std::find_if(wsValue.cbegin(), wsValue.cend(), [](const wchar_t& wChar) { return !std::iswspace(wChar) && L'{' != wChar; });
-			std::wstring::const_reverse_iterator itEnd = std::find_if(wsValue.crbegin(), wsValue.crend(), [](const wchar_t& wChar) { return !std::iswspace(wChar) && L'}' != wChar; });
-
-			if (wsValue.cend() != itStart && wsValue.crend() != itEnd)
-				wsValue = std::wstring(itStart, itEnd.base());
-
-			const std::vector<std::wstring> arWords{NSCSS::NS_STATIC_FUNCTIONS::GetWordsW(wsValue, true, L":;")};
-
-			SvgURL oURL;
-			TFontArguments m_oArguments;
-
-			for (unsigned int unIndex = 0; unIndex < arWords.size(); ++unIndex)
+			if (unCur >= wsStyles.length() || L'{' != wsStyles[unCur])
 			{
-				if (arWords[unIndex].length() > 3 && L"src" == arWords[unIndex].substr(0, 3) && L':' == arWords[unIndex].back() && 
-				    unIndex + 1 < arWords.size() && oURL.SetValue(arWords[++unIndex]))
-				{
-					continue;
-				}
-				else if (arWords[unIndex].length() > 11 && L"font-family" == arWords[unIndex].substr(0, 11) && L':' == arWords[unIndex].back() &&
-				         unIndex + 1 < arWords.size())
-				{
-					const std::vector<std::wstring> arFontFamily{NSCSS::NS_STATIC_FUNCTIONS::GetWordsW(arWords[++unIndex], false, L"\"\',;")};
-
-					if (arFontFamily.empty())
-						continue;
-
-					m_oArguments.m_wsFontFamily = arFontFamily.back();
-				}
+				unPos += wsTag.length();
+				continue;
 			}
 
-			if (!oURL.Empty() && !m_oArguments.m_wsFontFamily.empty())
-				pFile->AddFontFace(m_oArguments, oURL.GetValue());
+			const size_t unClose{wsStyles.find(L'}', unCur + 1)};
 
-			oSearchStart = oMatch.suffix().first;
+			if (std::wstring::npos == unClose)
+				break;
+
+			size_t unInnerStart{unCur + 1};
+			size_t unInnerEnd{unClose};
+
+			while (unInnerStart < unInnerEnd && std::iswspace(wsStyles[unInnerStart]))
+				++unInnerStart;
+
+			while (unInnerEnd > unInnerStart && std::iswspace(wsStyles[unInnerEnd - 1]))
+				--unInnerEnd;
+
+			if (unInnerStart < unInnerEnd)
+			{
+				const std::wstring wsValue{wsStyles.substr(unInnerStart, unInnerEnd - unInnerStart)};
+
+				SvgURL oURL;
+				TFontArguments oArguments;
+
+				for (const StylePropertie& oPropertie : ParseFontFace(wsValue))
+				{
+					if (L"font-family" == oPropertie.first)
+					{
+						oArguments.m_wsFontFamily = oPropertie.second;
+						TrimQuotes(oArguments.m_wsFontFamily);
+					}
+					else if (L"src" == oPropertie.first)
+						oURL.SetValue(oPropertie.second);
+				}
+
+				if (!oURL.Empty() && !oArguments.m_wsFontFamily.empty())
+					pFile->AddFontFace(oArguments, oURL.GetValue());
+			}
+
+			unPos = unClose + 1;
 		}
 	}
 	template <class ObjectType>
@@ -267,11 +511,19 @@ namespace SVG
 		else if ("pattern" == sElementName)
 		{
 			pObject = CObject::Create<CPattern>(oReader, pFile);
+
+			if (NULL == pObject)
+				return ReadChildrens<CRenderedObject>(oReader, NULL, pFile);
+
 			ReadChildrens(oReader, (CGraphicsContainer*)(&((CPattern*)pObject)->GetContainer()), pFile);
 		}
 		else if ("clipPath" == sElementName)
 		{
 			pObject = CObject::Create<CClipPath>(oReader, pFile);
+
+			if (NULL == pObject)
+				return ReadChildrens<CRenderedObject>(oReader, NULL, pFile);
+
 			ReadChildrens(oReader, (CGraphicsContainer*)(&((CClipPath*)pObject)->GetContainer()), pFile);
 		}
 		else if ("marker" == sElementName)
@@ -282,6 +534,10 @@ namespace SVG
 		else if ("mask" == sElementName)
 		{
 			pObject = CObject::Create<CMask>(oReader, pFile);
+
+			if (NULL == pObject)
+				return ReadChildrens<CRenderedObject>(oReader, NULL, pFile);
+
 			ReadChildrens(oReader, (CGraphicsContainer*)(&((CMask*)pObject)->GetContainer()), pFile);
 		}
 		else if ("symbol" == sElementName)
@@ -295,6 +551,30 @@ namespace SVG
 		else if ("font" == sElementName)
 		{
 			pObject = CObject::Create<CFont>(oReader, pFile, pFile);
+		}
+		else if ("foreignObject" == sElementName)
+		{
+			double dWidth{300};
+
+			START_READ_ATTRIBUTES(oReader)
+				if ("width" == ATTRIBUTE_NAME)
+					dWidth = oReader.GetDouble();
+			END_READ_ATTRIBUTES(oReader)
+
+			CSvgReader oNewReader;
+
+			const std::wstring wsSVG{ConvertForeignObjectToSvg(oReader.GetInnerXML(), dWidth)};
+
+			if (oNewReader.ReadFromString(wsSVG))
+			{
+				pObject = CObject::Create<CGraphicsContainer>(oNewReader, pFile, pParent);
+
+				if (!ReadChildrens(oNewReader, (CGraphicsContainer*)pObject, pFile, (CGraphicsContainer*)pObject))
+				{
+					RELEASEINTERFACE(pObject);
+					return false;
+				}
+			}
 		}
 
 		if (NULL == pObject)

@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "FontTTWriter.h"
 #include "../../DesktopEditor/common/File.h"
@@ -367,14 +377,14 @@ namespace PdfWriter
 		unsigned int t;
 		int nPos = 0, i, j, k, n;
 
-		// Write an OpenType font without changing it
+		// Write OpenType font without modifying it
 		if (m_bOpenTypeCFF)
 		{
 			WriteCIDFontType0C(pOutputStream, pCodeToGID, unCodesCount);
 			return;
 		}
 
-		// Checking missing tables
+		// Check for missing tables
 		bool bMissingCmap = (nCmapIndex = SeekTable("cmap")) < 0;
 		bool bMissingName = SeekTable("name") < 0;
 		bool bMissingPost = SeekTable("post") < 0;
@@ -400,8 +410,8 @@ namespace PdfWriter
 			{
 				bUnsortedLoca = true;
 			}
-			// The glyph description must be at least 12 bytes (nContours,
-			// xMin, yMin, xMax, yMax, instructionLength - each 2 bytes);
+			// Glyph description must be at least 12 bytes (nContours,
+			// xMin, yMin, xMax, yMax, instructionLength - 2 bytes each);
 			if (i > 0 && pLocaTable[i].nOrigOffset - pLocaTable[i - 1].nOrigOffset > 0 && pLocaTable[i].nOrigOffset - pLocaTable[i - 1].nOrigOffset < 12)
 			{
 				pLocaTable[i - 1].nOrigOffset = pLocaTable[i].nOrigOffset;
@@ -410,7 +420,7 @@ namespace PdfWriter
 			pLocaTable[i].nIndex = i;
 		}
 
-		// Checking for null tables
+		// Check for zero-length tables
 		nZeroLengthTables = 0;
 		for (i = 0; i < m_nTablesCount; ++i)
 		{
@@ -418,7 +428,7 @@ namespace PdfWriter
 				++nZeroLengthTables;
 		}
 
-		// Checking the length of the Cmap table
+		// Check Cmap table length
 		badCmapLen = false;
 		nCmapLen = 0;
 		if (!bMissingCmap)
@@ -438,12 +448,12 @@ namespace PdfWriter
 			}
 		}
 
-		// Checking whether the table 'hmtx' is shortened.
+		// Check if 'hmtx' table is abbreviated.
 		i = SeekTable("hhea");
 		nHMetrics = GetU16BE(m_pTables[i].nOffset + 34, &bSuccess);
 		abbrevHMTX = nHMetrics < m_nGlyphs;
 
-		// If everything is in order, and we don't need to rewrite the 'cmap' and 'name' tables, then write the TTF file as it is
+		// If everything is fine and we don't need to rewrite 'cmap' and 'name' tables, write TTF file as is
 		if (!bMissingCmap && !bMissingName && !bMissingPost && !bMissingOS2 && !bUnsortedLoca && !badCmapLen && !abbrevHMTX && nZeroLengthTables == 0 && !sName && !pCodeToGID)
 		{
 			pOutputStream->Write((BYTE *)m_sFile, m_nLen);
@@ -451,12 +461,12 @@ namespace PdfWriter
 			return;
 		}
 
-		// Sorting the 'loca' table: some fonts contain unordered
-		// table 'loca'; and some fonts with a normal 'loca' table
-		// contain empty elements in the middle of the table, cmpTrueTypeLocaOffset
-		// uses shifts as the main sorting key, and glyph numbers
-		// as a second key (so that elements in the table that have the same position
-		// were in the same order as in the original font)
+		// Sort 'loca' table: some fonts contain unsorted 'loca' table;
+		// and some fonts with normal 'loca' table contain empty elements
+		// in the middle of the table, cmpTrueTypeLocaOffset uses offsets
+		// as primary sort key, and glyph numbers as secondary key
+		// (so that elements with the same position go in the same order
+		// as in the original font)
 		nGlyphLen = 0;
 		if (bUnsortedLoca || pUseGlyfs)
 		{
@@ -471,7 +481,7 @@ namespace PdfWriter
 
 			for (i = 0; i <= m_nGlyphs; ++i)
 			{
-				// TO DO: Test writing here only those glyphs that we need
+				// TO DO: Test writing only the glyphs that we need here
 
 				if (pUseGlyfs && lGlyfsCount == m_nGlyphs)
 				{
@@ -503,7 +513,7 @@ namespace PdfWriter
 			nGlyphLen = nPos;
 		}
 
-		// Calculate checksums of tables 'loca' and 'glyf'
+		// Calculate checksums for 'loca' and 'glyf' tables
 		nLocaChecksum = nGlyphChecksum = 0;
 		if (bUnsortedLoca || pUseGlyfs)
 		{
@@ -540,7 +550,7 @@ namespace PdfWriter
 			}
 		}
 
-		// Building a new table 'name'
+		// Build new 'name' table
 		if (sName)
 		{
 			n = strlen(sName);
@@ -590,7 +600,7 @@ namespace PdfWriter
 			arrNewNameTable = NULL;
 		}
 
-		// Building a new table 'cmap'
+		// Build new 'cmap' table
 		if (pCodeToGID)
 		{
 			unsigned short ushSubTableLen = 10 + unCodesCount * 2;
@@ -600,9 +610,9 @@ namespace PdfWriter
 			arrNewCmapTable[1] = 0;           //
 			arrNewCmapTable[2] = 0;           // number of encoding tables = 1
 			arrNewCmapTable[3] = 1;           //
-			arrNewCmapTable[4] = 0;           // platform ID = 1 (MacOS) // These two fields are required
-			arrNewCmapTable[5] = 1;           //                         // have the same values, otherwise, Adobe
-			arrNewCmapTable[6] = 0;           // encoding ID = 0 // Acrobat may not open this font.
+			arrNewCmapTable[4] = 0;           // platform ID = 1 (MacOS) // These two fields must have
+			arrNewCmapTable[5] = 1;           //                         // these values, otherwise Adobe
+			arrNewCmapTable[6] = 0;           // encoding ID = 0         // Acrobat cannot open this font.
 			arrNewCmapTable[7] = 0;           //
 			arrNewCmapTable[8] = 0;           // offset of subtable
 			arrNewCmapTable[9] = 0;           //
@@ -631,7 +641,7 @@ namespace PdfWriter
 			arrNewCmapTable = NULL;
 		}
 
-		// Generate a new table 'hmtx' and update the table 'hhea'
+		// Generate new 'hmtx' table and update 'hhea' table
 		if (abbrevHMTX)
 		{
 			i = SeekTable("hhea");
@@ -675,12 +685,12 @@ namespace PdfWriter
 			nNewHHEALen = nNewHMTXLen = 0;
 		}
 
-		// Create a list of tables:
-		// - save the original non-zero tables
-		// - rewrite the length of the 'cmap' table, if necessary
+		// Create table list:
+		// - keep original non-zero tables
+		// - rewrite 'cmap' table length if necessary
 		// - add missing tables
 		// - sort tables by tags
-		// - calculate new table positions, taking into account 4-byte alignment
+		// - calculate new table positions with 4-byte alignment
 		// - recalculate table checksums
 		nNewTables = m_nTablesCount - nZeroLengthTables + (bMissingCmap ? 1 : 0) + (bMissingName ? 1 : 0) + (bMissingPost ? 1 : 0) + (bMissingOS2 ? 1 : 0);
 		pNewTables = (TrueTypeTable *)malloc(nNewTables * sizeof(TrueTypeTable));
@@ -825,7 +835,7 @@ namespace PdfWriter
 			}
 		}
 
-		// Recording information about tables in a file
+		// Write table information to file
 		arrTableDir = (char *)malloc(12 + nNewReqTables * 16);
 		arrTableDir[0] = 0x00; // sfnt version
 		arrTableDir[1] = 0x01; //
@@ -868,7 +878,7 @@ namespace PdfWriter
 		}
 		pOutputStream->Write((BYTE*)arrTableDir, 12 + nNewReqTables * 16);
 
-		// Calculate the checksum of the file
+		// Calculate file checksum
 		nFileChecksum = ComputeTableChecksum((unsigned char *)arrTableDir, 12 + nNewReqTables * 16);
 		for (i = 0; i < nNewTables; ++i)
 		{
@@ -1003,7 +1013,7 @@ namespace PdfWriter
 		if (!m_bOpenTypeCFF || SeekTable("CFF ") < 0)
 			return;
 
-		// Open Type Font is written as it is, without changing it
+		// Write Open Type Font as is, without modifying it
 		pOutputStream->Write((BYTE*)m_sFile, m_nLen);
 
 		return;
@@ -1064,7 +1074,7 @@ namespace PdfWriter
 
 		m_bSuccess = true;
 
-		// Checking whether this file is (TTC)
+		// Check if this file is a TTC collection
 		unsigned int unTopTag = GetU32BE(0, &m_bSuccess);
 		if (!m_bSuccess)
 			return;
@@ -1081,12 +1091,12 @@ namespace PdfWriter
 		else
 			nPos = 0;
 
-		// Checking the sfnt version
+		// Check sfnt version
 		int nSfntVersion = GetU32BE(nPos, &m_bSuccess);
 		if (!m_bSuccess)
 			return;
 
-		// Check the data format. CFF or not?
+		// Check data format. CFF or not?
 		m_bOpenTypeCFF = (nSfntVersion == 0x4f54544f); // 'OTTO'
 
 		m_nTablesCount = GetU16BE(nPos + 4, &m_bSuccess);
@@ -1109,14 +1119,14 @@ namespace PdfWriter
 		if (!m_bSuccess)
 			return;
 
-		// Find tables necessary for both TrueType and Type 42
+		// Look for tables required for both TrueType and Type 42
 		if (SeekTable("head") < 0 || SeekTable("hhea") < 0 || SeekTable("maxp") < 0 || SeekTable("hmtx") < 0 || (!m_bOpenTypeCFF && SeekTable("loca") < 0) || (!m_bOpenTypeCFF && SeekTable("glyf") < 0) || (m_bOpenTypeCFF && SeekTable("CFF ") < 0))
 		{
 			m_bSuccess = false;
 			return;
 		}
 
-		// read CMaps tables
+		// Read CMaps tables
 		if ((nIndex = SeekTable("cmap")) >= 0)
 		{
 			nPos = m_pTables[nIndex].nOffset + 2;
@@ -1157,7 +1167,7 @@ namespace PdfWriter
 		if (!m_bSuccess)
 			return;
 
-		// Checking the correctness of the loca table
+		// Check loca table correctness
 		if (!m_bOpenTypeCFF)
 		{
 			nIndex = SeekTable("loca");

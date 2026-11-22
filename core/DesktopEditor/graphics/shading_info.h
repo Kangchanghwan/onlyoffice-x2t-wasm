@@ -1,26 +1,36 @@
 /*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include <iostream>
 #include <math.h>
@@ -45,25 +55,25 @@ namespace NSStructures
 	template <class ColorT = agg::rgba8>
 	class ColorFunction
 			/**
-			 *  I decided to implement an arbitrary runtime function as an array, since that is the easiest way.
-			 * I still don't quite understand exactly how the function is passed in PDF, but this implementation allows
-			 * any method to be selected.
+			 *  I decided to implement arbitrary function at runtime as an array, since it's the simplest
+			 * I haven't fully understood how exactly the function is passed in PDF, but this implementation allows the user
+			 * to choose any method.
 			 *
-			 *  For now everything is copied, because in most cases the vector is 2 KB and this is not a problem.
-			 * The size grows to megabytes only when a two-dimensional function is used, but using pointers for that
-			 * does not seem worth it because this appears to be an exceptional case (only one shading requires such a function).
-			 *  If necessary, it will probably be possible to rewrite it to unique_ptr.
+			 *  For now everything is copied, since in most cases the vector is 2KB in size and there are no problems
+			 * only when using a 2D function the size grows to MB, but I don't want to deal with pointers
+			 * for this, since apparently the case is exceptional (only 1 shading requires such a function).
+			 *  If needed, it can probably be rewritten to unique_ptr.
 			 *
-			 * It is possible to set regular linear interpolation, just for testing
-			 * + This is how the standard gradient is implemented.
+			 * There is an option to set regular linear interpolation, just for testing
+			 * + this is how standard gradient is implemented.
 			 *
-			 * Currently the default constructors fill in some values, again for testing.
-			 * Later this should be removed so that brushes do not carry this data when it is not needed.
-			 * Without memory allocation the total size is somewhere below 100 B, so it probably is not large enough
-			 * to justify a separate brush interface.
+			 * For now my default constructors fill something, for testing again
+			 * later we should remove all this, so we don't carry all this in the brush when it's not needed,
+			 * if we don't allocate memory then in total it will be <100B somewhere, I don't think it will be so much,
+			 * to write a separate interface for the brush
 			 *
-			 * I also do not yet know how to handle exceptional cases; in general, we can either
-			 * throw exceptions when something happens or do nothing.
+			 * Plus I don't even know how to handle edge cases, in general, we can just
+			 * throw exceptions if something goes wrong or do nothing.
 			*/
 	{
 	public:
@@ -234,7 +244,7 @@ namespace NSStructures
 			return y_index;
 		}
 		/**
-		 * Linear interpolation for constructing a color function.
+		 * Linear interpolation for building color function.
 		 */
 		int interpolate_indexes(size_t first, size_t second, size_t line = 0)
 		{
@@ -287,7 +297,7 @@ namespace NSStructures
 
 
 		/**
-		 * A workaround for linking errors. So as not to waste time just yet.
+		 * Workaround for linking errors. To not waste time for now.
 		*/
 		friend Point operator*(const Point &a, float t)
 		{
@@ -310,17 +320,17 @@ namespace NSStructures
 
 
 	/**
-	 *  Information specific to PDF rendering is stored here.
+	 *  This stores information specific to PDF rendering.
 	 *
-	 * I took a new implementation of transformations, because the existing one was based on doubles,
-	 * but such precision doesn't make much sense.
+	 * Used a new transformation implementation, since the existing one was on doubles,
+	 * and there's not much point in such precision.
 	 *
-	 * For shaders, it is required to support two calculation methods (with and without a parameter),
-	 * therefore a lot of additional information is required.
+	 * For shaders we need to support two calculation methods (with and without parameter),
+	 * so a lot of additional info is required.
 	 *
-	 * The shader will also receive bounds as parameters. I have not decided on this yet.
-	 * Bounds handling can be left to the caller, because the final fill is performed
-	 * by drawing a closed path and using the Fill command.
+	 * Also the shader will receive boundaries as parameters, I haven't decided yet,
+	 * we can leave boundary enforcement to the user, since filling will ultimately be done
+	 * by drawing a closed path and the Fill command
 	 * */
 	struct ShadingInfo
 	{
@@ -342,11 +352,11 @@ namespace NSStructures
 		} f_type;
 		ColorFunction<agg::rgba8> function;
 
-		// Reverse conversion from an image to a color function
+		// Reverse transformation from image to color function
 		std::vector<float> mapping;
 		std::vector<float> inv_map;
 
-		// Linear gradient is specified in pdf by 2 points
+		// Linear gradient is defined in PDF by 2 points
 		bool set_two_points;
 		Point point1, point2;
 
@@ -357,17 +367,17 @@ namespace NSStructures
 		std::vector<float> triangle_parameters;
 
 		/**
-		 *  The 4 by 4 matrix is filled out as in the documentation for PDF type 7
-		 * If type 6 is selected then the values are (1,2) (2,1) (1,1) (2,2)
-		 * In the array it is ignored and filled automatically, watch out for the passed gradient type
+		 *  4x4 matrix is filled as in PDF documentation type 7
+		 * If type 6 is selected then values (1,2) (2,1) (1,1) (2,2)
+		 * Are ignored in the array and filled automatically, watch the passed gradient type
 		 * (Numbering from zero)
 		 *
-		 * I'll probably write an adapter that converts the order of points from type 6 to general.
+		 * I'll probably write an adapter that converts point order from type 6 to general.
 		 */
 		agg::rgba8 fill_color;
 		std::vector<std::vector<Point>> patch;
-		std::vector<std::vector<agg::rgba8>> patch_colors; // 2 by 2 colors in the corners
-		std::vector<std::vector<float>> patch_parameters; // 2 by 2 parameters
+		std::vector<std::vector<agg::rgba8>> patch_colors; // 2x2 colors at corners
+		std::vector<std::vector<float>> patch_parameters; // 2x2 parameters
 	};
 
 	// Containing additional info about gradient
@@ -537,7 +547,7 @@ namespace NSStructures
 		float r0, r1;
 
 		float littleRadius, largeRadius;
-		float centerX, centerY;          // used in radial, diamond and conical gradient - offset relative to shape center
+		float centerX, centerY;          // used in radial, diamond and conical gradient - offset relative to figure center
 		float angle;                     // used in linear and conical gradient (rad)
 		float discrete_step;             // used to make discrete gradient. <= 0 to make continuous
 		float xsize, ysize;              // stretch image; can be negative to reflect relative to other axis; cannot be zero
@@ -553,9 +563,9 @@ namespace NSStructures
 
 
 	/**
-	 * Creates an object of the GradientInfo class according to the specified parameters.
+	 * Creates a GradientInfo class object with specified parameters.
 	 *
-	 * The color function must be filled in manually
+	 * Color function needs to be filled manually
 	 */
 	class GInfoConstructor {
 	public:
@@ -633,8 +643,8 @@ namespace NSStructures
 		}
 
 		/**
-		 * A set of 12 points for constructing boundaries in the order specified in the standard,
-		 * The order of colors or parameters is as in the standard.
+		 * Set of 12 points for building boundaries in the order specified in the standard,
+		 * Color or parameter order as in the standard.
 		 */
 		static GradientInfo get_curve(const std::vector<Point> &curve_points,
 									  const std::vector<float> &curve_parametrs,

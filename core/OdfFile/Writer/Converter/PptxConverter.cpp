@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "PptxConverter.h"
 #include "../../Common/utils.h"
@@ -70,6 +80,7 @@
 #include "../../../OOXML/PPTXFormat/Presentation/PresentationChildElements.h"
 #include "../../../OOXML/DocxFormat/Core.h"
 #include "../../../OOXML/DocxFormat/App.h"
+#include "../../../OOXML/Common/SimpleTypes_Shared.h"
 
 #include "../Format/odp_conversion_context.h"
 
@@ -201,6 +212,11 @@ bool PptxConverter::convertDocument()
 		
 	odp_context->start_document();
 
+	if (presentation && presentation->attrRtl.IsInit())
+	{
+		current_bidi_set = *presentation->attrRtl;
+	}
+
 	convert_styles();
 	convert_settings(); 
 	
@@ -213,7 +229,7 @@ bool PptxConverter::convertDocument()
 	convert_masters_and_layouts();
 	convert_slides();
 
-	//delete the unnecessary pptx document
+	// delete no longer needed pptx document
 	delete pptx_document; pptx_document = NULL;
 
 	odp_context->end_document();
@@ -231,52 +247,70 @@ void PptxConverter::convert_styles()
 
 	odp_context->styles_context()->create_default_style(odf_types::style_family::Graphic);					
 	
-	odf_writer::paragraph_format_properties	* paragraph_properties	= odp_context->styles_context()->last_state()->get_paragraph_properties();
-	odf_writer::text_format_properties		* text_properties		= odp_context->styles_context()->last_state()->get_text_properties();
+	odf_writer::paragraph_format_properties*	paragraph_properties	= odp_context->styles_context()->last_state()->get_paragraph_properties();
+	odf_writer::text_format_properties*			text_properties			= odp_context->styles_context()->last_state()->get_text_properties();
+	odf_writer::graphic_format_properties*		graphic_properties		= odp_context->styles_context()->last_state()->get_graphic_properties();
 
-	if (presentation->defaultTextStyle.IsInit())
+	//if (current_bidi_set)
+	//{ 
+	//	graphic_properties->style_writing_mode_ = odf_types::writing_mode::RlTb;
+	//}
+
+	bool default_text_style = presentation->defaultTextStyle.IsInit();
+
+	if (default_text_style || current_bidi_set) //rtl must be written even without defaultTextStyle
 	{
-		OoxConverter::convert(presentation->defaultTextStyle->levels[9].GetPointer(), paragraph_properties, text_properties); //defPPr
-		OoxConverter::convert(presentation->defaultTextStyle->levels[0].GetPointer(), paragraph_properties, text_properties); //default text
-		
+		if (default_text_style)
+		{
+			OoxConverter::convert(presentation->defaultTextStyle->levels[9].GetPointer(), paragraph_properties, text_properties); //defPPr
+			OoxConverter::convert(presentation->defaultTextStyle->levels[0].GetPointer(), paragraph_properties, text_properties); //default text
+		}
 		odp_context->styles_context()->create_default_style(odf_types::style_family::Paragraph);		
-		paragraph_properties	= odp_context->styles_context()->last_state()->get_paragraph_properties();
+		paragraph_properties = odp_context->styles_context()->last_state()->get_paragraph_properties();
 		
-		OoxConverter::convert(presentation->defaultTextStyle->levels[0].GetPointer(), paragraph_properties, text_properties); //default text
+		if (default_text_style)
+			OoxConverter::convert(presentation->defaultTextStyle->levels[0].GetPointer(), paragraph_properties, text_properties); //default text
 		
-		odp_context->styles_context()->create_default_style(odf_types::style_family::Text);
-		text_properties			= odp_context->styles_context()->last_state()->get_text_properties();
+		if (current_bidi_set)
+		{
+			paragraph_properties->style_writing_mode_ = odf_types::writing_mode::RlTb;
+		}
 
-		OoxConverter::convert(presentation->defaultTextStyle->levels[0].GetPointer(), paragraph_properties, text_properties); //default text
+		odp_context->styles_context()->create_default_style(odf_types::style_family::Text);
+		text_properties = odp_context->styles_context()->last_state()->get_text_properties();
+
+		if (default_text_style)
+			OoxConverter::convert(presentation->defaultTextStyle->levels[0].GetPointer(), paragraph_properties, text_properties); //default text
 	}
-	//convert(presentation->defaultTextStyle.GetPointer()); //default list styles
+	//convert(presentation->defaultTextStyle.GetPointer()); // default list styles
 	
 ///////////////////////////////////////////////////////////////////////////
 
 	odp_context->styles_context()->create_default_style(odf_types::style_family::Table);					
-	odf_writer::style_table_properties	* table_properties	= odp_context->styles_context()->last_state()->get_table_properties();
-	//for better rendering in editors - let's combine the styles of overlapping borders
+	odf_writer::style_table_properties* table_properties	= odp_context->styles_context()->last_state()->get_table_properties();
+	// for nice rendering in editors - allow merging styles of overlapping borders
 	table_properties->content_.table_border_model_ = odf_types::border_model(odf_types::border_model::Collapsing);
 
+	if (current_bidi_set)
+	{ 
+		table_properties->content_.common_writing_mode_attlist_.style_writing_mode_ = odf_types::writing_mode::RlTb;
+	}
 	odp_context->styles_context()->create_default_style(odf_types::style_family::TableRow);					
-	odf_writer::style_table_row_properties	* row_properties	= odp_context->styles_context()->last_state()->get_table_row_properties();
+	odf_writer::style_table_row_properties* row_properties	= odp_context->styles_context()->last_state()->get_table_row_properties();
 	row_properties->style_table_row_properties_attlist_.fo_keep_together_ = odf_types::keep_together(odf_types::keep_together::Auto);
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-	//why?! for OpenOffice, insets/frames need a base style - without it, another type of geometry oO!!!
+	// for some reason?! OpenOffice needs base style for inserts/frames - without it different geometry type o_O !!!
 	odp_context->styles_context()->create_style(L"Frame", odf_types::style_family::Graphic, false, true);		
 	
-	odf_writer::graphic_format_properties	* frame_graphic_properties	= odp_context->styles_context()->last_state()->get_graphic_properties();
-	odf_writer::text_format_properties		* frame_text_properties		= odp_context->styles_context()->last_state()->get_text_properties();
+	odf_writer::graphic_format_properties* frame_graphic_properties	= odp_context->styles_context()->last_state()->get_graphic_properties();
+	odf_writer::text_format_properties* frame_text_properties		= odp_context->styles_context()->last_state()->get_text_properties();
 
 	if (frame_text_properties && text_properties)
 		frame_text_properties->apply_from(*text_properties);
 
 	odp_context->page_layout_context()->create_layer_sets();
 }
-
-
-
 void PptxConverter::convert_settings()
 {
 	OoxConverter::convert(presentation->m_pJsaProject.operator ->());
@@ -1351,7 +1385,7 @@ void PptxConverter::convert_slides()
 {
 	for (size_t i = 0; i < presentation->sldIdLst.size(); ++i)
 	{
-		odp_context->map_table_styles_.clear();// TODO - don't clean for identical themes
+		odp_context->map_table_styles_.clear();// todooo - don't clear for same themes
 
         std::wstring rId = presentation->sldIdLst[i].rid.get();
         smart_ptr<PPTX::Slide> slide = ((*presentation)[rId]).smart_dynamic_cast<PPTX::Slide>();
@@ -1435,7 +1469,7 @@ void PptxConverter::convert_slides()
 			}
 			pFind = m_mapLayouts.find(slide->Layout->m_sOutputFilename);
 			if (pFind == m_mapLayouts.end())
-			{//won't get here anymore - handled above
+			{// won't get here anymore - handled above
 				odp_context->start_layout_slide();
 					convert_layout(&slide->Layout->cSld);
 				odp_context->end_layout_slide();
@@ -2274,6 +2308,23 @@ void PptxConverter::convert(PPTX::Logic::TableProperties *oox_table_pr)
 		}
 	}
 
+	if (oox_table_pr->Rtl.IsInit())
+	{	//rtl="0" must reset the direction inherited from the global (presentation) rtl
+		odf_writer::odf_style_state_ptr table_style_state = odp_context->styles_context()->last_state(odf_types::style_family::Table);
+
+		if (table_style_state)
+		{
+			odf_writer::style_table_properties *table_properties = table_style_state->get_table_properties();
+
+			if (table_properties)
+			{
+				table_properties->content_.common_writing_mode_attlist_.style_writing_mode_ = *oox_table_pr->Rtl
+					? odf_types::writing_mode(odf_types::writing_mode::RlTb)
+					: odf_types::writing_mode(odf_types::writing_mode::LrTb);
+			}
+		}
+	}
+
 	if (oox_table_pr->Fill.is_init())
 	{
 		odp_context->styles_context()->create_style(L"", odf_types::style_family::TableCell, true, false, -1);
@@ -2290,8 +2341,7 @@ void PptxConverter::convert(PPTX::Logic::TableProperties *oox_table_pr)
 		}
 		odp_context->slide_context()->table_context()->set_default_cell_properties(style_state->get_name());
 	}
-	//EffectProperties			Effects;
-	//nullable_bool				Rtl;
+	//EffectProperties Effects;
 }
 
 void PptxConverter::convert(PPTX::Logic::Table *oox_table)
@@ -2408,7 +2458,7 @@ bool PptxConverter::convert(PPTX::Logic::TableCellProperties *oox_table_cell_pr,
 	
 	if ((border_inside_v || border_inside_h))
 	{
-		if (cell_properties->content_.common_border_attlist_.fo_border_)//split by sides
+		if (cell_properties->content_.common_border_attlist_.fo_border_)// distribute to sides
 		{
 			if (cell_properties->content_.common_border_attlist_.fo_border_->is_none() == false)
 			{
@@ -2420,7 +2470,7 @@ bool PptxConverter::convert(PPTX::Logic::TableCellProperties *oox_table_cell_pr,
 			}		
 			cell_properties->content_.common_border_attlist_.fo_border_ = boost::none;
 		}	
-		//if no, remove, if yes, add
+		// if no - remove, if yes - add
 		if (border_inside_h)
 		{
 			bool del_border = (std::wstring::npos != border_inside_h->find(L"none"));
@@ -2511,7 +2561,7 @@ void PptxConverter::convert(PPTX::Logic::TcBdr *oox_table_borders)
 {
 	if (!oox_table_borders) return;
 
-	//NEITHER GRAPHICS NOR CELL PROPERTIES.. PARAGRAPH!! - invalid odf!!!
+	// NEITHER GRAPHICS NOR CELL PROPERTIES.. PARAGRAPH damn!! - idiotic odf !!!
 	//odf_writer::style_table_cell_properties *odf_cell_props = odp_context->styles_context()->last_state(odf_types::style_family::TableCell)->get_table_cell_properties();
 	odf_writer::paragraph_format_properties *odf_para_props = odp_context->styles_context()->last_state(odf_types::style_family::TableCell)->get_paragraph_properties();
 
@@ -2530,7 +2580,7 @@ void PptxConverter::convert(PPTX::Logic::TcBdr *oox_table_borders, odf_writer::p
 	{
 		convert(oox_table_borders->left->ln.GetPointer(), left);
 		//if (left.empty())
-		//	convert(oox_table_borders->left->lnRef.GetPointer(), left); //TODO
+		//	convert(oox_table_borders->left->lnRef.GetPointer(), left); //todooo
 	}
 	if (oox_table_borders->right.IsInit())
 	{
@@ -2707,7 +2757,7 @@ void PptxConverter::convert(PPTX::Logic::Bg *oox_background)
 	odf_writer::style* page_style_ = dynamic_cast<odf_writer::style*>(odp_context->current_slide().page_style_elm_.get());
 	odf_writer::style_drawing_page_properties* page_props = page_style_->content_.add_get_style_drawing_page_properties();
 	
-	//optional
+	// optional
 	//if (page_props->content_.common_draw_fill_attlist_.draw_fill_image_name_)
 	//{
 	//	page_props->content_.draw_background_size_ = L"border";
@@ -2844,8 +2894,8 @@ void PptxConverter::convert_slide(PPTX::Logic::CSld *oox_slide, PPTX::Logic::TxS
 				pShape->Merge(update_shape);
 
 				if (type == Slide && bPlaceholder && false == bTextPresent && update_shape.txBody.IsInit())
-				// special for LibreOffice - so that it displays placeholders on slides normally! damn...
-				// changing the formatting in the placeholder for this slide will be lost
+				// special for libre - so it displays placeholders on slides normally! damn...
+				// formatting changes in placeholder for this slide will be lost
 				{
 					update_shape.txBody->Paragrs.clear();
 				}
@@ -2940,3 +2990,4 @@ void PptxConverter::convert_layout(PPTX::Logic::CSld *oox_slide)
 }
 
 } 
+

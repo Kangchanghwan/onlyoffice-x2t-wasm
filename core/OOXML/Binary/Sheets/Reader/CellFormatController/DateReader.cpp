@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "DateReader.h"
@@ -49,7 +59,7 @@ bool DateReader::GetDigitalDate(const std::wstring &date, double &result, bool &
         cellCounter_++;
         return false;
     }
-    ///if no dates were found in n cells, stop searching for them
+    ///if no date was found in n cells - stop searching for them
     if(!dateFound_ && cellCounter_ > NonDatecellLimit)
         return false;
     if(!parseIsoDate(date,time))
@@ -69,7 +79,7 @@ bool DateReader::GetDigitalDate(const std::wstring &date, double &result, bool &
     //date without time
     if(time.tm_year > 0 && time.tm_hour == 0 && time.tm_min == 0 && time.tm_sec == 0)
     {
-        //determine whether the date is standard
+        //determine if date is standard
         if(time.tm_year >= 70)
             result = getStandartDate(time);
         else
@@ -208,12 +218,12 @@ bool DateReader::parseLocalDate(const std::wstring &date, tm &result, bool &Hasd
     ParsingElem parsingNow = ParsingElem::none;
     auto cutteddateStr =  spaceCut(date);
 
-    //The time separator differs only in a few locales
+    //time separator differs only in a few locales
     wchar_t timeSeparator = L':';
     if(lcid_ == 1035 || lcid_ == 11)
         timeSeparator = L'.';
 
-    //flags of assembled date parts
+    //flags for collected date parts
     bool bSec = false;
     bool bMin = false;
     bool bHour = false;
@@ -225,7 +235,7 @@ bool DateReader::parseLocalDate(const std::wstring &date, tm &result, bool &Hasd
     DateElemTypes PrevType = DateElemTypes::none;
     std::vector<wchar_t> StringBuf;
 
-    //parse the date character by character
+    //parse date character by character
     for(auto i = 0; i < cutteddateStr.length(); i++)
     {
         auto charElement = cutteddateStr.at(i);
@@ -238,7 +248,7 @@ bool DateReader::parseLocalDate(const std::wstring &date, tm &result, bool &Hasd
             elementType = DateElemTypes::delimeter;
         else
             elementType = DateElemTypes::letter;
-        if(CurrentElementType == DateElemTypes::none)//first pass
+        if(CurrentElementType == DateElemTypes::none)// first pass
         {
             StringBuf.push_back(charElement);
         }
@@ -246,7 +256,7 @@ bool DateReader::parseLocalDate(const std::wstring &date, tm &result, bool &Hasd
         {
             if(CurrentElementType == elementType)
             {
-                //checking the validity of date element sizes
+                // checking validity of date element sizes
                 if(elementType == DateElemTypes::digit && StringBuf.size() < 4)
                 {
                     StringBuf.push_back(charElement);
@@ -269,7 +279,7 @@ bool DateReader::parseLocalDate(const std::wstring &date, tm &result, bool &Hasd
                 {
                     if(timeSeparator != locInf.DateSeparator[0])
                     {
-                        //parse part of date
+                        // parsing date part
                         _INT32 datePart;
                         if(!tryGetInt(StringBuf, datePart))
                         {
@@ -290,7 +300,7 @@ bool DateReader::parseLocalDate(const std::wstring &date, tm &result, bool &Hasd
                         }
 
                     }
-                    ///todo option when both date and time are separated by "."
+                    ///todo case when both date and time are separated by "."
                 }
                 if(CurrentElementType == DateElemTypes::letter && elementType == DateElemTypes::delimeter)
                 {
@@ -305,7 +315,7 @@ bool DateReader::parseLocalDate(const std::wstring &date, tm &result, bool &Hasd
                 }
                 else if((CurrentElementType == DateElemTypes::delimeter || CurrentElementType == DateElemTypes::space) && elementType != DateElemTypes::space)
                 {
-                    //just add to the buffer what was behind the separator
+                    // simply add to buffer what was after the delimiter
                     StringBuf.push_back(charElement);
                 }
                 else if(elementType== DateElemTypes::space)
@@ -334,7 +344,7 @@ bool DateReader::parseLocalDate(const std::wstring &date, tm &result, bool &Hasd
                      }
                     if(CurrentElementType == DateElemTypes::letter)
                     {
-                        // if it isn't am pm then only the name of the month can be alphabetic in the date
+                        // if this is not am pm then only month name can be alphabetic in a date
                         if(!parseAmPm(StringBuf, result))
                         {
                             if(parseMonthName(StringBuf, result))
@@ -347,10 +357,10 @@ bool DateReader::parseLocalDate(const std::wstring &date, tm &result, bool &Hasd
                 }
                 else if(elementType == DateElemTypes::letter)
                 {
-                    //invalid date
+                    // invalid date
                     bError = true;
                 }
-                //analyze the assembled element
+                // analyzing the collected element
                 PrevType = CurrentElementType;
             }
         }
@@ -359,7 +369,7 @@ bool DateReader::parseLocalDate(const std::wstring &date, tm &result, bool &Hasd
         if(bError)
             return false;
     }
-    //analyze the last element in the buffer
+    // analyzing the last element in the buffer
     if(parsingNow == ParsingElem::date)
     {
         if(CurrentElementType == DateElemTypes::digit)
@@ -398,7 +408,7 @@ bool DateReader::parseLocalDate(const std::wstring &date, tm &result, bool &Hasd
             StringBuf.clear();
         }
     }
-    //normalize the year if there is one
+    // normalize the year if it exists
     if(Hasdate)
     {
         result.tm_mon--;
@@ -412,7 +422,7 @@ bool DateReader::parseLocalDate(const std::wstring &date, tm &result, bool &Hasd
 bool DateReader::parseIsoDate(const std::wstring &date, tm &result)
 {
     std::wregex iso_regex(
-    LR"(^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?(?:(Z)|([+-])(\d{2})(?::?(\d{2}))?)?)?$)"                        // timezone: Z or ±h:min
+	LR"(^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,9}))?)?(?:(Z)|([+-])(\d{2})(?::?(\d{2}))?)?)?$)"                        // timezone: Z or ±h:min
     );
 
     std::wsmatch match;
@@ -454,11 +464,11 @@ bool DateReader::parseIsoDate(const std::wstring &date, tm &result)
 }
 _INT32 DateReader::getStandartDate(tm date)
 {
-    // resetting the time so that it doesn't affect the date
+    // zeroing time so it doesn't affect the date
     date.tm_hour = 0;
     date.tm_min = 0;
     date.tm_sec = 0;
-    // Convert date to excel format
+    // Converting date to Excel format
     auto timeT = mktime(&date);
     auto tp = std::chrono::system_clock::from_time_t(timeT);
     auto excelTime = std::chrono::duration_cast<std::chrono::seconds>(tp.time_since_epoch()).count();
@@ -476,7 +486,7 @@ double DateReader::getStandartTime(tm date)
 }
 
 
-// Function to detect leap year
+// Function to determine leap year
 bool isLeapYear(int year) {
     return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
 }
@@ -492,11 +502,11 @@ _INT32 DateReader::getNonUnixDate(tm date)
            days += isLeapYear(year) ? 366 : 365;
        }
 
-       // Add the number of days before the start of the current year
+       // Add the number of days until the start of current year
        for (int month = 0; month < date.tm_mon; ++month) {
            days += daysInMonth[month];
            if (month == 1 && isLeapYear(date.tm_year + 1900))
-               days++; // add 1 day for February in a leap year
+               days++; // add 1 day for February in leap year
        }
 
        // Add the number of days of the current month

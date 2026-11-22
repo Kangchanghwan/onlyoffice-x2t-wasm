@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include <xml/simple_xml_writer.h>
@@ -60,18 +70,18 @@ void oox_axis_content::oox_serialize(std::wostream & _Wostream)
 				{
 					CP_XML_ATTR(L"val", 1);
 				}
-				//CP_XML_NODE(L"c:lblAlgn")
-				//{
-				//	CP_XML_ATTR(L"val", "ctr");
-				//}
-				//CP_XML_NODE(L"c:lblOffset")
-				//{
-				//	CP_XML_ATTR(L"val",100);
-				//}
-				//CP_XML_NODE(L"c:noMultiLvlLbl")
-				//{
-				//	CP_XML_ATTR(L"val", 1);
-				//}
+				CP_XML_NODE(L"c:lblAlgn")
+				{
+					CP_XML_ATTR(L"val", L"ctr");
+				}
+				CP_XML_NODE(L"c:lblOffset")
+				{
+					CP_XML_ATTR(L"val", 100);
+				}
+				CP_XML_NODE(L"c:noMultiLvlLbl")
+				{
+					CP_XML_ATTR(L"val", 0);
+				}
 			}
 			break;
 		case 2:
@@ -111,8 +121,15 @@ void oox_axis_content::oox_serialize_content(std::wostream & _Wostream)
 	_CP_OPT(double)			doubleVal;
 	
 	oox_title title;
-	title.set_content(content_.title_);//todo needs to be set to the normal layout
-  
+	title.set_content(content_.title_);
+	title.set_layout(title_layout_.x, title_layout_.y, title_layout_.w, title_layout_.h);
+
+	_CP_OPT(int) rotateLabels;
+	if (content_.properties_)
+	{
+		rotateLabels = odf_reader::oox_convert_rotation_angle(content_.properties_->common_rotation_angle_attlist_.style_rotation_angle_);
+	}
+
 	CP_XML_WRITER(_Wostream)
     {
 		CP_XML_NODE(L"c:axId")
@@ -168,11 +185,9 @@ void oox_axis_content::oox_serialize_content(std::wostream & _Wostream)
 		}
 		CP_XML_NODE(L"c:axPos")
         {
-			if (content_.dimension_ == L"x")
-				CP_XML_ATTR(L"val", L"b");//  "b" | "l" |  "r" |  "t"// == bottom left right top
-				
-			if (content_.dimension_ == L"y")
-				CP_XML_ATTR(L"val", L"l");//  "b" | "l" |  "r" |  "t"// == bottom left right top
+			//  "b" | "l" |  "r" |  "t"// == bottom left right top
+			if (content_.dimension_ == L"y")	CP_XML_ATTR(L"val", L"l");
+			else								CP_XML_ATTR(L"val", L"b");
 		}
 		//oox_serialize_ln(_Wostream, content_.graphic_properties_);
 		_CP_OPT(std::wstring) strNumFormat, strPercentFormat, strAxisType;
@@ -255,7 +270,7 @@ void oox_axis_content::oox_serialize_content(std::wostream & _Wostream)
 		shape.set(content_.graphic_properties_, content_.fill_) ;
 		shape.oox_serialize(_Wostream);
 
-		oox_serialize_default_text(_Wostream, content_.text_properties_);
+		oox_serialize_default_text(_Wostream, content_.text_properties_, rotateLabels);
 		
 		for (size_t i = 0; i < cross_id_.size(); i++)
 		{

@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 
@@ -295,6 +305,9 @@ namespace DocFileFormat
 		bool bFilled = true;
 		bool hasTextbox = false;
 		bool layoutInCell = true; //anmeldebogenfos.doc
+        bool HorizRule = false;
+        bool StandardHR = false;
+        bool NoshadeHR = false;
 		bool b3D = false;
 		bool bShadow = false;
 		bool bPicturePresent = false;
@@ -393,6 +406,18 @@ namespace DocFileFormat
 				{
 					layoutInCell = booleans->fLayoutInCell;
 				}
+                if (booleans->fUsefHorizRule)
+                {
+                    HorizRule = booleans->fHorizRule;
+                }
+                if (booleans->fUsefStandardHR)
+                {
+                    StandardHR = booleans->fStandardHR;
+                }
+                if (booleans->fUsefNoshadeHR)
+                {
+                    NoshadeHR = booleans->fNoshadeHR;
+                }
 			}
 			break;
 			// GEOMETRY
@@ -740,6 +765,27 @@ namespace DocFileFormat
 					}
 				}
 			}break;
+            case ODRAW::pctHR:
+            {
+                int pctValue = (int)iter->op;
+
+                if (pctValue > 0)
+                {
+                    std::wstring pctStr = std::to_wstring(pctValue);
+                    m_pXmlWriter->WriteAttribute(L"o:hrpct", pctStr);
+                }
+
+            }break;
+            case ODRAW::alignHR:
+            {
+                switch (iter->op)
+                {
+                case 0:	m_pXmlWriter->WriteAttribute(L"o:hralign", L"left");	break;
+                case 1:	m_pXmlWriter->WriteAttribute(L"o:hralign", L"center");	break;
+                case 2:	m_pXmlWriter->WriteAttribute(L"o:hralign", L"right");	break;
+                }
+
+            }break;
 			// OLE
 			case ODRAW::pictureId:
 			{
@@ -904,14 +950,14 @@ namespace DocFileFormat
 				switch (iter->op)
 				{
 				case 0:
-				case 4://regular
+				case 4://normal 							
 					break;
 				case 1:
 				case 3:
-				case 5://vert (tilt your head to the right)
+				case 5://vertical (tilt head right)						
 					appendStyleProperty(sTextboxStyle, L"layout-flow", L"vertical");
 					break;
-				case 2://vert (tilt your head to the left)
+				case 2://vertical (tilt head left)	
 					appendStyleProperty(sTextboxStyle, L"layout-flow", L"vertical");
 					appendStyleProperty(sTextboxStyle, L"mso-layout-flow-alt", L"bottom-to-top");
 					break;
@@ -1051,6 +1097,18 @@ namespace DocFileFormat
 				m_pXmlWriter->WriteAttribute(L"coordsize", (FormatUtils::SizeTToWideString(*xCoord) + L"," + FormatUtils::SizeTToWideString(*yCoord)));
 			}
 		}
+        if (HorizRule)
+        {
+            m_pXmlWriter->WriteAttribute(L"o:hr", L"t");
+        }
+        if (StandardHR)
+        {
+            m_pXmlWriter->WriteAttribute(L"o:hrstd", L"t");
+        }
+        if (NoshadeHR)
+        {
+            m_pXmlWriter->WriteAttribute(L"o:hrnoshade", L"t");
+        }
 
 		int nCode = 0;
 		if (pShape->GetShapeType())
@@ -1188,7 +1246,7 @@ namespace DocFileFormat
 		{
 			if (b3D)
 			{
-				appendValueAttribute(&m_3dstyle, L"v:ext", L"view" ); //??? pull out
+				appendValueAttribute(&m_3dstyle, L"v:ext", L"view" ); //??? extract
 			}
 			appendValueAttribute(&m_3dstyle, L"on", b3D ? L"t" : L"f" );
 			m_pXmlWriter->WriteString(m_3dstyle.GetXMLString());
@@ -1220,6 +1278,10 @@ namespace DocFileFormat
 // write imagedata
 		if (m_imagedata.GetAttributeCount())
 		{
+			if (m_isBullete)
+			{
+				appendValueAttribute(&m_imagedata, L"o:title", L"");
+			}
 			m_pXmlWriter->WriteString(m_imagedata.GetXMLString());
 		}		
 		
@@ -1405,8 +1467,8 @@ namespace DocFileFormat
 
 	std::wstring VMLShapeMapping::GetLineFrom(const ChildAnchor* pAnchor, bool twistDimensions) const
 	{
-		//If the line is in a group, then the coordinates should be in Twips
-		//If the line is in a group, then the coordinates must be in other units of measurement (for example, in twips)
+		//If line is in a group, coordinates must be in Twips
+		//If line is in a group, coordinates must be in other units of measurement (e.g. twips)
 
 		std::wstring strXmlFrom;
 
@@ -1450,7 +1512,7 @@ namespace DocFileFormat
 
 	std::wstring VMLShapeMapping::GetLineTo(const ChildAnchor* pAnchor, bool twistDimensions) const
 	{
-		//If the line is in a group, then the coordinates must be in other units of measurement (for example, in twips)
+		//If line is in a group, coordinates must be in other units of measurement (e.g. twips)
 
 		std::wstring strXmlTo;
 
@@ -1573,7 +1635,7 @@ namespace DocFileFormat
 									boost::shared_array<unsigned char>(pData), nData, oBlip->btWin32));
 								result = true;	
 								break;
-							}//in case of conversion error, store the original dib
+							}//in case of conversion error - keep original dib
 						}
 						m_context->_docx->ImagesList.push_back(ImageFileStructure(GetTargetExt(oBlip->btWin32), 
 							bitBlip->m_pvBits, bitBlip->pvBitsSize, oBlip->btWin32));
@@ -1875,10 +1937,10 @@ namespace DocFileFormat
 
 					if (booleans->fUsefBehindDocument && booleans->fBehindDocument)
 					{
-						//behind the text (The shape is behind the text, so the z-index must be negative.)
+						//behind text (The shape is behind the text, so the z-index must be negative.)
 						m_isInlineShape = false;
 
-						if (false == bZIndex/* && false == m_inGroup*/) // Пример.doc
+						if (false == bZIndex/* && false == m_inGroup*/) // Example.doc
 						{
 							appendStyleProperty(oStyle, L"z-index", FormatUtils::IntToWideString(-zIndex - 0x7ffff));
 							bZIndex = true;
@@ -2029,7 +2091,7 @@ namespace DocFileFormat
 
 		AppendOptionsToStyle( style, options, zIndex );
 		
-		//don't append the dimension info to lines,
+		//don't append the dimension info to lines, 
 		// because they have "from" and "to" attributes to decline the dimension
 		if (false == shape->is<LineType>())
 		{
@@ -2053,7 +2115,7 @@ namespace DocFileFormat
 		}
 		else
 		{
-			//if the position type isn't written, it will be inline
+			//if position type is not specified, it will be inline
 			if ( anchor != NULL )
 			{
 				appendStylePropertyFirst( style, L"position", L"absolute" );
@@ -2061,7 +2123,7 @@ namespace DocFileFormat
 			else if (m_pSpa)
 			{
 				//append size and position ...
-				//if (m_pSpa->fAnchorLock)//this is the ability to change the anchor, not its type
+				//if (m_pSpa->fAnchorLock)//this is anchor change capability, not its type
 
 				if (m_isInlineShape)/*m_pSpa->bx == TEXT && m_pSpa->by == TEXT*/
 				{
@@ -2344,13 +2406,13 @@ namespace DocFileFormat
 			DrawingPrimitiveCTextBox * callout = dynamic_cast<DrawingPrimitiveCTextBox *>(primitive);
 			if ((callout) && (callout->txbx))
 			{
-				//temporary normal textbox
+				//temporarily regular textbox
 				callout->txbx->xa += callout->xa;
 				callout->txbx->ya += callout->ya;
 
 				WritePrimitiveProps(dynamic_cast<DrawingPrimitive*>(callout->txbx), (index==0?true:false));
 			}
-			//TODO draw a custom shape
+			//todooo draw custom shape
 		}
 		else 
 			WritePrimitiveProps(primitive, (index==0?true:false));

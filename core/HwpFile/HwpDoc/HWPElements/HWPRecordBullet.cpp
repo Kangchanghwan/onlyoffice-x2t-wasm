@@ -1,9 +1,48 @@
+/*
+ * Copyright (C) Ascensio System SIA, 2009-2026
+ *
+ * This program is a free software product. You can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License (AGPL)
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
+ * Section 5 of the GNU AGPL version 3.
+ *
+ * No trademark rights are granted under this License.
+ *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 #include "HWPRecordBullet.h"
+
+#include "../Common/NodeNames.h"
 
 namespace HWP
 {
 CHWPRecordBullet::CHWPRecordBullet(CHWPDocInfo& oDocInfo, int nTagNum, int nLevel, int nSize, CHWPStream& oBuffer, int nOff, int nVersion)
-	: CHWPRecord(nTagNum, nLevel, nSize), m_pParent(&oDocInfo)
+	: CHWPRecord(nTagNum, nLevel, nSize), m_pParent(&oDocInfo), m_oHeaderInfo{},
+	  m_chBulletChar(0), m_nBulletImage(0), m_chBright(0), m_chContrast(0),
+	  m_chImageEffect(0), m_chCheckBulletChar(0)
 {
 	oBuffer.SavePosition();
 
@@ -46,11 +85,13 @@ CHWPRecordBullet::CHWPRecordBullet(CHWPDocInfo& oDocInfo, int nTagNum, int nLeve
 }
 
 CHWPRecordBullet::CHWPRecordBullet(CHWPDocInfo& oDocInfo, CXMLReader& oReader, EHanType eType)
-	: CHWPRecord(EHWPTag::HWPTAG_BULLET, 0, 0), m_pParent(&oDocInfo)
+	: CHWPRecord(EHWPTag::HWPTAG_BULLET, 0, 0), m_pParent(&oDocInfo), m_oHeaderInfo{},
+	  m_chBulletChar(0), m_nBulletImage(0), m_chBright(0), m_chContrast(0),
+	  m_chImageEffect(0), m_chCheckBulletChar(0)
 {
 	if (EHanType::HWPML == eType)
-		return; // TODO:: implement when a sample is encountered
-	
+		return; // TODO:: Implement when example is encountered
+
 	START_READ_ATTRIBUTES(oReader)
 	{
 		if ("char" == sAttributeName)
@@ -72,8 +113,92 @@ CHWPRecordBullet::CHWPRecordBullet(CHWPDocInfo& oDocInfo, CXMLReader& oReader, E
 	}
 	END_READ_ATTRIBUTES(oReader)
 
-	WHILE_READ_NEXT_NODE_WITH_ONE_NAME(oReader, "hc:img")
-		m_sBinItemRefID = oReader.GetAttribute("binaryItemIDRef");
+	WHILE_READ_NEXT_NODE_WITH_NAME(oReader)
+	{
+		if ("hc:img" == sNodeName)
+		{
+			m_sBinItemRefID = oReader.GetAttribute("binaryItemIDRef");
+			continue;
+		}
+
+		if (GetNodeName(ENode::ParaHead, eType) != sNodeName)
+			continue;
+
+		START_READ_ATTRIBUTES(oReader)
+		{
+			if (GetAttributeName(EAttribute::Aligment, eType) == sAttributeName)
+			{
+				const std::string sType{oReader.GetTextA()};
+
+				if (GetValueName(EValue::Left, eType) == sType)
+					m_oHeaderInfo.m_chAlign = 0;
+				else if (GetValueName(EValue::Center, eType) == sType)
+					m_oHeaderInfo.m_chAlign = 1;
+				else if (GetValueName(EValue::Right, eType) == sType)
+					m_oHeaderInfo.m_chAlign = 2;
+			}
+			else if (GetAttributeName(EAttribute::UseInstWidth, eType) == sAttributeName)
+				m_oHeaderInfo.m_bUseInstWidth = oReader.GetBool();
+			else if (GetAttributeName(EAttribute::AutoIndent, eType) == sAttributeName)
+				m_oHeaderInfo.m_bAutoIndent = oReader.GetBool();
+			else if (GetAttributeName(EAttribute::WidthAdjust, eType) == sAttributeName)
+				m_oHeaderInfo.m_shWidthAdjust = oReader.GetInt();
+			else if (GetAttributeName(EAttribute::TextOffsetType, eType) == sAttributeName)
+			{
+				const std::string sType{oReader.GetTextA()};
+
+				if (GetValueName(EValue::Percent, eType) == sType)
+					m_oHeaderInfo.m_chTextOffsetType = 0;
+				else if (GetValueName(EValue::HwpUnit, eType) == sType)
+					m_oHeaderInfo.m_chTextOffsetType = 1;
+			}
+			else if (GetAttributeName(EAttribute::TextOffset, eType) == sAttributeName)
+				m_oHeaderInfo.m_shTextOffset = oReader.GetInt();
+			else if (GetAttributeName(EAttribute::CharShape, eType) == sAttributeName)
+				m_oHeaderInfo.m_nCharShape = std::abs(oReader.GetInt());
+		}
+		END_READ_ATTRIBUTES(oReader)
+	}
 	END_WHILE
+}
+
+HWP_CHAR CHWPRecordBullet::GetBulletChar() const
+{
+	return m_chBulletChar;
+}
+
+HWP_CHAR CHWPRecordBullet::GetCheckBulletChar() const
+{
+	return m_chCheckBulletChar;
+}
+
+bool CHWPRecordBullet::UseImage() const
+{
+	return 0 != m_nBulletImage && !m_sBinItemRefID.empty();
+}
+
+const HWP_STRING& CHWPRecordBullet::GetBinItemRefID() const
+{
+	return m_sBinItemRefID;
+}
+
+HWP_BYTE CHWPRecordBullet::GetAlign() const
+{
+	return m_oHeaderInfo.m_chAlign;
+}
+
+int CHWPRecordBullet::GetCharShape() const
+{
+	return m_oHeaderInfo.m_nCharShape;
+}
+
+short CHWPRecordBullet::GetTextOffset() const
+{
+	return m_oHeaderInfo.m_shTextOffset;
+}
+
+bool CHWPRecordBullet::GetAutoIndent() const
+{
+	return m_oHeaderInfo.m_bAutoIndent;
 }
 }

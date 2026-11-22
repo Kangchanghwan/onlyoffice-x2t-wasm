@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "SS.h"
@@ -40,6 +50,9 @@
 #include"../Biff_records/End.h"
 #include"../Biff_records/StartObject.h"
 #include"../Biff_records/EndObject.h"
+#include"../Biff_records/ShapePropsStream.h"
+
+#include"../../../../../OOXML/PPTXFormat/Logic/SpPr.h"
 
 namespace XLS
 {
@@ -62,7 +75,7 @@ namespace XLS
 		L"333399", 	L"000000", 	L"FFFFFF", 	L"FF0000", 	L"00FF00", 	L"0000FF", 	L"FFFF00", 	L"FF00FF", 	L"00FFFF", 	L"800000", 	
 		L"800000", 	L"800000", 	L"808000", 	L"800080", 	L"808000", 	L"C0C0C0", 	L"808080", 	L"9999FF", 	L"993366", 	L"FFFFCC", 
 		L"CCFFFF", 	L"660066", 	L"FF8080", 	L"0066CC", 	L"CCCCFF",
-		//TODO - see what is next in ms
+		//todoooo - check what MS uses further 
 		L"000080", 	L"FF00FF", 	L"FFFF00", 	L"00FFFF", 	L"800080", 	L"800000", 	L"808000", 	L"0000FF", 	L"00CCFF", 	L"CCFFFF", 	
 		L"CCFFCC", 	L"FFFF99", 	L"99CCFF", 	L"FF99CC", 	L"CC99FF", 	L"FFCC99", 	L"3366FF", 	L"33CCCC", 	L"99CC00", 	L"FFCC00", 	
 		L"FF9900", 	L"FF6600", 	L"666699", 	L"969696", 	L"336600", 	L"339966", 	L"330000", 	L"333300", 	L"993300", 	L"993366", 	
@@ -111,7 +124,7 @@ const bool SS::loadContent(BinProcessor& proc)
 	{
 		bRead = true;
 	}
-	if (proc.optional<Begin>()) //with biff5 there may be or not, biff8 - there must be
+	if (proc.optional<Begin>()) //in biff5 may or may not be present, biff8 - must be present
 	{
 		bRead = true;
 		elements_.pop_back();
@@ -238,10 +251,65 @@ const bool SS::saveContent(BinProcessor& proc)
 	proc.mandatory<Begin>();
 	if(m_Chart3DBarShape != nullptr)
 		proc.mandatory(*m_Chart3DBarShape);
-	if(m_LineFormat != nullptr)
+	std::vector<BYTE> CheckSumData;
+	_UINT32 checkSum = 0;
+	auto calcChecksum = [](const std::vector<uint8_t>& data, _UINT32 &checksum)
+	{
+		for (BYTE byte : data) {
+			checksum ^= (static_cast<_UINT32>(byte) << 24);
+
+			for (int i = 0; i < 8; ++i) {
+				if (checksum & 0x80000000U) {
+					checksum = (checksum << 1) ^ 0x000000AFU;
+				} else {
+					checksum <<= 1;
+				}
+			}
+		}
+	};
+	/*if(m_LineFormat != nullptr)
+	{
 		proc.mandatory(*m_LineFormat);
+		auto castedLine = static_cast<LineFormat*>(m_LineFormat.get());
+		castedLine->setChecksum(CheckSumData);
+	}
+	else if(!m_arSHAPEPROPS.empty())
+	{
+		LineFormat lnFmt;
+		lnFmt.setChecksum(CheckSumData);
+		proc.mandatory(lnFmt);
+	}
 	if(m_AreaFormat != nullptr)
+	{
 		proc.mandatory(*m_AreaFormat);
+		auto castedArea = static_cast<AreaFormat*>(m_AreaFormat.get());
+		if(!castedArea->fAuto)
+			castedArea->setChecksum(CheckSumData);
+	}
+	else if(!m_arSHAPEPROPS.empty())
+	{
+		AreaFormat areaFmt;
+		proc.mandatory(areaFmt);
+	}*/
+	{
+		LineFormat line;
+		line.rgb.red = 0xFFFF;
+		line.rgb.green = 0xFFFF;
+		line.rgb.blue = 0xFFFF;
+		line.lns = 0;
+		line.we = 0;
+		line.icv = 9;
+		line.fAuto = false;
+		line.fAutoCo = false;
+		line.setChecksum(CheckSumData);
+		proc.mandatory(line);
+		AreaFormat area;
+		area.fls = 1;
+		area.fAuto = false;
+		area.setChecksum(CheckSumData);
+		proc.mandatory(area);
+	}
+	calcChecksum(CheckSumData, checkSum);
 	if(m_PieFormat != nullptr)
 		proc.mandatory(*m_PieFormat);
 	if(m_SerFmt != nullptr)
@@ -253,8 +321,37 @@ const bool SS::saveContent(BinProcessor& proc)
 	if(m_AttachedLabel != nullptr)
 		proc.mandatory(*m_AttachedLabel);
 	for(auto i : m_arSHAPEPROPS)
-		if(i != nullptr)
-			proc.mandatory(*i);
+	{
+		auto castedProp = dynamic_cast<SHAPEPROPS*>(i.get());
+		if(castedProp == nullptr)
+			continue;
+		auto propHeader = dynamic_cast<ShapePropsStream*>(castedProp->m_ShapePropsStream.get());
+		if(propHeader == nullptr)
+			continue;
+
+		if(propHeader->wObjContext == 0)
+			propHeader->dwChecksum = checkSum;
+		else if(propHeader->wObjContext == 1 && m_MarkerFormat != nullptr)
+		{
+			auto castedMarker = static_cast<MarkerFormat*>(m_MarkerFormat.get());
+			AreaFormat area;
+			area.rgbFore.red = castedMarker->rgbFore.red;
+			area.rgbFore.green = castedMarker->rgbFore.green;
+			area.rgbFore.blue = castedMarker->rgbFore.blue;
+			area.rgbBack.red = castedMarker->rgbBack.red;
+			area.rgbBack.green = castedMarker->rgbBack.green;
+			area.rgbBack.blue = castedMarker->rgbBack.blue;
+			area.fls = 1;
+			area.fAuto = false;
+			CheckSumData = std::vector<BYTE>();
+			_UINT32 MarkerCheckSum = 0;
+			area.setChecksum(CheckSumData);
+			calcChecksum(CheckSumData, MarkerCheckSum);
+			propHeader->dwChecksum = MarkerCheckSum;
+		}
+		proc.mandatory(*i);
+	}
+
 	proc.mandatory<End>();
 	return true;
 }
@@ -297,8 +394,8 @@ int SS::serialize_default(std::wostream & _stream, int series_type, int ind )
 				
 				if ((line) && (line->lns == (_UINT16)5)) ind = -1;
 			}
-
-			if (ind >= 0 && default_series_line_color->size() > ind &&  m_isAutoLine)
+			const size_t colorsCount = sizeof(default_series_line_color) / sizeof(default_series_line_color[0]);
+			if (ind >= 0 && colorsCount > ind &&  m_isAutoLine)
 			{
 				CP_XML_NODE(L"a:ln")
 				{
@@ -325,7 +422,7 @@ int SS::serialize_default(std::wostream & _stream, int series_type, int ind )
 		//else
 		//{
 		//	//generation (series_data_format->iss)
-		//	//TODO
+		//	//todooo
 		//}
 		if (m_PieFormat && (series_type == CHART_TYPE_Doughnut	|| 
 							series_type == CHART_TYPE_BopPop	|| 
@@ -361,6 +458,25 @@ int SS::serialize(std::wostream & _stream, int series_type, int indPt)
 	DataFormat		*series_data_format = dynamic_cast<DataFormat*>		(m_DataFormat.get());
 	SerFmt			*series_format		= dynamic_cast<SerFmt*>			(m_SerFmt.get());
 	MarkerFormat	*marker_format		= dynamic_cast<MarkerFormat*>	(m_MarkerFormat.get());
+	ShapePropsStream *spStream			= nullptr;
+	ShapePropsStream *mkPropStream		= nullptr;
+	if(!m_arSHAPEPROPS.empty())
+	{
+		for(auto spProp : m_arSHAPEPROPS)
+		{
+			auto SpProps = dynamic_cast<SHAPEPROPS*>(spProp.get());
+			if(SpProps == nullptr)
+				continue;
+			auto tempStream = dynamic_cast<ShapePropsStream*>(SpProps->m_ShapePropsStream.get());
+			if(tempStream == nullptr)
+				continue;
+
+			if (tempStream->wObjContext == 0)
+				spStream = tempStream;
+			else if(tempStream->wObjContext == 1)
+				mkPropStream  = tempStream;
+		}
+	}
 
 	int ind = series_data_format->iss;
 
@@ -374,6 +490,17 @@ int SS::serialize(std::wostream & _stream, int series_type, int indPt)
 	if ((line) && (line->fAuto == false)) bLine = true;
 
 	bool bMarkerEx = false;
+	if(spStream)
+	{
+		std::wstring spPr = spStream->getChartSpPr();
+		if (false == spPr.empty())
+		{
+			_stream.write(spPr.c_str(), spPr.size());
+			bLine = false;
+			bArea = false;
+			indPt = 0;
+		}
+	}
 
 	CP_XML_WRITER(_stream)    
 	{
@@ -428,7 +555,7 @@ int SS::serialize(std::wostream & _stream, int series_type, int indPt)
 					}	
 					else if ( series_type != CHART_TYPE_Line || m_is3D == true ) //line & !3dLine
 						ind = 31; //black
-
+					const size_t colorsCount = sizeof(default_series_line_color) / sizeof(default_series_line_color[0]);
 					CP_XML_NODE(L"a:ln")
 					{
 						CP_XML_ATTR(L"w", 12700);//single
@@ -437,8 +564,10 @@ int SS::serialize(std::wostream & _stream, int series_type, int indPt)
 						{
 							CP_XML_NODE(L"a:srgbClr")
 							{
-								if(default_series_line_color->size() > ind)
+								if(colorsCount > ind)
 									CP_XML_ATTR(L"val",  default_series_line_color[ind]);
+								else
+									CP_XML_ATTR(L"val", L"000000");
 							}
 						}
 						CP_XML_NODE(L"a:prstDash")
@@ -460,7 +589,11 @@ int SS::serialize(std::wostream & _stream, int series_type, int indPt)
 								series_type != CHART_TYPE_Bar		&&	
 								series_type != CHART_TYPE_BopPop )
 		{
-			marker_format->serialize(_stream, ind, bMarkerEx ? m_GELFRAME : BaseObjectPtr());
+			std::wstring MkSpPr;
+			if(mkPropStream != nullptr)
+				MkSpPr = mkPropStream->getChartSpPr();
+
+			marker_format->serialize(_stream, ind, bMarkerEx ? m_GELFRAME : BaseObjectPtr(), MkSpPr);
 		}
 		else if (/*series_type == CHART_TYPE_Line ||*/ series_type == CHART_TYPE_Scatter)
 		{
@@ -499,9 +632,7 @@ int SS::serialize2(std::wostream & _stream, int series_type)
 			}
 		}
 		
-		if (m_isAutoLine == false && (	series_type == CHART_TYPE_Line	|| 
-										series_type == CHART_TYPE_Radar/* || 
-										series_type == CHART_TYPE_Scatter*/))
+		if (m_LineFormat && (series_type == CHART_TYPE_Line || series_type == CHART_TYPE_Radar))
 		{
 			if (series_format)
 			{

@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 
@@ -71,7 +81,7 @@ public:
 	void ApplyListProperties (odf_reader::paragraph_format_properties & propertiesOut, int Level);
 	odf_reader::style_list_level_properties* ApplyListProperties (odf_reader::paragraph_format_properties & propertiesOut, odf_reader::text_list_style* text_list_style, int Level);
 	
-	void set_local_styles_container(odf_reader::styles_container*  local_styles_);//this is if the object styles are contained in another document
+	void set_local_styles_container(odf_reader::styles_container*  local_styles_);//this is if object styles are contained in another document
 
 	hyperlink_data get_hyperlink();
 	void start_hyperlink();
@@ -139,11 +149,11 @@ private:
 	void			dump_run();
 	void			dump_field();
   
-	size_t paragraphs_cout_; //???? only because of the starting point?
-   
+	size_t paragraphs_cout_; //???? only because of counting start?
+
 	std::wstringstream text_;		//incoming text
-    std::wstringstream paragraph_;	//permanently discarded paragraphs
-    std::wstringstream run_;		//permanently discarded pieces with perhaps different properties
+    std::wstringstream paragraph_;	//permanently dumped paragraphs
+    std::wstringstream run_;		//permanently dumped chunks with possibly different properties
    
 	std::wstring		last_paragraph_style_name_;
 	std::wstring		paragraph_style_name_;
@@ -160,9 +170,9 @@ private:
 	_CP_OPT(odf_types::length) svg_heightVal;
 	_CP_OPT(odf_types::length) svg_widthVal;
     
-    int new_list_style_number_;	// counter for numbering the names of styles created during the conversion process
-   
-    boost::unordered_map<std::wstring, std::wstring> list_style_renames_; // numbering renaming chains
+    int new_list_style_number_;	// counter for numbering names created during style conversion
+
+    boost::unordered_map<std::wstring, std::wstring> list_style_renames_; // numbering rename chains
    
 	void write_list_styles(std::wostream & strm);
 	//void write_list_properties(std::wostream & strm);
@@ -211,7 +221,7 @@ void pptx_text_context::Impl::start_paragraph(const std::wstring & styleName)
     {	
 		//if (in_list_ == false || in_comment == true)
 		//{
-		//// end of the previous paragraph and beginning of the next
+		//// end of previous paragraph and start of next
 		////text_ << L"&#10;";
 		//	text_ << L"\n"; 
 		//}
@@ -237,7 +247,7 @@ void pptx_text_context::Impl::end_paragraph()
 	in_paragraph = false;
 }
 
-void pptx_text_context::Impl::start_span(const std::wstring & styleName)//a piece of text in a paragraph (paragraph) with its own properties - it can be 1 letter
+void pptx_text_context::Impl::start_span(const std::wstring & styleName)//text chunk in paragraph with its own properties - this can be even 1 letter
 {
 	int text_size = text_.str().length();
 	
@@ -438,7 +448,7 @@ void pptx_text_context::Impl::write_pPr(std::wostream & strm)
 	odf_reader::paragraph_format_properties paragraph_properties_;
 	
 	ApplyParagraphProperties	(paragraph_style_name_,	paragraph_properties_, process_layouts_);
-	ApplyListProperties			(paragraph_properties_, level);//To align the slide, apply the paragraph properties
+	ApplyListProperties			(paragraph_properties_, level);//apply list alignment to paragraph properties
 
 	paragraph_properties_.pptx_convert(pptx_context_);	
 	
@@ -616,7 +626,7 @@ void pptx_text_context::Impl::dump_field()
 			}
 			else
 			{
-				//write it as normal text
+				//write as regular text
 				text_ << content;
 			}
 		}
@@ -634,7 +644,7 @@ void pptx_text_context::Impl::dump_run()
 	//	return; 
 	
 	const std::wstring content = XmlUtils::EncodeXmlString(text_.str());
-	//if (content.length() <1 && span_style_name_.length()<1) return ;      ...check with empty lines whether they are needed...
+	//if (content.length() <1 &&  span_style_name_.length()<1) return ;      ... check if empty lines are needed ...
 
 	if (content.length() > 0)
 	{
@@ -788,7 +798,7 @@ void pptx_text_context::Impl::end_list()
 {
 	in_list_ = false;
   
-	list_style_stack_.pop_back();// don't erase yet .. as soon as we save it in lstStyles - we'll clear it
+	list_style_stack_.pop_back();// don't erase yet.. will clear when saved to lstStyles
 }
 
 std::wstring pptx_text_context::Impl::current_list_style()

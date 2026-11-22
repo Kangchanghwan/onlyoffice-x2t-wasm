@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "XlsxSerializer.h"
 
@@ -55,7 +65,7 @@ namespace BinXlsxRW{
         OOX::CPath pathMediaDir = sDstPath + FILE_SEPARATOR_STR + _T("xl") + FILE_SEPARATOR_STR + _T("media");
 		OOX::CPath pathEmbedDir = sDstPath + FILE_SEPARATOR_STR + _T("xl") + FILE_SEPARATOR_STR + _T("embeddings");
 		
-        //Need to create a folder even when saving as CSV, because reading a theme from a binary writes it to a file.
+        //need to create folder even when saving to csv, because when reading theme from binary, it is written to file.
         OOX::CPath pathXlDir = sDstPath + FILE_SEPARATOR_STR + _T("xl");
 
         OOX::CPath pathThemeDir = pathXlDir + FILE_SEPARATOR_STR + OOX::FileTypes::Theme.DefaultDirectory().GetPath();
@@ -111,11 +121,11 @@ namespace BinXlsxRW{
 			pFontPicker->SetEmbeddedFontsDirectory(m_sEmbeddedFontsDir);
 			pEmbeddedFontsManager = pFontPicker->GetNativeCutter();
 
-			//add a mega font
+			//add mega font
 			pEmbeddedFontsManager->CheckFont(_T("Wingdings 3"), pFontManager);
 			pEmbeddedFontsManager->CheckFont(_T("Arial"), pFontManager);
 			//pEmbeddedFontsManager adds all digits
-			//for headings
+			//for headers
 			pEmbeddedFontsManager->CheckFont(_T("Calibri"), pFontManager);
 			pEmbeddedFontsManager->CheckString(std::wstring(_T("ABCDEFGHIJKLMNOPQRSTUVWXYZ")));
 
@@ -215,7 +225,10 @@ namespace BinXlsxRW{
 					
 					m_pExternalDrawingConverter->WriteRels(sChartsWorksheetRelType, sChartsWorksheetRelsName, std::wstring(), &rId);
 
-					chart_file->m_oChartSpace.m_externalData = new OOX::Spreadsheet::CT_ExternalData();
+					if (NULL == chart_file->m_oChartSpace.m_externalData)
+					{
+						chart_file->m_oChartSpace.m_externalData = new OOX::Spreadsheet::CT_ExternalData();
+					}
 					chart_file->m_oChartSpace.m_externalData->m_id = L"rId" + std::to_wstring(rId);
 					chart_file->m_oChartSpace.m_externalData->m_autoUpdate = false;
 				}
@@ -289,9 +302,9 @@ namespace BinXlsxRW{
 		NSCommon::smart_ptr<OOX::Spreadsheet::CChartFile> oChart = file.smart_dynamic_cast<OOX::Spreadsheet::CChartFile>();
 
 		if (oChart.IsInit() == false) return false;
-	//analyze the chart
+	//analyze chart
 		BinXlsxRW::ChartWriter helper;
-		helper.parseChart(oChart->m_oChartSpace.m_chart);
+		if (false == helper.parseChart(oChart->m_oChartSpace.m_chart)) return false;
 	//create temp
 		std::wstring sTempDir = NSSystemPath::GetDirectoryName(sDstFile) + FILE_SEPARATOR_STR + NSSystemPath::GetFileName(sDstFile) + L"_TEMP";
 		NSDirectory::CreateDirectory(sTempDir);
@@ -300,7 +313,7 @@ namespace BinXlsxRW{
         std::wstring sMediaPath;// will be filled by 'CreateXlsxFolders' method
         std::wstring sEmbedPath; // will be filled by 'CreateXlsxFolders' method
 		CreateXlsxFolders (sTempDir, sMediaPath, sEmbedPath);
-	//fill out Xlsx
+	//fill Xlsx
 		OOX::Spreadsheet::CXlsx oXlsx;
 		helper.toXlsx(oXlsx);
 	//write

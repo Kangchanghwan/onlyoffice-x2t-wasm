@@ -15,10 +15,10 @@ namespace NSCSS
 	public:
 		std::wstring m_wsName;  // Tag name
 		std::wstring m_wsClass; // Tag class
-		std::wstring m_wsId;    // Tag ID
+		std::wstring m_wsId;    // Tag id
 		std::wstring m_wsStyle; // Tag style
 		std::map<std::wstring, std::wstring> m_mAttributes; // Other tag attributes
-		//TODO:: perhaps std::wstring is unnecessary here
+		//TODO:: perhaps using std::wstring is excessive
 
 		#ifdef CSS_CALCULATOR_WITH_XHTML
 		CCompiledStyle *m_pCompiledStyle;
@@ -35,7 +35,7 @@ namespace NSCSS
 		std::wstring GetAttributeValue(const std::wstring& wsAttributeName) const;
 
 		#ifdef CSS_CALCULATOR_WITH_XHTML
-		void SetCompiledStyle(CCompiledStyle* pCompiledStyle);
+		void SetCompiledStyle(const CCompiledStyle* pCompiledStyle);
 		#endif
 
 		void Clear();

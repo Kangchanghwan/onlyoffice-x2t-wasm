@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 
@@ -91,6 +101,11 @@ namespace DocFileFormat
         XMLTools::XMLElement endnotePr	(L"w:endnotePr");
         XMLTools::XMLElement pgNumType	(L"w:pgNumType");
 
+		const SinglePropertyModifier* pSprmBiDi			= NULL;
+		const SinglePropertyModifier* pSprmTitlePg		= NULL;
+		const SinglePropertyModifier* pSprmRtlGutter	= NULL;
+		std::wstring wsVAlign;
+
 		HeaderAndFooterTable* pTable = _ctx->_doc->headerAndFooterTable;
         bool bHasEndnoteNumFmt = false;
 
@@ -105,24 +120,6 @@ namespace DocFileFormat
 					//case sprmSGprfIhdt: //betesil_pl_it.doc
 					{
 						fHF = FormatUtils::BytesToUChar( iter->Arguments, 0, iter->argumentsSize );
-					}break;
-					case sprmSPgbProp:
-					{
-						int val = FormatUtils::BytesToInt16( iter->Arguments, 0, iter->argumentsSize );
-						int pgbApplyTo		= FormatUtils::GetIntFromBits(val, 0 , 3);
-						int pgbPageDepth	= FormatUtils::GetIntFromBits(val, 3 , 2);
-						int pgbOffsetFrom	= FormatUtils::GetIntFromBits(val, 5 , 3);
-
-						if (pgbOffsetFrom == 0x1) //else default from text
-							appendValueAttribute( &pgBorders, L"w:offsetFrom", L"page" );
-						
-						if (pgbApplyTo == 0x0)
-							appendValueAttribute( &pgBorders, L"w:display", L"allPages" );
-						else if (pgbApplyTo == 0x1)
-							appendValueAttribute( &pgBorders, L"w:display", L"firstPage" );
-						else
-							appendValueAttribute( &pgBorders, L"w:display", L"notFirstPage" );
-
 					}break;
 					default:
 						break;
@@ -153,7 +150,7 @@ namespace DocFileFormat
 			}
 		}
 
-		//MUST be ignored if the section doesn't have page number restart enabled.([MS-DOC] - v20101113. page 152)
+		//MUST be ignored if the section does not have page number restart enabled.([MS-DOC] - v20101113. p.152)
 		bool bWasSprmSFPgnRestart = false;
 		std::wstring wsSprmSPgnStart;
 		int nProperty = 0; // for unknown
@@ -242,6 +239,28 @@ namespace DocFileFormat
                 appendValueAttribute( &paperSrc, L"w:other", FormatUtils::IntToWideString( FormatUtils::BytesToInt16( iter->Arguments, 0, iter->argumentsSize ) ) );
 				break;
 
+//page borders properties
+			case sprmSPgbProp:
+			{
+				int val = FormatUtils::BytesToInt16( iter->Arguments, 0, iter->argumentsSize );
+				int pgbApplyTo		= FormatUtils::GetIntFromBits(val, 0 , 3);
+				int pgbPageDepth	= FormatUtils::GetIntFromBits(val, 3 , 2);
+				int pgbOffsetFrom	= FormatUtils::GetIntFromBits(val, 5 , 3);
+
+				if (pgbOffsetFrom == 0x1)
+					appendValueAttribute( &pgBorders, L"w:offsetFrom", L"page" );
+
+				if (pgbPageDepth == 0x1)
+					appendValueAttribute( &pgBorders, L"w:zOrder", L"back" );
+
+				if (pgbApplyTo == 0x0)
+					appendValueAttribute( &pgBorders, L"w:display", L"allPages" );
+				else if (pgbApplyTo == 0x1)
+					appendValueAttribute( &pgBorders, L"w:display", L"firstPage" );
+				else
+					appendValueAttribute( &pgBorders, L"w:display", L"notFirstPage" );
+			}
+			break;
 //page borders
 			case sprmSBrcTop80:
 			case sprmSBrcTop:
@@ -401,18 +420,18 @@ namespace DocFileFormat
 
 			case sprmSFBiDi:
 			{
-                appendFlagElement (m_pXmlNode, *iter, L"bidi", iter->argumentsSize > 0 ? iter->Arguments[0] : true );
+				pSprmBiDi = &(*iter);
 			}break;
 
 			case sprmOldSFTitlePage:
 			case sprmSFTitlePage:
 			{
-                appendFlagElement (m_pXmlNode, *iter, L"titlePg", iter->argumentsSize > 0 ? iter->Arguments[0] : true );
+				pSprmTitlePg = &(*iter);
 			}break;
 
 			case sprmSFRTLGutter:
 			{
-                appendFlagElement (m_pXmlNode, *iter, L"rtlGutter", iter->argumentsSize > 0 ? iter->Arguments[0] : true );
+				pSprmRtlGutter = &(*iter);
 			}break;
 				
 			case sprmOldSBkc:
@@ -424,7 +443,7 @@ namespace DocFileFormat
 
 			case sprmOldSVjc:
 			case sprmSVjc:
-                appendValueElement (m_pXmlNode, L"vAlign", FormatUtils::MapValueToWideString( iter->Arguments[0], &TextVerticalAlignment[0][0], 4, 7 ), true );
+				wsVAlign = FormatUtils::MapValueToWideString( iter->Arguments[0], &TextVerticalAlignment[0][0], 4, 7 );
 				break;
 
 			case sprmOldSNfcPgn:
@@ -434,12 +453,12 @@ namespace DocFileFormat
 
 			case sprmOldSPgnStart:
 			case sprmSPgnStart:
-				wsSprmSPgnStart				=	FormatUtils::IntToWideString( FormatUtils::BytesToInt16( iter->Arguments, 0, iter->argumentsSize ) );
+				wsSprmSPgnStart =	FormatUtils::IntToWideString( FormatUtils::BytesToInt16( iter->Arguments, 0, iter->argumentsSize ) );
 				break;
 
 			case sprmOldSFPgnRestart:
 			case sprmSFPgnRestart:
-				bWasSprmSFPgnRestart		=	true;
+				bWasSprmSFPgnRestart =	true;
 				break;
 
 //	<w:lnNumType>	-	Line Numbering Settings
@@ -467,8 +486,8 @@ namespace DocFileFormat
 			case sprmOldSNLnnMod :
 			case sprmSNLnnMod :
 				{
-					short countBy			=	FormatUtils::BytesToUInt16 (iter->Arguments, 0, iter->argumentsSize);
-                    countBy					=	(std::min)((std::max)((int)countBy,0),100);						//	The value MUST be in the interval [0, 100].
+					short countBy =	FormatUtils::BytesToUInt16 (iter->Arguments, 0, iter->argumentsSize);
+                    countBy =	(std::min)((std::max)((int)countBy,0),100);						//	The value MUST be in the interval [0, 100].
 
                     appendValueAttribute (&lnNumType, L"w:countBy", countBy);
 				}
@@ -526,37 +545,49 @@ namespace DocFileFormat
 			}
 		}
 
-        appendValueElement (m_pXmlNode, L"type", _type, true );
-
 		if (footnotePr.GetChildCount())
 			m_pXmlNode->AppendChild (footnotePr);
 
 		if (endnotePr.GetChildCount())
 			m_pXmlNode->AppendChild (endnotePr);
 
+		appendValueElement (m_pXmlNode, L"type", _type, true );
+
 		if (pgSz.GetAttributeCount())
 			m_pXmlNode->AppendChild (pgSz);
-
-		if (pgBorders.GetChildCount())
-			m_pXmlNode->AppendChild (pgBorders);
 
 		if (pgMar.GetAttributeCount())
 			m_pXmlNode->AppendChild (pgMar);
 
+		if (paperSrc.GetAttributeCount())
+			m_pXmlNode->AppendChild (paperSrc);
+
+		if (pgBorders.GetChildCount())
+			m_pXmlNode->AppendChild (pgBorders);
+
 		if (lnNumType.GetAttributeCount())
 			m_pXmlNode->AppendChild (lnNumType);
 
-		if (paperSrc.GetAttributeCount())
-			m_pXmlNode->AppendChild (paperSrc);
+		if (pgNumType.GetAttributeCount())
+			m_pXmlNode->AppendChild (pgNumType);
 
 		if (cols.GetAttributeCount() || cols.GetChildCount())
 			m_pXmlNode->AppendChild (cols);
 
+		if (false == wsVAlign.empty())
+			appendValueElement (m_pXmlNode, L"vAlign", wsVAlign, true );
+
+		if (pSprmTitlePg)
+			appendFlagElement (m_pXmlNode, *pSprmTitlePg, L"titlePg", true );
+
+		if (pSprmBiDi)
+			appendFlagElement (m_pXmlNode, *pSprmBiDi, L"bidi", true );
+
+		if (pSprmRtlGutter)
+			appendFlagElement (m_pXmlNode, *pSprmRtlGutter, L"rtlGutter", true );
+
 		if (docGrid.GetAttributeCount())
 			m_pXmlNode->AppendChild (docGrid);
-
-		if (pgNumType.GetAttributeCount())
-			m_pXmlNode->AppendChild (pgNumType);
 
 		if (m_pXmlWriter)
 			m_pXmlWriter->WriteString (m_pXmlNode->GetXMLString() );

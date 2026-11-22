@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "xlsx_conversion_context.h"
@@ -92,7 +102,7 @@ public:
     }
 
     std::pair<std::wstring, std::wstring> add_drawing_xml(std::wstring const & content, xlsx_drawings_rels_ptr rels)
-    {//TODO counts file numbers separately
+    {// todo file number counters separately
         const std::wstring id = std::to_wstring(next_drawing_id_++);
         const std::wstring fileName = std::wstring(L"drawing") + id + L".xml";
        
@@ -196,8 +206,8 @@ _color xlsx_drawing_context::CorrectSysColor(int nColorCode, _drawing_state_ptr 
 
 	if (color.index != -1)
 	{
-		//extract color (
-		//TODO pass themes!!!!!
+		// extract color
+		// todo make themes !!!!!
 		color.nRGB = shemeDefaultColor[color.index];
 		color.index = -1;
 		color.sRGB = STR::toRGB(color.nRGB);
@@ -284,7 +294,7 @@ _color xlsx_drawing_context::CorrectSysColor(int nColorCode, _drawing_state_ptr 
         color.SetRGB(0xff - color.GetR(), 0xff - color.GetG(), 0xff - color.GetB());
 
 	//if (color.sRGB.empty())
-	//{wrong
+	// {incorrect
 	//	color.nRGB = shemeDefaultColor[nColorIndex];
 	//	color.index = -1;
 	//	color.sRGB = STR::toRGB(color.nRGB);
@@ -422,7 +432,7 @@ void xlsx_drawing_context::end_group()
 	//		{
 	//			_drawing_state_ptr & drawing_state = cur_states->front();
 
-	//			if (i != 0 || level != current_level) // group itself
+	//			if (i != 0 || level != current_level) // group refers to itself
 	//			{
 	//				double kf_x = (double)drawing_state->child_anchor.cx / drawing_state->group_anchor.cx;
 	//				double kf_y = (double)drawing_state->child_anchor.cy / drawing_state->group_anchor.cy;
@@ -1067,7 +1077,7 @@ void xlsx_drawing_context::serialize_group()
 			for (size_t i = 1; i < current_drawing_states->size(); i++)
 			{
 				CP_XML_STREAM() << current_drawing_states->at(i)->shape;
-				//TODO current_drawing_states->at(i).shape.erase(); // save memory
+				//todo current_drawing_states->at(i).shape.erase(); // save memory
 			}
 		}
 	}
@@ -1386,7 +1396,7 @@ void xlsx_drawing_context::serialize_vml_pic(_drawing_state_ptr & drawing_state)
 
 			std::wstring style = std::wstring(L"position:absolute;margin-left:0;margin-top:0;");
 			
-			//TODO make the values "shorter" .. 2 decimal places are enough
+			// todo make values "shorter" .. 2 decimal places is enough
 			style += std::wstring(L"width:")	+ std::to_wstring(drawing_state->child_anchor.cx)	+ std::wstring(L"pt;");
 			style += std::wstring(L"height:")	+ std::to_wstring(drawing_state->child_anchor.cy)	+ std::wstring(L"pt;");
 			style += std::wstring(L"z-index:")	+ std::to_wstring(drawing_state->id) + std::wstring(L";");
@@ -1716,7 +1726,7 @@ void xlsx_drawing_context::serialize_shape(_drawing_state_ptr & drawing_state)
 							{
 								CP_XML_NODE(L"a:avLst")
 								{
-									// need recalculation
+									// recalculation needed
 									//for (size_t i = 0; i < drawing_state->custom_adjustValues.size(); i++)
 									//{
 									//	if (drawing_state->custom_adjustValues[i])
@@ -1849,7 +1859,7 @@ std::wstring xlsx_drawing_context::convert_custom_shape(_drawing_state_ptr & dra
 	}
 	
 	for (size_t i = 0 ; i < drawing_state->custom_guides.size(); i++)
-	{//TODO merge/splice!!
+	{// todo merge/combine !!
 		NSCustomVML::CGuide guid;
 		
 		guid.m_eType		= drawing_state->custom_guides[i].m_eType;
@@ -1878,7 +1888,7 @@ std::wstring xlsx_drawing_context::convert_custom_shape(_drawing_state_ptr & dra
 		shape->m_oCustomVML.addSegment(drawing_state->custom_segments[i].m_eRuler , drawing_state->custom_segments[i].m_nCount);
 	}	
 	//for (int i = 0; i < drawing_state->custom_adjustHandles.size(); i++)
-	//{//TODO - this didn't happen before ?????
+	//{// todo - this wasn't here before ?????
 	//	shape->m_oCustomVML.addHandle(i, *drawing_state->custom_adjustHandles[i]);
 	//}
 	for (size_t i = 0; i < drawing_state->custom_adjustValues.size(); i++)
@@ -2127,7 +2137,7 @@ void xlsx_drawing_context::serialize_gradient_fill(std::wostream & stream, _draw
 						{
 							CP_XML_ATTR(L"pos",  (int)(fill.colorsPosition[i].first * 100000));
 							serialize_color(CP_XML_STREAM(), fill.colorsPosition[i].second, fill.colorsPosition[i].second.opacity);
-							//check that if there are indexes here, they are taken from software ones and not from user ones (see below)
+							// check that if there are indices here, they are taken from programmatic ones not user ones (see below)
 						}
 					}
 				}
@@ -2135,13 +2145,13 @@ void xlsx_drawing_context::serialize_gradient_fill(std::wostream & stream, _draw
 				{
 					CP_XML_NODE(L"a:gs")
 					{
-						fill.color.bScheme = false; // by general indices
+						fill.color.bScheme = false; // by common indices
 						CP_XML_ATTR(L"pos", 0);
 						serialize_color(CP_XML_STREAM(), fill.color, fill.color.opacity);
 					}
 					CP_XML_NODE(L"a:gs")
 					{
-						fill.color2.bScheme = false; // by general indices
+						fill.color2.bScheme = false; // by common indices
 						CP_XML_ATTR(L"pos", 100000);
 						serialize_color(CP_XML_STREAM(), fill.color2, fill.color2.opacity);
 					}
@@ -2320,7 +2330,7 @@ void xlsx_drawing_context::serialize_text(std::wostream & stream, _drawing_state
 	{
 		CP_XML_NODE(L"xdr:txBody")
 		{  
-			CP_XML_NODE(L"a:bodyPr")//TODO rtl
+			CP_XML_NODE(L"a:bodyPr")//todooo rtl
 			{
 				if (drawing_state->text.wrap == 2 || drawing_state->wordart.is)
 					CP_XML_ATTR(L"wrap", L"none" );
@@ -2344,7 +2354,7 @@ void xlsx_drawing_context::serialize_text(std::wostream & stream, _drawing_state
 					CP_XML_NODE(L"a:prstTxWarp")
 					{
 						CP_XML_ATTR(L"prst", prstTxWarp);
-						CP_XML_NODE(L"a:avLst");//modifiers
+						CP_XML_NODE(L"a:avLst");// modifiers
 					}
 				}
 				else

@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "table.h"
@@ -37,6 +47,7 @@
 #include "calcs_styles.h"
 #include "search_table_cell.h"
 
+#include "../../Common/odf_date_time_utils.h"
 #include "../../Reader/Converter/xlsx_utils.h"
 #include "../../Reader/Converter/xlsx_cell_format.h"
 #include "../../Formulas/formulasconvert.h"
@@ -60,7 +71,7 @@ int table_table_cell_content::xlsx_convert(oox::xlsx_conversion_context & Contex
 	for (size_t i = 0 ; i < elements_.size(); i++)
     {
         elements_[i]->xlsx_convert(Context);
-		if ((i < elements_.size() - 1) && (elements_[i + 1]->get_type() == typeTextP))
+		if ((elements_[i]->get_type() == typeTextP) && (i < elements_.size() - 1) && (elements_[i + 1]->get_type() == typeTextP))
 		{
 			Context.get_text_context()->start_paragraph(L"");
 			Context.get_text_context()->start_span(L"");
@@ -74,6 +85,33 @@ int table_table_cell_content::xlsx_convert(oox::xlsx_conversion_context & Contex
     return sharedStrId;
 }
 
+void table_table_row::activate_content_validations(oox::xlsx_conversion_context & Context)
+{
+	int row = Context.current_table_row() + 1;
+	if (row >= oox::max_table_rows) return;
+
+	int rows_repeated = (std::min)((int)attlist_.table_number_rows_repeated_, oox::max_table_rows - row);
+
+	int col = 0;
+	for (size_t i = 0; (i < content_.size()) && (col < oox::max_table_columns); i++)
+	{
+		table_table_cell			*cell		= dynamic_cast<table_table_cell*>		(content_[i].get());
+		table_covered_table_cell	*cover_cell	= dynamic_cast<table_covered_table_cell*>(content_[i].get());
+
+		table_table_cell_attlist	*attlist	= cell ? &cell->attlist_ : (cover_cell ? &cover_cell->attlist_ : NULL);
+		if (!attlist) break;
+
+		if (attlist->table_content_validation_name_)
+		{
+			int col_last = (std::min)(col + (int)attlist->table_number_columns_repeated_, oox::max_table_columns);
+			for (int c = col; c < col_last; c++)
+			{
+				Context.get_dataValidations_context().activate(*attlist->table_content_validation_name_, c, row, rows_repeated);
+			}
+		}
+		col += attlist->table_number_columns_repeated_;
+	}
+}
 void table_table_row::xlsx_convert(oox::xlsx_conversion_context & Context)
 {
 	bool bEndTable = Context.get_table_context().state()->get_end_table();
@@ -85,13 +123,15 @@ void table_table_row::xlsx_convert(oox::xlsx_conversion_context & Context)
 	}
 	if (attlist_.table_number_rows_repeated_ > 0x0f00 && empty_content_cells(false) || bEndTable)//0xf000 - conv_KDZO3J3xLIbZ5fC0HR0__xlsx.ods
 	{
+		activate_content_validations(Context); //check for validations
+
 		Context.get_table_context().state()->set_end_table();
 		Context.get_table_context().state()->add_empty_row(attlist_.table_number_rows_repeated_, bHeader);
 		return;		//conv_hSX8n3lVbhALjt0aafg__xlsx.ods, conv_MA2CauoNfX_7ejKS5eg__xlsx.ods
 	}
 
     std::wostream & strm = Context.current_sheet().sheetData();
-/// processing styles for row -
+///processing styles for row -
 	size_t Default_Cell_style_in_row_ = 0; 
 
     const std::wstring rowStyleName			= attlist_.table_style_name_.get_value_or(L"");
@@ -104,16 +144,16 @@ void table_table_row::xlsx_convert(oox::xlsx_conversion_context & Context)
 	
 	if ((instStyle_CellDefault) && (instStyle_CellDefault->content())) 
 		prop_CellDefault = instStyle_CellDefault->content()->get_style_table_cell_properties();
-//custom cell style settings in a given row
+//custom cell style settings for this row
 
-	if (prop_CellDefault) //Check that there is a custom for row, and then we'll calculate the style
+	if (prop_CellDefault) //check if there is any custom for row - then calculate style
 	{
 		odf_reader::style_table_cell_properties_attlist	cellFormatProperties = calc_table_cell_properties(instStyle_CellDefault);
 		Default_Cell_style_in_row_ = Context.get_style_manager().xfId(NULL,NULL, &cellFormatProperties, NULL, L"", 0, true);	
 	}
-	else //There is no cell style for the row, let's look at what's inside the row in the last cell
+	else //no cell style for row - let's look inside the row at the last cell
 	{
-		//Take the style from the last cell if it is repeating (then there is no need to write empty cells)
+		//take style from last cell if it's repeating (then don't need to write empty cells)
 		int ind_last_cell = content_.size()-1;
 		table_table_cell *last_cell = NULL;
 		if (ind_last_cell > 0)
@@ -142,8 +182,8 @@ void table_table_row::xlsx_convert(oox::xlsx_conversion_context & Context)
 						(*prop->attlist_.style_use_optimal_row_height_==true))
 			{
 				//automatic height adjustment.
-				//no in ooh
-				//TODO change the size y (double) according to the current font and compare it with the given one - interrupt !!!
+				//not present in oox
+				//todooo calculate size based on current font (double) and compare with specified - override!!!
 			}
 
 			std::wstringstream ht_s;
@@ -161,6 +201,14 @@ void table_table_row::xlsx_convert(oox::xlsx_conversion_context & Context)
 		{
 			bBreakAfter = true;
 		}
+	}
+	const double default_row_height = Context.getDefaultRowHeight();
+
+	Context.get_table_metrics().set_default_row_height(default_row_height);
+
+	if (row_height < 0.001)
+	{
+		row_height = default_row_height;
 	}
 	int row_current = Context.current_table_row() + 1;
 
@@ -241,14 +289,14 @@ void table_table_row::xlsx_convert(oox::xlsx_conversion_context & Context)
 		{
             skip_next_row = true;  
 			if (attlist_.table_number_rows_repeated_ > 0xf000)
-				break;//Уведомление_о_вручении.ods (sheet 1)
+				break;//Notification_of_delivery.ods (1st sheet)
 		}
 		if (content_.size() > 0 && attlist_.table_number_rows_repeated_ > 1000)
 		{
 			table_table_cell * table_cell = dynamic_cast<table_table_cell *>(content_[0].get());
 			if ((table_cell) && (table_cell->attlist_.table_number_columns_repeated_ > 1000))
 			{
-				break;//Уведомление_о_вручении.ods (sheet 2)
+				break;//Notification_of_delivery.ods (2nd sheet)
 			}
 		}
     }
@@ -411,6 +459,8 @@ void table_table::xlsx_convert(oox::xlsx_conversion_context & Context)
 		rows->table_rows_1_.remove_equals_empty();
 		rows->table_rows_2_.remove_equals_empty();
 	}
+	if (conditional_formats_)
+		Context.get_conditionalFormatting_context().set_calcext_formats(true);
 
     table_rows_and_groups_.xlsx_convert(Context);
 
@@ -483,9 +533,9 @@ namespace {
 
 double pixToSize(double pixels, double maxDigitSize)
 { 
-	if (pixels < 8) pixels = 8; //УВЕДОМЛЕНИЕ О ПРИБЫТИИ ИНОСТРАННОГО ГРАЖДАНИНА.ods
+	if (pixels < 8) pixels = 8; //NOTIFICATION_OF_ARRIVAL_OF_FOREIGN_CITIZEN.ods
 
-	return (int(( pixels /*/ 0.75*/ - 5)/ maxDigitSize * 100. + 0.5)) /100. * 0.98; // * 9525. * 72.0 / (360000.0 * 2.54);
+	return (int(( pixels - 5) / maxDigitSize * 100. + 0.5)) / 100.;
 }
 
 }
@@ -539,7 +589,7 @@ void table_table_column::xlsx_convert(oox::xlsx_conversion_context & Context)
                     if (inst->content())
                     {
 						if (const style_table_cell_properties * prop = inst->content()->get_style_table_cell_properties())
-						{//make a check so that the default, that is, empty, style doesn't appear here
+						{//add check so that default, i.e. empty style, doesn't get here
 							odf_reader::style_table_cell_properties_attlist	cellFormatProperties = calc_table_cell_properties(inst);
 							
 							bool set_default = false;
@@ -708,15 +758,15 @@ std::wstring CalcCellDataStyle(oox::xlsx_conversion_context & Context,
 
 }
 
-void table_table_cell::xlsx_convert(oox::xlsx_conversion_context & Context)
+void table_table_cell::xlsx_convert(oox::xlsx_conversion_context& Context)
 {
 	bool bExternalTable = !Context.current_sheet().external_ref().empty();
-	
-	std::wostream & strm = Context.current_sheet().sheetData();
-    
-	const common_value_and_type_attlist & attr	= attlist_.common_value_and_type_attlist_;
+
+	std::wostream& strm = Context.current_sheet().sheetData();
+
+	const common_value_and_type_attlist& attr = attlist_.common_value_and_type_attlist_;
 	std::wstring formula = attlist_.table_formula_.get_value_or(L"");
-	  
+
 
 	if (attlist_.table_number_columns_repeated_ < 199 && last_cell_) last_cell_ = false;
 
@@ -747,7 +797,7 @@ void table_table_cell::xlsx_convert(oox::xlsx_conversion_context & Context)
 		if (num_format_type == office_value_type::Time ||
 			num_format_type == office_value_type::Date ||
 			num_format_type == office_value_type::Currency)
-		{//the data format type from the style doesn't match the cell data format
+		{//data format type from style doesn't match cell data format
 			num_format.clear();
 			num_format_type = office_value_type::Custom;
 		}
@@ -760,7 +810,7 @@ void table_table_cell::xlsx_convert(oox::xlsx_conversion_context & Context)
 		if (num_format_type == office_value_type::Time ||
 			num_format_type == office_value_type::Date ||
 			num_format_type == office_value_type::Currency)
-		{//the data format type from the style doesn't match the cell data format
+		{//data format type from style doesn't match cell data format
 			num_format.clear();
 			num_format_type = office_value_type::Percentage;
 		}
@@ -775,41 +825,25 @@ void table_table_cell::xlsx_convert(oox::xlsx_conversion_context & Context)
 	{
 		if (attr.office_date_value_)
 		{
-			int y, m, d;
-			_CP_OPT(int) h, min, sec;
-			if (oox::parseDateTime(attr.office_date_value_.get(), y, m, d, h, min, sec))
+			double dDate = 0;
+			if (odf_datetime::parse_date_value(attr.office_date_value_.get(), dDate) && dDate > 0)
 			{
-				boost::int64_t intDate = oox::convertDate(y, m, d);
-				_CP_OPT(double) dTime;
-				if (h && min)
-				{
-					dTime = oox::convertTime(*h, *min, sec.get_value_or(0));
-				}
-				if (intDate > 0)
-				{
-					if (dTime)
-					{
-						number_val = XmlUtils::ToString(*dTime + intDate);
-					}
-					else
-					{
-						number_val = boost::lexical_cast<std::wstring>(intDate);
-					}
-					xlsx_value_type = oox::XlsxCellType::n;
+				number_val = XmlUtils::ToString(dDate);
+				xlsx_value_type = oox::XlsxCellType::n;
 
-					if (num_format_type == office_value_type::Currency)
-					{//the data format type from the style doesn't match the cell data format
-						num_format.clear();
-						num_format_type = office_value_type::Date;
-					}
+				if (num_format_type == office_value_type::Currency)
+				{//data format type from style doesn't match cell data format
+					num_format.clear();
+					num_format_type = office_value_type::Date;
+				}
 
-					if (num_format.empty())
-						num_format = Context.get_num_format_context().get_last_date_format();
-				}
-				else
-				{
-					str_val = attr.office_date_value_.get();
-				}
+				if (num_format.empty())
+					num_format = Context.get_num_format_context().get_last_date_format();
+			}
+			else
+			{
+				str_val = attr.office_date_value_.get();
+				xlsx_value_type = oox::XlsxCellType::str;
 			}
 		}
 	}
@@ -819,29 +853,25 @@ void table_table_cell::xlsx_convert(oox::xlsx_conversion_context & Context)
 		if (attr.office_time_value_)
 		{
 			const std::wstring tv = attr.office_time_value_.get();
-			int h, m;
-			double s;
-			if (oox::parseTime(tv, h, m, s))
+			double dTime = 0;
+			if (odf_datetime::parse_time_value(tv, dTime) && dTime >= 0)
 			{
-				double dTime = oox::convertTime(h, m, s);
-				if (dTime >= 0)
-				{
-					number_val = boost::lexical_cast<std::wstring>(dTime);
-					xlsx_value_type = oox::XlsxCellType::n;
+				number_val = XmlUtils::ToString(dTime);
+				xlsx_value_type = oox::XlsxCellType::n;
 
-					if (num_format_type == office_value_type::Currency)
-					{//the data format type from the style doesn't match the cell data format
-						num_format.clear();
-						num_format_type = office_value_type::Time;
-					}
+				if (num_format_type == office_value_type::Currency)
+				{//data format type from style doesn't match cell data format
+					num_format.clear();
+					num_format_type = office_value_type::Time;
+				}
 
-					if (num_format.empty())
-						num_format = Context.get_num_format_context().get_last_time_format();
-				}
-				else
-				{
-					str_val = tv;
-				}
+				if (num_format.empty())
+					num_format = Context.get_num_format_context().get_last_time_format();
+			}
+			else
+			{
+				str_val = tv;
+				xlsx_value_type = oox::XlsxCellType::str;
 			}
 		}
 	}
@@ -885,39 +915,77 @@ void table_table_cell::xlsx_convert(oox::xlsx_conversion_context & Context)
 			need_cache_convert = true;
 		}
 	}
+	// calculate style for cell
+	odf_read_context& odfContext = Context.root()->odf_context();
+	style_instance* defaultCellStyle = NULL, * defaultColumnCellStyle = NULL, * defaultRowCellStyle = NULL, *cellStyle = NULL;
+	//---------------------------------------------------------------------------------------------------------	
 
+	if (is_present_hyperlink_)
+	{
+		defaultCellStyle = odfContext.styleContainer().style_by_name(L"Hyperlink", style_family::TableCell, true);
+	}
+	if (!defaultCellStyle)
+	{
+		defaultCellStyle = odfContext.styleContainer().style_default_by_type(style_family::TableCell);
+	}
+
+	defaultRowCellStyle = odfContext.styleContainer().style_by_name(rowStyleName, style_family::TableCell, false);
+	cellStyle = odfContext.styleContainer().style_by_name(cellStyleName, style_family::TableCell, false);
+
+//----------------------------------------------------------------------------------------------------------------------------------
+	oox::xlsx_cell_format cellFormat;
+	cellFormat.set_cell_type(xlsx_value_type);
+	cellFormat.set_num_format(oox::odf_string_to_build_in(odf_value_type));
+
+	if (cellStyle && cellStyle->content() && false == cellStyle->content()->style_map_.empty() &&
+		false == Context.get_conditionalFormatting_context().is_calcext_formats())
+	{
+		std::wstring ref = oox::getCellAddress(Context.current_table_column() + 1, Context.current_table_row());
+
+		if (attlist_.table_number_columns_repeated_ > 1)
+		{
+			ref += L":" + oox::getCellAddress(Context.current_table_column() + attlist_.table_number_columns_repeated_, Context.current_table_row());
+		}
+		std::wstring condition_sort;
+		for (const auto& s_map : cellStyle->content()->style_map_)
+		{
+			if (const style_map* styleMap = dynamic_cast<const style_map*>(s_map.get()))
+			{
+				if (false == styleMap->style_base_cell_address_.empty())
+				{
+					condition_sort = styleMap->style_base_cell_address_;
+					break;
+				}
+			}
+		}
+		if (condition_sort.empty()) condition_sort = cellStyleName;
+		if (Context.get_conditionalFormatting_context().start_by(condition_sort, ref))
+		{//odf 1.0
+			for (const auto& s_map : cellStyle->content()->style_map_)
+			{
+				if (const style_map* styleMap = dynamic_cast<const style_map*>(s_map.get()))
+				{
+					const std::wstring& applyStyleName = styleMap->style_apply_style_name_;
+					const std::wstring& condition = styleMap->style_condition_;
+
+					Context.get_conditionalFormatting_context().add_rule(1);
+					Context.get_conditionalFormatting_context().set_formula(condition);
+
+					int dxfId = Context.get_dxfId_style(applyStyleName);
+
+					if (dxfId >= 0)
+						Context.get_conditionalFormatting_context().set_dxf(dxfId);
+				}
+			}
+			Context.get_conditionalFormatting_context().end();
+		}
+	}
 	for (unsigned int r = 0; r < attlist_.table_number_columns_repeated_; ++r)
 	{
-// calculate style for cell
-//---------------------------------------------------------------------------------------------------------	
-		std::wstring columnStyleName = Context.get_table_context().default_column_cell_style(); // there may be different column styles when repeated (Book 24.ods)
+		std::wstring columnStyleName = Context.get_table_context().default_column_cell_style(); // different column styles may exist with repeated (Book 24.ods)
+		defaultColumnCellStyle = odfContext.styleContainer().style_by_name(columnStyleName, style_family::TableCell, false);
 
-		odf_read_context& odfContext = Context.root()->odf_context();
-
-		style_instance* defaultCellStyle = NULL, * defaultColumnCellStyle = NULL, * defaultRowCellStyle = NULL, * cellStyle = NULL;
-		try
-		{
-			if (is_present_hyperlink_)
-			{
-				defaultCellStyle = odfContext.styleContainer().style_by_name(L"Hyperlink", style_family::TableCell, true);
-			}
-			if (!defaultCellStyle)
-			{
-				defaultCellStyle = odfContext.styleContainer().style_default_by_type(style_family::TableCell);
-			}
-
-			defaultColumnCellStyle = odfContext.styleContainer().style_by_name(columnStyleName, style_family::TableCell, false);
-			defaultRowCellStyle = odfContext.styleContainer().style_by_name(rowStyleName, style_family::TableCell, false);
-			cellStyle = odfContext.styleContainer().style_by_name(cellStyleName, style_family::TableCell, false);
-		}
-		catch (...)
-		{
-			_CP_LOG << L"[error]: style wrong\n";
-		}
-
-		std::wstring data_style = CalcCellDataStyle(Context, columnStyleName, rowStyleName, cellStyleName);
-
-		// styles aren't inherited
+		// styles are not inherited
 		std::vector<const style_instance*> instances;
 		instances.push_back(defaultCellStyle);
 
@@ -943,13 +1011,18 @@ void table_table_cell::xlsx_convert(oox::xlsx_conversion_context & Context)
 		text_format_properties_ptr textFormatProperties = calc_text_properties_content(instances);
 		paragraph_format_properties parFormatProperties = calc_paragraph_properties_content(instances);
 		style_table_cell_properties_attlist cellFormatProperties = calc_table_cell_properties(instances);
+
 //-------------------------------------------------------------------------------------------------------------------------------
+		std::wstring			cell_num_format		= num_format;
+		office_value_type::type cell_num_format_type= num_format_type;
+
+		std::wstring data_style = CalcCellDataStyle(Context, columnStyleName, rowStyleName, cellStyleName);
 
 		if (false == data_style.empty())
 		{
-			num_format = Context.get_num_format_context().find_complex_format(data_style, num_format_type);
+			cell_num_format = Context.get_num_format_context().find_complex_format(data_style, cell_num_format_type);
 
-			if (num_format.empty())
+			if (cell_num_format.empty())
 			{
 				office_element_ptr elm = odfContext.numberStyles().find_by_style_name(data_style);
 				number_style_base* num_style = dynamic_cast<number_style_base*>(elm.get());
@@ -960,22 +1033,22 @@ void table_table_cell::xlsx_convert(oox::xlsx_conversion_context & Context)
 					num_style->oox_convert(Context.get_num_format_context());
 					Context.get_num_format_context().end_complex_format();
 
-					num_format = Context.get_num_format_context().get_last_format();
-					num_format_type = Context.get_num_format_context().type();					
+					cell_num_format = Context.get_num_format_context().get_last_format();
+					cell_num_format_type = Context.get_num_format_context().type();
 				}
 			}
 			if (attr.office_value_type_)
 			{
-				if (attr.office_value_type_.get() != num_format_type && num_format_type != office_value_type::Custom)
-				{// reset from cell 
-					num_format_type = attr.office_value_type_->get_type();
-					num_format.clear();
+				if (attr.office_value_type_.get() != cell_num_format_type && cell_num_format_type != office_value_type::Custom)
+				{// reset from cell
+					cell_num_format_type = attr.office_value_type_->get_type();
+					cell_num_format.clear();
 				}
-				
+
 			}
 		}
 //----------------------------------------------------------------------------------------------------------------------------------
-		bool is_style_visible = (!cellStyleName.empty() || defaultColumnCellStyle || !num_format.empty()) ? true : false;
+		bool is_style_visible = (!cellStyleName.empty() || defaultColumnCellStyle || !cell_num_format.empty()) ? true : false;
 
 		if (count_paragraph > 1)
 		{
@@ -987,22 +1060,21 @@ void table_table_cell::xlsx_convert(oox::xlsx_conversion_context & Context)
 			is_style_visible = false;
 			xlsx_value_type = oox::XlsxCellType::str;
 		}
-		oox::xlsx_cell_format cellFormat;
-		cellFormat.set_cell_type(xlsx_value_type);
-		cellFormat.set_num_format(oox::odf_string_to_build_in(odf_value_type));
 
 		size_t	xfId_last_set = 0;
 		if (is_style_visible)
 		{
 			xfId_last_set = Context.get_style_manager().xfId(textFormatProperties, &parFormatProperties, &cellFormatProperties,
-				&cellFormat, num_format, num_format_type, false, is_style_visible);
+				&cellFormat, cell_num_format, cell_num_format_type, false, is_style_visible);
 		}
+//---------------------------------------------------------------------------------------------------------
+		Context.start_table_cell(attlist_extra_.table_number_columns_spanned_ - 1,
+			attlist_extra_.table_number_rows_spanned_ - 1);
 
-        Context.start_table_cell (	attlist_extra_.table_number_columns_spanned_	- 1 ,
-									attlist_extra_.table_number_rows_spanned_		- 1	);
 		if (is_style_visible)
+		{
 			Context.set_current_cell_style_id(xfId_last_set);
-//---------------------------------------------------------------------------------------------------------	
+		}
 		if (bExternalTable)
 		{
 			std::wstringstream str;
@@ -1013,7 +1085,6 @@ void table_table_cell::xlsx_convert(oox::xlsx_conversion_context & Context)
 		{
 			sharedStringId = content_.xlsx_convert(Context, textFormatProperties, need_cache_convert);
 		}
-
 
 		if (xlsx_value_type == oox::XlsxCellType::str || xlsx_value_type == oox::XlsxCellType::inlineStr)
 		{
@@ -1036,7 +1107,7 @@ void table_table_cell::xlsx_convert(oox::xlsx_conversion_context & Context)
 		}
 		if (sharedStringId >= 0)
 		{
-			xlsx_value_type = oox::XlsxCellType::s;//in the case of text, if there is one, we take the cached value
+			xlsx_value_type = oox::XlsxCellType::s;//for text, if it exists, we take the cached value
 		}		
 //---------------------------------------------------------------------------------------------------------			
 		if (skip_next_cell)
@@ -1045,7 +1116,7 @@ void table_table_cell::xlsx_convert(oox::xlsx_conversion_context & Context)
 			break;
 		}
 	
-	// Skip empty cells.
+	// skip empty cells.
         if ( is_data_visible || ((cellStyle || defaultColumnCellStyle) && is_style_visible))
         {
 			std::wstring ref = oox::getCellAddress(Context.current_table_column(), Context.current_table_row());
@@ -1115,9 +1186,9 @@ void table_table_cell::xlsx_convert(oox::xlsx_conversion_context & Context)
 				else
 				{
 					empty_cell_count++;
-					//Уведомление_о_вручении.ods - 13 empty repetitions with cellStyle=NULL - necessary!!!
+					//Notification_of_delivery.ods - 13 empty repeats with cellStyle=NULL - needed!!!
 					if (empty_cell_count > 19 && last_cell_&& (attlist_.table_number_columns_repeated_> 299 || cellStyle == NULL)) 
-					{//write a sheet only if a style is specified only for these cells
+					{//write full sheet only if style is set only for these cells
 						skip_next_cell = true;
 					}
 				}				
@@ -1163,7 +1234,7 @@ void table_covered_table_cell::xlsx_convert(oox::xlsx_conversion_context & Conte
 	std::wstring rowStyleName		= Context.get_table_context().default_row_cell_style();
 
 	if (attlist_.table_number_columns_repeated_ > 1)
-		columnStyleName.clear(); // There may be different styles of columns Book 24.ods
+		columnStyleName.clear(); // there can be different column styles Book 24.ods
 
 	odf_read_context & odfContext = Context.root()->odf_context();   
 
@@ -1183,7 +1254,7 @@ void table_covered_table_cell::xlsx_convert(oox::xlsx_conversion_context & Conte
 
     std::wstring data_style = CalcCellDataStyle(Context, columnStyleName, rowStyleName, cellStyleName);
 
-    // styles aren't inherited
+    // styles are not inherited
     std::vector<const style_instance *> instances;
     instances.push_back(defaultCellStyle);
 
@@ -1235,33 +1306,16 @@ void table_covered_table_cell::xlsx_convert(oox::xlsx_conversion_context & Conte
         xlsx_value_type = oox::XlsxCellType::n;              
         if (attr.office_date_value_)
         {
-            int y, m, d;
-			_CP_OPT(int) h, min, s;
-            if (oox::parseDateTime(attr.office_date_value_.get(), y, m, d, h, min, s))
-            {
-				boost::int64_t intDate = oox::convertDate(y, m, d);
-				_CP_OPT(double) dTime;
-
-				if (h && min)
-				{
-					dTime = oox::convertTime(*h, *min,  s.get_value_or(0));
-				}
-				if (intDate > 0)
-				{
-					if (dTime)
-					{
-						number_val = XmlUtils::ToString(*dTime + intDate);
-					}
-					else
-					{
-						number_val = std::to_wstring(intDate);
-					}
-				}
-				else
-				{
-					str_val = attr.office_date_value_.get();
-				}
-            }
+			double dDate = 0;
+			if (odf_datetime::parse_date_value(attr.office_date_value_.get(), dDate) && dDate > 0)
+			{
+				number_val = XmlUtils::ToString(dDate);
+			}
+			else
+			{
+				str_val = attr.office_date_value_.get();
+				xlsx_value_type = oox::XlsxCellType::str;
+			}
         }
     }
     else if ((odf_value_type == office_value_type::Time) ||
@@ -1271,12 +1325,16 @@ void table_covered_table_cell::xlsx_convert(oox::xlsx_conversion_context & Conte
         if (attr.office_time_value_)
         {
             const std::wstring tv = attr.office_time_value_.get();
-            int h,m;
-            double s;
-            if (oox::parseTime(tv, h, m, s))
-            {
-                number_val = boost::lexical_cast<std::wstring>(oox::convertTime(h, m, s));
-            }                
+			double dTime = 0;
+			if (odf_datetime::parse_time_value(tv, dTime) && dTime >= 0)
+			{
+				number_val = XmlUtils::ToString(dTime);
+			}
+			else
+			{
+				str_val = tv;
+				xlsx_value_type = oox::XlsxCellType::str;
+			}
         }
     }
     else if ((odf_value_type == office_value_type::Boolean) ||
@@ -1357,11 +1415,11 @@ void table_covered_table_cell::xlsx_convert(oox::xlsx_conversion_context & Conte
 		const int sharedStringId = content_.xlsx_convert(Context, textFormatProperties);
 
 		if (xlsx_value_type == oox::XlsxCellType::str && sharedStringId >= 0)
-			xlsx_value_type = oox::XlsxCellType::s;//in the case of text, if there is one, we take the cached value
+			xlsx_value_type = oox::XlsxCellType::s;//for text, if it exists, we take the cached value
 			
 		if (skip_next_cell) break;
 
-        // Skip empty cells.
+        // skip empty cells.
         if ( is_data_visible || ((cellStyle || defaultColumnCellStyle) && is_style_visible))
         {
             CP_XML_WRITER(strm)
@@ -1412,9 +1470,9 @@ void table_covered_table_cell::xlsx_convert(oox::xlsx_conversion_context & Conte
 				else
 				{
 					empty_cell_count++;
-					//Уведомление_о_вручении.ods - 13 empty repetitions with cellStyle=NULL - necessary!!!
+					//Notification_of_delivery.ods - 13 empty repeats with cellStyle=NULL - needed!!!
 					if (empty_cell_count > 19 && last_cell_&& (attlist_.table_number_columns_repeated_> 299 || cellStyle == NULL)) 
-					{//write a sheet only if a style is specified only for these cells
+					{//write full sheet only if style is set only for these cells
 						skip_next_cell = true;
 					}
 				}				
@@ -1441,7 +1499,9 @@ void table_content_validation::xlsx_convert(oox::xlsx_conversion_context & Conte
 {
 	std::wstring name = table_name_.get_value_or(L"");
 	
-	Context.get_dataValidations_context().add(name, table_base_cell_address_.get_value_or(L""));
+	Context.get_dataValidations_context().add(name, table_base_cell_address_.get_value_or(L""),
+													table_allowempty_cell_ ? table_allowempty_cell_->get() : true,
+													table_display_list_.get_value_or(L"unsorted") == L"none");
 	Context.get_dataValidations_context().add_formula(name, table_condition_.get_value_or(L""));
 	
 	for (size_t i = 0 ; i < content_.size(); i++)

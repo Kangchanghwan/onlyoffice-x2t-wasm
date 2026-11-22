@@ -1,26 +1,36 @@
 /*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "CSldViewPr.h"
@@ -34,10 +44,10 @@ namespace PPTX
 			parentFile		= oSrc.parentFile;
 			parentElement	= oSrc.parentElement;
 
-			CViewPr				= oSrc.CViewPr;
-			attrShowGuides		= oSrc.attrShowGuides;
-			attrSnapToGrid		= oSrc.attrSnapToGrid;
-			attrSnapToObjects	= oSrc.attrSnapToObjects;
+			CViewPr			= oSrc.CViewPr;
+			showGuides		= oSrc.showGuides;
+			snapToGrid		= oSrc.snapToGrid;
+			snapToObjects	= oSrc.snapToObjects;
 
 			GuideLst = oSrc.GuideLst;
 
@@ -52,18 +62,18 @@ namespace PPTX
 			XmlUtils::CXmlNode oNodeLst = node.ReadNode(L"p:guideLst");
 			XmlMacroLoadArray(oNodeLst, L"p:guide", GuideLst, Guide);
 
-			XmlMacroReadAttributeBase(node, L"showGuides", attrShowGuides);
-			XmlMacroReadAttributeBase(node, L"snapToGrid", attrSnapToGrid);
-			XmlMacroReadAttributeBase(node, L"snapToObjects", attrSnapToObjects);
+			XmlMacroReadAttributeBase(node, L"showGuides", showGuides);
+			XmlMacroReadAttributeBase(node, L"snapToGrid", snapToGrid);
+			XmlMacroReadAttributeBase(node, L"snapToObjects", snapToObjects);
 
 			FillParentPointersForChilds();
 		}
 		std::wstring CSldViewPr::toXML() const
 		{
 			XmlUtils::CAttribute oAttr;
-			oAttr.Write(L"showGuides", attrShowGuides);
-			oAttr.Write(L"snapToGrid", attrSnapToGrid);
-			oAttr.Write(L"snapToObjects", attrSnapToObjects);
+			oAttr.Write(L"showGuides", showGuides);
+			oAttr.Write(L"snapToGrid", snapToGrid);
+			oAttr.Write(L"snapToObjects", snapToObjects);
 
 			XmlUtils::CNodeValue oValue;
 			oValue.Write(CViewPr);
@@ -74,9 +84,9 @@ namespace PPTX
 		void CSldViewPr::toPPTY(NSBinPptxRW::CBinaryFileWriter* pWriter) const
 		{
 			pWriter->WriteBYTE(NSBinPptxRW::g_nodeAttributeStart);
-			pWriter->WriteBool2(0, attrShowGuides);
-			pWriter->WriteBool2(1, attrSnapToGrid);
-			pWriter->WriteBool2(2, attrSnapToObjects);
+			pWriter->WriteBool2(0, showGuides);
+			pWriter->WriteBool2(1, snapToGrid);
+			pWriter->WriteBool2(2, snapToObjects);
 			pWriter->WriteBYTE(NSBinPptxRW::g_nodeAttributeEnd);
 
 			pWriter->WriteRecord1(0, CViewPr);
@@ -98,15 +108,15 @@ namespace PPTX
 				{
 					case 0:
 					{
-						attrShowGuides = pReader->GetBool();
+						showGuides = pReader->GetBool();
 					}break;
 					case 1:
 					{
-						attrSnapToGrid = pReader->GetBool();
+						snapToGrid = pReader->GetBool();
 					}break;
 					case 2:
 					{
-						attrSnapToObjects = pReader->GetBool();
+						snapToObjects = pReader->GetBool();
 					}break;
 					default:
 						break;
@@ -146,9 +156,9 @@ namespace PPTX
 
 			pWriter->StartAttributes();
 
-			pWriter->WriteAttribute(L"showGuides", attrShowGuides);
-			pWriter->WriteAttribute(L"snapToGrid", attrSnapToGrid);
-			pWriter->WriteAttribute(L"snapToObjects", attrSnapToObjects);
+			pWriter->WriteAttribute(L"snapToGrid", snapToGrid);
+			pWriter->WriteAttribute(L"showGuides", showGuides);
+			pWriter->WriteAttribute(L"snapToObjects", snapToObjects);
 
 			pWriter->EndAttributes();
 

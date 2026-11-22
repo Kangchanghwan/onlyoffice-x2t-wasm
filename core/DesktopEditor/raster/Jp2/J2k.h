@@ -1,5 +1,40 @@
-﻿#pragma once
-// The functions in this file are designed to read/write various parts of the JPEG2000-codestream: markers and data
+﻿/*
+ * Copyright (C) Ascensio System SIA, 2009-2026
+ *
+ * This program is a free software product. You can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License (AGPL)
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
+ * Section 5 of the GNU AGPL version 3.
+ *
+ * No trademark rights are granted under this License.
+ *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
+#pragma once
+// Functions in this file are designed for reading/writing various parts of JPEG2000-codestream: markers and data
 //-------------------------------------------------------------------------------------------------------------------------------
 
 #include "math.h"
@@ -98,7 +133,7 @@ namespace Jpeg2000
 	}
 
 	//-------------------------------------------------------------------------------------------------------------------------------
-	// Auxiliary functions
+	// Helper functions
 	//-------------------------------------------------------------------------------------------------------------------------------
 	static void J2k_WriteSOC(J2kCodestream *pJ2k)
 	{
@@ -188,7 +223,7 @@ namespace Jpeg2000
 			pImage->pComponents[nIndex].nFactorDiv2      = 0;
 		}
 
-		// Count the number of tiles by X and Y
+		// Calculate number of tiles by X and Y
 		pCodingParams->nXTilesCount = CeilDiv(pImage->nXsiz - pCodingParams->nXTOsiz, pCodingParams->nXTsiz);
 		pCodingParams->nYTilesCount = CeilDiv(pImage->nYsiz - pCodingParams->nYTOsiz, pCodingParams->nYTsiz);
 
@@ -218,7 +253,7 @@ namespace Jpeg2000
 			pCodingParams->pTCP[nIndex].nFirst     = 1;
 		}
 
-		// Resetting the data for the PPM marker
+		// Reset data for PPM marker
 		pCodingParams->nPPM          = 0;
 		pCodingParams->pPPMData      = NULL;
 		pCodingParams->pPPMDataFirst = NULL;
@@ -315,7 +350,7 @@ namespace Jpeg2000
 
 		int nLen = pStream->Read(2);
 
-		// TO DO: Do normal reading
+		// TO DO: Implement proper reading
 		pStream->Skip(nLen - 2);
 	}
 
@@ -537,7 +572,7 @@ namespace Jpeg2000
 	//                else
 	//                        sprintf(str1, "unknown"); /* unknown */
 	//
-	//                /* Now write them to screen */
+	//                /* Now we write them to screen */
 	//                opj_event_msg(j2k->cinfo, EVT_INFO,
 	//                        "EPB(%d): (%sl, %sp, %u), %lu, %s\n",
 	//                        cio_tell(cio) - 13,
@@ -665,7 +700,7 @@ namespace Jpeg2000
 			pTCCP->aoStepSizes[nCurBand].nMantissa = nMantissa;
 		}
 
-		// TODO: If the quantization type is ScalarImplicit, then calculate the quantization coefficients for the remaining Subbands
+		// Add : If quantization type is ScalarImplicit, calculate quantization coefficients for remaining Subbands
 		if (pTCCP->nQuantStyle == J2K_CCP_QNTSTY_SIQNT)
 		{
 			for (int nCurBand = 1; nCurBand < J2K_MAXBANDS; nCurBand++)
@@ -920,7 +955,7 @@ namespace Jpeg2000
 				pCodingParams->pPPMDataFirst = pCodingParams->pPPMData;
 				pCodingParams->nPPMLength    = nNppm;
 			}
-			else // Not the first PPM marker
+			else // Not first PPM marker
 			{
 				BYTE *pPPMData_new = (BYTE *)Malloc((nNppm + pCodingParams->nPPMStore) * sizeof(unsigned char));
 				if (!pPPMData_new)
@@ -936,14 +971,14 @@ namespace Jpeg2000
 				pCodingParams->nPPMLength    = nNppm + pCodingParams->nPPMStore;
 			}
 
-			// Reading the rest of the data
+			// Read remaining data
 			int nIndex;
 			for (nIndex = nNppm; nIndex > 0; nIndex--)
 			{
 				pCodingParams->pPPMData[nStore] = pStream->Read(1);
 				nStore++;
 				nLen--;
-				if (nLen == 0) // The case when the packet header hasn't ended in the current token, but will end in the next one
+				if (nLen == 0) // Case when packet header didn't end in current marker, but will end in the next one
 					break;
 			}
 			pCodingParams->nPPMPrevious = nIndex - 1;
@@ -973,7 +1008,7 @@ namespace Jpeg2000
 			pTCP->nPPTStore     = 0;
 			pTCP->nPPTLength    = nLen - 3;
 		}
-		else // Not the first PPT marker
+		else // Not first PPT marker
 		{
 			BYTE *pPPTData_new =  (unsigned char *)Malloc((nLen - 3 + pTCP->nPPTStore) * sizeof(unsigned char));
 			if (!pPPTData_new)
@@ -1010,7 +1045,7 @@ namespace Jpeg2000
 		pStream->Skip(2);
 
 		pStream->Write(pJ2k->nCurTileIndex, 2); // Isot
-		pStream->Skip(4);                       // Psot (for now we leave some space, write here in the J2k_WriteSOD function)
+		pStream->Skip(4);                       // Psot (leaving space for now, write here in J2k_WriteSOD function)
 		pStream->Write(0, 1);                   // TPsot
 		pStream->Write(1, 1);                   // TNsot
 
@@ -1066,7 +1101,7 @@ namespace Jpeg2000
 
 		TileCodingParams *pTCP = &pCodingParams->pTCP[pJ2k->nCurTileIndex];
 
-		if (pTCP->nFirst == 1) // Initializing PPT
+		if (pTCP->nFirst == 1) // Initialize PPT
 		{
 			TileCompCodingParams *pTemp = pTCP->pTCCP;
 			memcpy(pTCP, pJ2k->pDefaultTCP, sizeof(TileCodingParams));
@@ -1116,7 +1151,7 @@ namespace Jpeg2000
 
 		int nTileDataLen = TCD_EncodeTile(pTCD, pJ2k->nCurTileIndex, (BYTE*)pStream->GetOwner() + pStream->Tell(), pStream->GetLeftSize() - 2, pImageInfo);
 
-		// Write the Psot field in the SOT marker
+		// Write Psot field in SOT marker
 		int nTotalLen =  pStream->Tell() + nTileDataLen - pJ2k->nSOTStartPos;
 		pStream->Seek(pJ2k->nSOTStartPos + 6);
 		pStream->Write(nTotalLen, 4); // Psot
@@ -1134,7 +1169,7 @@ namespace Jpeg2000
 
 		if (nLen == pStream->GetLeftSize() + 1)
 		{
-			nTruncate = 1; // Cropped codestream
+			nTruncate = 1; // Truncated codestream
 		}
 
 		unsigned char *pData = (unsigned char *)Malloc((pJ2k->pTileLen[nCurTileIndex] + nLen) * sizeof(unsigned char));
@@ -1152,7 +1187,7 @@ namespace Jpeg2000
 		unsigned char *pDataPointer = pData + pJ2k->pTileLen[nCurTileIndex];
 		//for ( int nIndex = 0; nIndex < nLen; nIndex++ ) 
 		//{
-		//	pDataPointer[nIndex] = pStream->Read( 1 ); // Read the encoded data of the current tile
+		//	pDataPointer[nIndex] = pStream->Read( 1 ); // Read encoded data of the current tile
 		//}
 
 		pStream->Read(pDataPointer, nLen);
@@ -1197,7 +1232,7 @@ namespace Jpeg2000
 		int nLen          = pStream->Read(2); // Lrgn
 		int nCurComponent = pStream->Read(nComponentsCount <= 256 ? 1 : 2); // Crgn
 		int nROIStyle     = pStream->Read(1); // Srgn
-		// TO DO: Insert check nROIStyle == 0
+		// TO DO: Add check for nROIStyle == 0
 		pTCP->pTCCP[nCurComponent].nROIShift = pStream->Read(1); // SPrgn 
 	}
 
@@ -1247,8 +1282,8 @@ namespace Jpeg2000
 	}
 	static void J2k_ReadUNK(J2kCodestream *pJ2k)
 	{
-		// Assume that the unknown marker isn't empty, and therefore
-		// its next two bytes are the length of the marker.
+		// Assume that the unknown marker is not empty, which means
+		// its next two bytes represent the marker length.
 		CReader *pStream = pJ2k->pStreamIO;
 		int nLen = pStream->Read(2);
 
@@ -1262,7 +1297,7 @@ namespace Jpeg2000
 
 
 	//-------------------------------------------------------------------------------------------------------------------------------
-	// Table linking a read token - decoder state - decoder action (function) when reading this token
+	// Table linking marker read - decoder state - decoder action (function) when reading this marker
 	typedef struct TDecoderMSTableEntry
 	{
 		int    nID;     // Marker value
@@ -1317,7 +1352,7 @@ namespace Jpeg2000
 	}
 
 	//-------------------------------------------------------------------------------------------------------------------------------
-	// Decoding J2K/JPT streams
+	// Decoding J2K / JPT streams
 	//-------------------------------------------------------------------------------------------------------------------------------
 
 	J2kCodestream* J2k_CreateDecompress(PCommon pCodecInfo)
@@ -1381,7 +1416,7 @@ namespace Jpeg2000
 	{
 		if (pJ2k && pParameters)
 		{
-			// Create and initialize the CodingParams structure
+			// Create and initialize CodingParams structure
 			CodingParams *pCodingParams = (CodingParams*)Malloc(sizeof(CodingParams));
 			if (!pCodingParams)
 			{
@@ -1401,7 +1436,7 @@ namespace Jpeg2000
 
 		pJ2k->pStreamIO = pStream;
 
-		// Create a blank image
+		// Create an empty image
 		Image *pImage = Image_CreateEmpty();
 		if (!pImage)
 		{
@@ -1433,7 +1468,7 @@ namespace Jpeg2000
 				return 0;
 			}
 
-			// Checking the decoding limitation
+			// Check decoding limitation
 			if (pEntry->nID == J2K_MS_SOT && pJ2k->pCodingParams->eLimitDecoding == declimLimitToMainHeader)
 			{
 				Event_Message(EVT_INFO, "Main Header decoded.\n");
@@ -1461,7 +1496,7 @@ namespace Jpeg2000
 				pCodecInfo->nErrorCode = JP2_ERROR_NO_ERROR;
 				break;
 			}
-			// Checking if an error has appeared
+			// Check if an error occurred
 			if (JP2_ERROR_NO_ERROR != pCodecInfo->nErrorCode)
 			{
 				Image_Destroy(pImage);
@@ -1489,7 +1524,7 @@ namespace Jpeg2000
 
 		pJ2k->pStreamIO = pStream;
 
-		// Create a blank image
+		// Create an empty image
 		Image *pImage = Image_CreateEmpty();
 		if (!pImage)
 		{
@@ -1499,7 +1534,7 @@ namespace Jpeg2000
 
 		pJ2k->nState = j2kstateMHSOC;
 
-		// Initializing the header
+		// Initialize the header
 		JPTMessageHeader oHeader;
 		JPT_InitMessageHeader(&oHeader);
 		// Read the first message header
@@ -1637,7 +1672,7 @@ namespace Jpeg2000
 			return;
 		}
 
-		// Create and initialize the Coding parameters structure
+		// Create and initialize Coding parameters structure
 		CodingParams *pCodingParams = (CodingParams*)Malloc(sizeof(CodingParams));
 		if (!pCodingParams)
 		{
@@ -1649,7 +1684,7 @@ namespace Jpeg2000
 		pCodingParams->nXTilesCount = 1;
 		pCodingParams->nYTilesCount = 1;
 
-		// Copying the specified parameters
+		// Copy the specified parameters
 
 		pCodingParams->nDistoAlloc   = pParameters->nDistoAlloc;
 		pCodingParams->nFixedAlloc   = pParameters->nFixedAlloc;
@@ -1669,7 +1704,7 @@ namespace Jpeg2000
 			memcpy(pCodingParams->pMatrix, pParameters->pMatrix, array_size);
 		}
 
-		// Do create an indexing file?
+		// Create index file?
 		pCodingParams->nIndexOn = pParameters->nIndexOn;
 		if (pCodingParams->nIndexOn)
 		{
@@ -1702,7 +1737,7 @@ namespace Jpeg2000
 			}
 		}
 
-		// Calculating other encoding parameters
+		// Calculate other encoding parameters
 
 		if (pParameters->bTileSizeOn)
 		{
@@ -1790,7 +1825,7 @@ namespace Jpeg2000
 			for (int nComponentIndex = 0; nComponentIndex < pImage->nCsiz; nComponentIndex++)
 			{
 				TileCompCodingParams *pTCCP = &pTCP->pTCCP[nComponentIndex];
-				pTCCP->nCodingStyle      = pParameters->nCodingStyle & 0x01;	// 0 => one area || 1 => arbitrary number of areas
+				pTCCP->nCodingStyle      = pParameters->nCodingStyle & 0x01;	// 0 => one precinct || 1 => arbitrary number of precincts
 				pTCCP->nResolutionsCount = pParameters->nResolutionsCount;
 				pTCCP->nCodeBlockWidth   = FloorLog2(pParameters->nCodeBlockWidthInit);
 				pTCCP->nCodeBlockHeight  = FloorLog2(pParameters->nCodeBlockHeightInit);
@@ -1959,7 +1994,7 @@ namespace Jpeg2000
 			{
 				for (int nResolutionIndex = 0; nResolutionIndex < pImageInfo->nDecompCount + 1; nResolutionIndex++)
 				{
-					// Assume that the values of XRsiz and YRsiz are the same for all components
+					// Assuming XRsiz, YRsiz values are the same for all components
 					int nX0 = pImageInfo->nXTOsiz + nTileIndex - (int)floor((float)nTileIndex / (float)pImageInfo->nXTilesCount) * pImageInfo->nXTilesCount * pImageInfo->nXTsiz;
 					int nY0 = pImageInfo->nXTOsiz + (int)floor((float)nTileIndex / (float)pImageInfo->nXTilesCount) * pImageInfo->nYTsiz;
 					int nX1 = nX0 + pImageInfo->nXTsiz;
@@ -2001,7 +2036,7 @@ namespace Jpeg2000
 			}
 			else if (pImageInfo->eProgOrder == poPCRL)
 			{
-				// Assume that the values of XRsiz and YRsiz are the same for all components
+				// Assuming XRsiz, YRsiz values are the same for all components
 				int nX0 = pImageInfo->nXTOsiz + nTileIndex - (int)floor((float)nTileIndex / (float)pImageInfo->nXTilesCount) * pImageInfo->nXTilesCount * pImageInfo->nXTsiz;
 				int nY0 = pImageInfo->nXTOsiz + (int)floor((float)nTileIndex / (float)pImageInfo->nXTilesCount) * pImageInfo->nYTsiz;
 				int nX1 = nX0 + pImageInfo->nXTsiz;
@@ -2047,7 +2082,7 @@ namespace Jpeg2000
 			{
 				for (int nComponentIndex = 0; nComponentIndex < pImageInfo->nCompCount; nComponentIndex++)
 				{
-					// Assume that the values of XRsiz and YRsiz are the same for all components
+					// Assuming XRsiz, YRsiz values are the same for all components
 					int nX0 = pImageInfo->nXTOsiz + nTileIndex - (int)floor((float)nTileIndex / (float)pImageInfo->nXTilesCount) * pImageInfo->nXTilesCount * pImageInfo->nXTsiz;
 					int nY0 = pImageInfo->nXTOsiz + (int)floor((float)nTileIndex / (float)pImageInfo->nXTilesCount) * pImageInfo->nYTsiz;
 					int nX1 = nX0 + pImageInfo->nXTsiz;
@@ -2158,7 +2193,7 @@ namespace Jpeg2000
 		}
 		//-------------
 
-		// Creating a structure for encoding tiles
+		// Create structure for encoding tiles
 		TCD *pTCD = TCD_Create(pJ2k->pCodecInfo);
 
 		// Encode each tile
@@ -2168,7 +2203,7 @@ namespace Jpeg2000
 
 			pJ2k->nCurTileIndex = nTileIndex;
 
-			// Initialize before coding
+			// Initialize before encoding
 			if (0 == nTileIndex)
 			{
 				TCD_MallocEncode(pTCD, pImage, pCodingParams, pJ2k->nCurTileIndex);
@@ -2177,7 +2212,7 @@ namespace Jpeg2000
 			{
 				TCD_InitEncode(pTCD, pImage, pCodingParams, pJ2k->nCurTileIndex);
 			}
-			// Checking the error
+			// Check for errors
 			if (JP2_ERROR_NO_ERROR != pTCD->pCodecInfo->nErrorCode)
 			{
 				TCD_Destroy(pTCD);
@@ -2215,13 +2250,13 @@ namespace Jpeg2000
 
 		}
 
-		// Removing the structure encoding tiles
+		// Delete the tile encoding structure
 		TCD_FreeEncode(pTCD);
 		TCD_Destroy(pTCD);
 
 		J2k_WriteEOC(pJ2k);
 
-		// Create a file with indexing
+		// Create index file
 		if (pImageInfo && pImageInfo->nIndexOn)
 		{
 			if (!J2k_CreateIndex(pJ2k, pStream, pImageInfo, sIndex))

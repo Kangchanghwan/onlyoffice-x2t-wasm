@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #ifndef _ASC_FONTCONVERTER_FONT_FILE_TYPE1C_H
 #define _ASC_FONTCONVERTER_FONT_FILE_TYPE1C_H
@@ -36,16 +46,16 @@ namespace NSFontConverter
 
     struct Type1CIndex
     {
-        int nPos;         // Position in the file from the beginning of the file
-        int nCount;       // Number of occurrences
+        int nPos;         // Position in file from file start
+        int nCount;       // Number of entries
         int nOffsetSize;  // Offset size
-        int nStartPos;    // Starting position index data - 1
-        int nEndPos;      // Position of the next byte after Type1CIndex
+        int nStartPos;    // Start position of index data - 1
+        int nEndPos;      // Position of next byte after Type1CIndex
     };
 
     struct Type1CIndexVal
     {
-        int nPos;         // Position in the file from the beginning of the file
+        int nPos;         // Position in file from file start
         int nLen;         // Length in bytes
     };
 
@@ -68,7 +78,7 @@ namespace NSFontConverter
         int    nPaintType;
         int    nCharStringType;
         double arrdFontMatrix[6];
-        bool   bHasFontMatrix;	// In CID fonts, it is possible that the font matrix is in the FD, and not in the upper dictionary
+        bool   bHasFontMatrix;	// In CID fonts the font matrix may be in FD, not in top dict
         int    nUniqueID;
         double arrdFontBBox[4];
         double dStrokeWidth;
@@ -145,7 +155,7 @@ namespace NSFontConverter
         void              *pOutputStream;
         bool               bASKII;          // ASCII encoding?
         unsigned short     unEncryptionKey; // eexec encryption key
-        int                nLine;           // number of eexec characters remaining on the current line
+        int                nLine;           // number of eexec characters remaining on current line
     };
 
     //------------------------------------------------------------------------
@@ -165,7 +175,7 @@ namespace NSFontConverter
 
         char *GetName();
 
-        // Return the encoding as an array of 256 names (some may be
+        // Return encoding as array of 256 names (some may be
         // NULL). Used only for 8-bit fonts.
         char **GetEncoding();
 
@@ -269,9 +279,9 @@ namespace NSFontConverter
 
         Type1COperator     m_arrOperators[49];
         int                m_nOperatorsCount;
-        int                m_nHints;           // for the current character
+        int                m_nHints;           // for current symbol
         bool               m_bFirstOperator;
-        bool               m_bOpenPath;		   // true if there is an open path
+        bool               m_bOpenPath;		   // true if there is an unclosed path
     };
 }
 

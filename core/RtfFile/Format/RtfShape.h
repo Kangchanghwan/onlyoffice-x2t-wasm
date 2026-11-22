@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #pragma once
 #include "RtfPicture.h"
@@ -154,6 +164,10 @@ public:
 	int m_nGeoRight;
 	int m_nGeoBottom;	
 	int	m_nShapePath;
+	int m_nInscribeLeft;
+	int m_nInscribeTop;
+	int m_nInscribeRight;
+	int m_nInscribeBottom;
 	std::vector< std::pair<int, int> >	m_aPVerticles;
 	std::vector< int>					m_aPSegmentInfo;
 //Connectors
@@ -161,7 +175,7 @@ public:
 	int m_nConnectorStyle;			//cxstyle Connector style
 
 //Picture Effects
-	int m_nCropFromTop;				//cropFromTop Top cropping percentage. Measured in fraction 1 /65536
+	int m_nCropFromTop;				//cropFromTop	Top cropping percentage. Measured in fraction 1/65536
 	int m_nCropFromBottom;			//cropFromBottom	Bottom cropping percentage.
 	int m_nCropFromLeft;			//cropFromLeft	Left cropping percentage.
 	int m_nCropFromRight;			//cropFromRight	Right cropping percentage.
@@ -192,7 +206,7 @@ public:
 	int m_nFillToLeft;
 	int m_nFillShadeType;
     std::vector< std::pair<int, double> >	m_aFillShadeColors;
-	//int m_bFillShape;				//there is a copy of the image fill
+	//int m_bFillShape;				//there is a copy of image fill	
 //Line
 	int m_bLine;					//fLine Has a line
 	int m_nLineColor;
@@ -204,6 +218,13 @@ public:
 	int m_nLineEndArrowLength;		//lineEndArrowLength	End arrow length (for acceptable values see meaning for lineStartArrowLength).
 	int m_nLineWidth;				//lineWidth Width of the line.
 	int m_nLineDashing;
+    bool m_bHr;
+    bool m_bHrStd;
+    int  m_nHrAlign;
+    bool m_bHrNoShade;
+    int  m_nHrPct;
+    int  m_nHrHeight;
+    int  m_nHrWeight;
 
 //WordArt
     std::wstring	m_sGtextUNICODE;
@@ -224,7 +245,7 @@ public:
 	std::wstring	m_sSigSetupSuggSigner2;
 	std::wstring	m_sSigSetupSuggSignerEmail;
 
-	RtfCharProperty	m_oCharProperty; // there may be track changes...
+	RtfCharProperty	m_oCharProperty; // track changes may be here...
 
 //pWrapPolygonVertices	Points of the text wrap polygon.
 	std::vector< std::pair<__int64, __int64> >	m_aWrapPoints;

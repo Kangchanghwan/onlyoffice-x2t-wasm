@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.7
 FROM ubuntu:22.04 AS base
 SHELL ["/bin/bash", "-c"]
  
@@ -41,7 +42,7 @@ COPY embuild.sh /bin/embuild.sh
 
 
 FROM base AS build-tools
-RUN git clone --depth=1 --branch v9.3.0.140 https://github.com/ONLYOFFICE/build_tools.git
+RUN git clone --depth=1 --branch v10.0.0.176 https://github.com/ONLYOFFICE/build_tools.git
 WORKDIR /build_tools
 RUN python configure.py
 
@@ -144,11 +145,14 @@ RUN --mount=type=cache,sharing=locked,target=/emsdk/upstream/emscripten/cache/ \
  
 FROM base AS boost
 # emscriptens boost does not work because of missing symbols
+# [cs] boost release tarball checked by hash instead of cloning ~150 submodules
 WORKDIR /
-RUN git clone https://github.com/boostorg/boost.git
+ADD --checksum=sha256:2e64e5d79a738d0fa6fb546c6e5c2bd28f88d268a2a080546f74e5ff98f29d0e \
+    https://github.com/boostorg/boost/releases/download/boost-1.84.0/boost-1.84.0.tar.xz /boost-1.84.0.tar.xz
+RUN tar -xJf boost-1.84.0.tar.xz \
+ && mv boost-1.84.0 boost \
+ && rm boost-1.84.0.tar.xz
 WORKDIR /boost
-RUN git fetch && git checkout boost-1.84.0
-RUN git submodule update --init --recursive
 RUN . /emsdk/emsdk_env.sh \
  && CXXFLAGS=-fms-extensions emcmake cmake '-DBOOST_EXCLUDE_LIBRARIES=context;cobalt;coroutine;fiber;log;thread;wave;type_erasure;serialization;locale;contract;graph'
 RUN . /emsdk/emsdk_env.sh \
@@ -601,6 +605,38 @@ RUN --mount=type=cache,sharing=locked,target=/emsdk/upstream/emscripten/cache/ \
 
 
 
+FROM base AS ofdfile
+COPY core/OFDFile /core/OFDFile
+COPY core/Common /core/Common
+COPY core/DesktopEditor /core/DesktopEditor
+COPY core/OfficeUtils /core/OfficeUtils
+COPY core/PdfFile /core/PdfFile
+COPY --from=boost /usr/local/include/boost /boost/libs/functional/include/boost
+COPY --from=common /core/build/lib/linux_64/libkernel.a /core/build/lib/linux_64/
+COPY --from=graphics /core/build/lib/linux_64/libgraphics.a /core/build/lib/linux_64/
+COPY --from=unicodeconverter /core/build/lib/linux_64/libUnicodeConverter.a /core/build/lib/linux_64/
+COPY --from=pdffile /core/build/lib/linux_64/libPdfFile.a /core/build/lib/linux_64/
+WORKDIR /core
+RUN --mount=type=cache,sharing=locked,target=/emsdk/upstream/emscripten/cache/ \
+    embuild.sh OFDFile
+# Outputs /core/build/lib/linux_64/libOFDFile.a
+
+
+
+FROM base AS starmath
+COPY core/OdfFile /core/OdfFile
+COPY core/Common /core/Common
+COPY core/DesktopEditor /core/DesktopEditor
+COPY core/OOXML /core/OOXML
+COPY core/OfficeUtils /core/OfficeUtils
+COPY --from=boost /usr/local/include/boost /boost/libs/functional/include/boost
+WORKDIR /core
+RUN --mount=type=cache,sharing=locked,target=/emsdk/upstream/emscripten/cache/ \
+    embuild.sh OdfFile/Reader/Converter/StarMath2OOXML/StarMath2OOXML.pro
+# Outputs /core/build/lib/linux_64/libStarMathConverter.a
+
+
+
 FROM base AS docxrenderer
 COPY core/DocxRenderer /core/DocxRenderer
 COPY core/Common /core/Common
@@ -660,8 +696,7 @@ COPY --from=log-symbols /out /
 
 
 
-FROM ghcr.io/euro-office/documentserver:v9.3.2 AS documentserver
-# Outputs: /var/www/euro-office/documentserver/server/FileConverter/bin/x2t
+# [cs] reference documentserver stage removed: test.js never runs the native x2t
 
 
 
@@ -717,6 +752,8 @@ COPY --from=apple /core/build/lib/linux_64/libIWorkFile.a /core/build/lib/linux_
 COPY --from=hwpfile /core/build/lib/linux_64/libHWPFile.a /core/build/lib/linux_64/
 COPY --from=docxrenderer /core/build/lib/linux_64/libDocxRenderer.a /core/build/lib/linux_64/
 COPY --from=doctrenderer /core/build/lib/linux_64/libdoctrenderer.a /core/build/lib/linux_64/
+COPY --from=ofdfile /core/build/lib/linux_64/libOFDFile.a /core/build/lib/linux_64/
+COPY --from=starmath /core/build/lib/linux_64/libStarMathConverter.a /core/build/lib/linux_64/
 COPY --from=ooxmlsignature /core/build/lib/linux_64/libooxmlsignature.a /core/build/lib/linux_64/
 
 RUN cat /wrap-main.cpp >> /core/X2tConverter/src/main.cpp
@@ -753,7 +790,6 @@ WORKDIR /test
 COPY tests /test/tests
 COPY non-public-tests /test/tests
 COPY --from=testfiles /tests /test/tests
-COPY --from=documentserver /var/www/euro-office/documentserver/server/FileConverter/bin/x2t /bin/
 RUN mkdir results
 # RUN ls -l tests ; exit 1
 # RUN . /emsdk/emsdk_env.sh \

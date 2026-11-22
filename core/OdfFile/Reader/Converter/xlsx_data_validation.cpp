@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "xlsx_data_validation.h"
@@ -45,7 +55,7 @@ struct xlsx_dataValidation
 {
 	std::wstring ref;
 	//std::wstring activate_ref;
-	std::map<int, std::vector<int>> mapCells;
+	std::map<int, std::vector<std::pair<int, int>>> mapCells;// map(col, row start-end)
 
 	std::wstring type;
 	std::wstring formula1;			
@@ -55,7 +65,7 @@ struct xlsx_dataValidation
 	bool showErrorMessage = false;
 	bool showInputMessage = false;
 	bool showDropDown = false;
-	bool allowBlank = false;
+	bool allowBlank = true;
 
 	std::wstring error_text;
 	std::wstring error_title;
@@ -81,7 +91,7 @@ private:
 			{
 				//prepare
 				std::map<int, std::vector<std::pair<int, int>>> mapCells;
-				for (std::map<int, std::vector<int>>::iterator jt = it->second->mapCells.begin(); jt != it->second->mapCells.end(); ++jt)
+				for (std::map<int, std::vector<std::pair<int, int>>>::iterator jt = it->second->mapCells.begin(); jt != it->second->mapCells.end(); ++jt)
 				{
 					std::sort(jt->second.begin(), jt->second.end());
 					std::vector<std::pair<int, int>> arr;
@@ -298,18 +308,22 @@ public:
 	std::map<std::wstring, xlsx_dataValidation_ptr>		mapActivateDataValidations; //in current table
 
 private:
-	void MakePairVector(std::vector<int> & arInput, std::vector<std::pair<int, int>> &arOutput)
+	void MakePairVector(std::vector<std::pair<int, int>> & arInput, std::vector<std::pair<int, int>> &arOutput)
 	{
-		int pos = arInput[0];
+		std::pair<int, int> current = arInput[0];
 		for (size_t i = 1; i < arInput.size(); i++)
 		{
-			if (arInput[i-1] + 1  != arInput[i])
+			if (current.second + 1 < arInput[i].first)
 			{
-				arOutput.push_back(std::make_pair(pos, arInput[i - 1]));
-				pos = arInput[i];
+				arOutput.push_back(current);
+				current = arInput[i];
+			}
+			else if (current.second < arInput[i].second)
+			{
+				current.second = arInput[i].second;
 			}
 		}
-		arOutput.push_back(std::make_pair(pos, arInput[arInput.size() - 1]));
+		arOutput.push_back(current);
 	}
 };
 
@@ -332,7 +346,7 @@ void xlsx_dataValidations_context::serialize_x14(std::wostream & _Wostream)
 {
 	return impl_->serialize_x14(_Wostream);
 }
-void xlsx_dataValidations_context::activate(const std::wstring & name, int col, int row/*const std::wstring & ref*/)
+void xlsx_dataValidations_context::activate(const std::wstring & name, int col, int row/*const std::wstring & ref*/, int rows_repeated)
 {
 	std::map<std::wstring, xlsx_dataValidation_ptr>::iterator pFindActivate = impl_->mapActivateDataValidations.find(name);
 	
@@ -354,24 +368,29 @@ void xlsx_dataValidations_context::activate(const std::wstring & name, int col, 
 		pFindActivate = impl_->mapActivateDataValidations.find(name);
 	}
 
-	std::map<int, std::vector<int>>::iterator pFindCol = pFindActivate->second->mapCells.find(col);
+	std::pair<int, int> rows_range = std::make_pair(row, row + (rows_repeated > 1 ? rows_repeated - 1 : 0));
+
+	std::map<int, std::vector<std::pair<int, int>>>::iterator pFindCol = pFindActivate->second->mapCells.find(col);
 
 	if (pFindCol == pFindActivate->second->mapCells.end())
 	{
-		std::vector<int> rows; rows.push_back(row);
+		std::vector<std::pair<int, int>> rows; rows.push_back(rows_range);
 		pFindActivate->second->mapCells.insert(std::make_pair(col, rows));
 	}
 	else
 	{
-		pFindCol->second.push_back(row);
+		pFindCol->second.push_back(rows_range);
 	}
 }
-void xlsx_dataValidations_context::add(const std::wstring & name, const std::wstring &ref)
+void xlsx_dataValidations_context::add(const std::wstring & name, const std::wstring &ref, bool allowBlank, bool showDropDown)
 {
 	xlsx_dataValidation_ptr _new = xlsx_dataValidation_ptr(new xlsx_dataValidation);
 
 	formulasconvert::odf2oox_converter converter;
 	_new->ref = converter.convert_named_ref(ref, false, L";");
+
+	_new->allowBlank	= allowBlank;
+	_new->showDropDown	= showDropDown;
 
 	impl_->mapDataValidations.insert(std::make_pair(name, _new));
 }

@@ -1,3 +1,38 @@
+/*
+ * Copyright (C) Ascensio System SIA, 2009-2026
+ *
+ * This program is a free software product. You can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License (AGPL)
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
+ * Section 5 of the GNU AGPL version 3.
+ *
+ * No trademark rights are granted under this License.
+ *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 #include "HWPXFile.h"
 
 #include <cwctype>
@@ -5,7 +40,8 @@
 namespace HWP
 {
 CHWPXFile::CHWPXFile(const HWP_STRING& sFileName)
-	: m_sFileName(sFileName), m_pZipFolder(nullptr), m_oDocInfo(this)
+	: m_sFileName(sFileName), m_pZipFolder(nullptr), m_oDocInfo(this),
+	  m_eCryptResult(EHwpxCryptResult::OK)
 {}
 
 CHWPXFile::~CHWPXFile()
@@ -29,7 +65,37 @@ bool CHWPXFile::Detect()
 
 	m_pZipFolder = new CZipFolderMemory(pBuffer, dwBufferSize);
 
+	ReadManifest();
+
 	return GetFileHeader();
+}
+
+void CHWPXFile::SetPassword(const HWP_STRING& sPassword)
+{
+	m_oCrypt.SetPassword(sPassword);
+}
+
+bool CHWPXFile::Encrypted() const
+{
+	return m_oCrypt.Encrypted();
+}
+
+EHwpxCryptResult CHWPXFile::GetCryptResult() const
+{
+	return m_eCryptResult;
+}
+
+void CHWPXFile::ReadManifest()
+{
+	CXMLReader oReader;
+
+	if (nullptr == m_pZipFolder || nullptr == oReader.GetReader())
+		return;
+
+	if (!m_pZipFolder->getReaderFromFile(L"META-INF/manifest.xml", *oReader.GetReader()) || !oReader.ReadNextNode())
+		return;
+
+	m_oCrypt.ParseManifest(oReader);
 }
 
 bool CHWPXFile::Open()
@@ -129,13 +195,22 @@ bool CHWPXFile::GetChildStream(const HWP_STRING& sFileName, CHWPStream& oBuffer)
 	if (nullptr == pFileBuffer)
 		return false;
 
-	pFileBuffer->UnsetDestroy();
+	if (!m_oCrypt.Encrypted(sFileName))
+	{
+		pFileBuffer->UnsetDestroy();
 
-	oBuffer.SetStream((HWP_BYTE*)pFileBuffer->Buffer, pFileBuffer->Size);
+		oBuffer.SetStream((HWP_BYTE*)pFileBuffer->Buffer, pFileBuffer->Size);
+
+		delete pFileBuffer;
+
+		return true;
+	}
+
+	m_eCryptResult = m_oCrypt.Decrypt(sFileName, (const HWP_BYTE*)pFileBuffer->Buffer, pFileBuffer->Size, oBuffer);
 
 	delete pFileBuffer;
 
-	return true;
+	return EHwpxCryptResult::OK == m_eCryptResult;
 }
 
 bool CHWPXFile::ReadDocInfo()
@@ -181,9 +256,22 @@ bool CHWPXFile::GetDocument(const HWP_STRING& sEntryName, CXMLReader& oReader)
 	if (nullptr == m_pZipFolder || nullptr == oReader.GetReader())
 		return false;
 
-	if (m_pZipFolder->getReaderFromFile(sEntryName, *oReader.GetReader()))
-		return oReader.ReadNextNode();
+	if (!m_oCrypt.Encrypted(sEntryName))
+	{
+		if (m_pZipFolder->getReaderFromFile(sEntryName, *oReader.GetReader()))
+			return oReader.ReadNextNode();
 
-	return false;
+		return false;
+	}
+
+	CHWPStream oStream;
+
+	if (!GetChildStream(sEntryName, oStream))
+		return false;
+
+	if (!oReader.GetReader()->FromStringA(std::string(oStream.GetCurPtr(), oStream.GetSize())))
+		return false;
+
+	return oReader.ReadNextNode();
 }
 }

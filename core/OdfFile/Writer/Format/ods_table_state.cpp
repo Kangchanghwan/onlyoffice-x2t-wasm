@@ -1,36 +1,46 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "logging.h"
 
 #include <boost/algorithm/string.hpp>
-#include <boost/date_time.hpp>
 
 #include "../../Formulas/formulasconvert.h"
 
 #include "ods_table_state.h"
+#include "../../Common/odf_date_time_utils.h"
 #include "odf_text_context.h"
 #include "ods_conversion_context.h"
 
@@ -57,138 +67,6 @@ namespace odf_writer {
 	_INT32 ods_table_state::tmp_column_ =0;
 	_INT32 ods_table_state::tmp_row_ =0;
 
-namespace utils////////////////////////////////////////// GENERAL helpers .. pull something out in utils ???
-
-{
-	bool convert_date(__int64 date, std::wstring & date_str)
-	{
-		boost::gregorian::date date_ = boost::gregorian::date(1900, 1, 1) + boost::gregorian::date_duration( date - (date < 60 ? 1 : 2)); //29.02.1900
-
-		bool res = true;
-		try
-		{
-			date_str = boost::lexical_cast<std::wstring>(date_.year())
-				+ L"-" +
-				(date_.month() < 10 ? L"0" : L"") + boost::lexical_cast<std::wstring>(date_.month().as_number())
-				+ L"-" +
-				(date_.day() < 10 ? L"0" : L"") + boost::lexical_cast<std::wstring>(date_.day());
-		}
-		catch (...)
-		{
-			date_str = std::to_wstring(date);
-			res = false;
-		}
-		return res;
-	}
-	bool convert_date(const std::wstring & oox_date, std::wstring & odf_date)
-	{
-		__int64 iDate = 0;
-
-		bool res = true;
-		try
-		{
-			iDate = boost::lexical_cast<__int64>(oox_date);
-		}catch(...)
-		{
-			res = false;
-			odf_date =  oox_date;
-		}
-		res = convert_date(iDate, odf_date);
-		return res;
-	}
-	std::wstring convert_time(double dTime, bool bPT)
-	{
-		//12H15M42S - pt
-		int hours = 0, minutes = 0;
-		double sec = 0;
-
-		boost::posix_time::time_duration day(24, 0, 0);
-
-		double millisec = day.total_milliseconds() * dTime;
-
-		sec = millisec / 1000.;
-		hours = (int)(sec / 60. / 60.);
-		minutes = (int)((sec - (hours * (int)60 * (int)60)) / 60.);
-		sec = sec - (hours * (int)60 + minutes) * 60.;
-
-		int sec1 = (int)sec;
-
-		std::wstring time_str =
-			(hours < 10 ? L"0" : L"") + boost::lexical_cast<std::wstring>(hours)
-			+ (bPT ? std::wstring(L"H") : std::wstring(L":")) +
-			(minutes < 10 ? L"0" : L"") + boost::lexical_cast<std::wstring>(minutes)
-			+ (bPT ? std::wstring(L"M") : std::wstring(L":")) +
-			(sec1 < 10 ? L"0" : L"") + boost::lexical_cast<std::wstring>(sec1)
-			+ (bPT ? std::wstring(L"S") : std::wstring(L""));
-
-		return time_str;
-	}
-	bool convert_date_time(const std::wstring & oox_date_time, office_value_type::type& odf_type, std::wstring& odf_date_time)
-	{
-		double dDateTime = 0, dTime = 0;
-		__int64 nDate = 0;
-
-		bool res = true;
-
-		if (std::wstring::npos != oox_date_time.find(L"."))
-		{
-			try
-			{
-				dDateTime = boost::lexical_cast<double>(oox_date_time);
-			}
-			catch (...)
-			{
-				odf_date_time = oox_date_time;
-				return false;
-			}
-			nDate = (int)dDateTime;
-			dTime = (dDateTime - nDate);
-		}
-		else
-		{
-			nDate = boost::lexical_cast<__int64>(oox_date_time);
-		}
-
-		std::wstring sDate, sTime;
-		if (dTime > 0)
-		{
-			sTime = convert_time(dTime, false);
-		}
-		if (nDate > 0)
-		{
-			res = convert_date(nDate, sDate);
-			odf_type = office_value_type::Date;
-		}
-		else 
-			odf_type = office_value_type::Time;
-		
-		// "1899-12-31T05:37:46.66569
-		if (sDate.empty() && sTime.empty())
-		{
-			res = false;
-			odf_date_time = oox_date_time;
-		}
-		else
-		{
-			odf_date_time = sDate + (sTime.empty() ? L"" : L"T" + sTime);
-		}
-		return res;
-	}
-
-	std::wstring convert_time(const std::wstring & oox_time)
-	{
-		double dTime = 0;
-		
-		try
-		{		
-			dTime = boost::lexical_cast<double>(oox_time);
-		}catch(...)
-		{
-			return oox_time;
-		}
-		return std::wstring(L"PT") + convert_time(dTime, true);
-	}
-};
 
 ///////////////////////////////////////////////////////////////
 static formulasconvert::oox2odf_converter formulas_converter_table;
@@ -330,7 +208,7 @@ void ods_table_state::set_table_tab_color(_CP_OPT(color) & _color)
 	style_table_properties *table_properties = office_table_style_->content_.add_get_style_table_properties();
 	if (table_properties == NULL)return;
 
-	table_properties->content_.tableooo_tab_color_ = _color;
+	table_properties->content_.table_tab_color_ = _color;
 }
 void ods_table_state::set_table_style(office_element_ptr & elm)
 {	
@@ -342,7 +220,7 @@ void ods_table_state::set_table_style(office_element_ptr & elm)
 	if (table == NULL)return;
 	
 	table->attlist_.table_style_name_ = office_table_style_->style_name_;
-	//then, in principle, it will be possible to connect (find) by name
+	//later it will also be possible to link(find) by name
 }
 void ods_table_state::start_group(office_element_ptr & elm)
 {
@@ -651,7 +529,7 @@ _UINT32 ods_table_state::get_last_row_repeated ()
 
 void ods_table_state::set_row_default_cell_style(std::wstring & style_name)
 {
-	row_default_cell_style_name_= style_name;	//Need to define default-style (table_cell)!!!
+	row_default_cell_style_name_= style_name;	//must define default-style (table_cell)!!!
 	
 	//if (style_name.length() < 1) return;
 
@@ -801,11 +679,11 @@ void ods_table_state::add_hyperlink(const std::wstring & ref, _INT32 col, _INT32
 
 	hyperlinks_.push_back(state);
 }
-void ods_table_state::start_comment(_INT32 col, _INT32 row, std::wstring & author)
+void ods_table_state::start_comment(_INT32 col, _INT32 row, std::wstring & author, std::wstring& date_time)
 {
 	ods_comment_state state;
 
-	state.row = row;  state.col = col; state.author = author;	
+	state.row = row;  state.col = col; state.author = author; state.date_time = date_time;
 	create_element(L"office", L"annotation", state.elm, context_);
 
 	office_annotation * annotation = dynamic_cast<office_annotation*>(state.elm.get());
@@ -867,14 +745,26 @@ void ods_table_state::end_comment(odf_text_context *text_context)
 			comments_.back().elm->add_child_element(text_context->text_elements_list_[i].elm);
 		}
 	}
-	if (comments_.back().author.length() > 0 && comments_.back().elm)
+	if (comments_.back().elm)
 	{
 		office_element_ptr dc_elm;
-		create_element(L"dc", L"creator", dc_elm, context_);
-		if (dc_elm)
+		if (false == comments_.back().author.empty())
 		{
-			dc_elm->add_text(comments_.back().author);
-			comments_.back().elm->add_child_element(dc_elm);
+			create_element(L"dc", L"creator", dc_elm, context_);
+			if (dc_elm)
+			{
+				dc_elm->add_text(comments_.back().author);
+				comments_.back().elm->add_child_element(dc_elm);
+			}
+		}
+		if (false == comments_.back().date_time.empty())
+		{
+			create_element(L"dc", L"date", dc_elm, context_);
+			if (dc_elm)
+			{
+				dc_elm->add_text(comments_.back().date_time);
+				comments_.back().elm->add_child_element(dc_elm);
+			}
 		}
 	}
 }
@@ -891,7 +781,7 @@ void ods_table_state::check_spanned_cells()
 			_INT32 start_col = jt->first;
 			_INT32 end_col = jt->first + jt->second.spanned_cols;
 
-			for (size_t i = 0; i < cells_.size(); ++i) //TODO cells_ vector -> map by row
+			for (size_t i = 0; i < cells_.size(); ++i) //todooo cells_ vector -> map by row
 			{
 				if (cells_[i].row > end_row) break;
 
@@ -1010,7 +900,7 @@ void ods_table_state::set_cell_formula(std::wstring & formula)
 {
 	if (formula.empty()) return;
 
-	//TODO used table columns in formula - TableName[TableColumn]
+	//todooo used tabled columns in formula - TableName[TableColumn]
 	for (size_t i = 0; i < table_parts_.size(); ++i)
 	{
 		if (std::wstring::npos != formula.find(table_parts_[i].name + L"["))
@@ -1069,7 +959,7 @@ void ods_table_state::set_cell_formula(std::wstring & formula)
 				for (size_t j = 0; j < table_parts_[i].columns.size(); j ++)
 				{
 					std::wstring name = table_parts_[i].name + L"[" + table_parts_[i].columns[j].first + L"]";
-					//Table1[ Amount per sq. 3 ]
+					//Table1[ Sum for Q3 ]
 
 					XmlUtils::replace_all(odfFormula, name, table_parts_[i].columns[j].second);
 				}
@@ -1091,7 +981,7 @@ std::wstring ods_table_state::replace_cell_row(boost::wsmatch const & what)
 	{
 		std::wstring ref_formula = what[1].str();
 		_INT32 col_formula = 0, row_formula = 0;
-		utils::parsing_ref(ref_formula, col_formula, row_formula);col_formula--;//Otherwise count from 1
+		utils::parsing_ref(ref_formula, col_formula, row_formula);col_formula--;//otherwise counting from 1
 	
 		ref_formula = utils::getColAddress(col_formula) + std::to_wstring(row_formula + current_table_row_ - tmp_row_);
 
@@ -1165,7 +1055,7 @@ void ods_table_state::add_or_find_cell_shared_formula(std::wstring & formula, st
 		{
 			odf_formula = pFind->second.formula;
 
-			//change the ref formula!!!
+			//change formula by ref !!!
 			if (pFind->second.moving_type == 1)
 			{
 				tmp_column_ = pFind->second.base_column;
@@ -1199,7 +1089,7 @@ void ods_table_state::set_cell_array_formula(std::wstring & formula, std::wstrin
 {
 	set_cell_formula(formula);
 
-	//; ??? C2:D5 or D1;F1;G; ...???
+	//; ??? C2:D5 or D1;F1;G; ... ???
 
  	std::vector<std::wstring> ref_cells;
 	boost::algorithm::split(ref_cells,ref, boost::algorithm::is_any_of(L":"), boost::algorithm::token_compress_on);
@@ -1241,7 +1131,7 @@ void ods_table_state::add_child_element( const office_element_ptr & child_elemen
 	office_table_->add_child_element(child_element);
 }
 
-void ods_table_state::convert_position(oox_table_position & oox_pos, double & x, double & y)//c 0 count
+void ods_table_state::convert_position(oox_table_position & oox_pos, double & x, double & y)//0-based counting
 {
 	double sz_col=0;
     size_t curr_col = 0, i;
@@ -1345,7 +1235,7 @@ void ods_table_state::set_cell_value(const std::wstring & value, bool need_cash)
 	{
 		cell->attlist_.common_value_and_type_attlist_ = common_value_and_type_attlist();
 		cell->attlist_.common_value_and_type_attlist_->office_value_type_ = office_value_type(office_value_type::Float);
-		//temporarily... no type definition yet
+		//temporary... until type detector is available
 	}
 	cells_.back().empty = false;
 	
@@ -1365,7 +1255,7 @@ void ods_table_state::set_cell_value(const std::wstring & value, bool need_cash)
 		case office_value_type::DateTime:	
 		{
 			std::wstring sVal;
-			bool result = utils::convert_date_time(value, type, sVal);
+			bool result = odf_datetime::convert_date_time(value, type, sVal);
 			
 			cell->attlist_.common_value_and_type_attlist_->office_value_type_ = office_value_type(type);
 
@@ -1486,8 +1376,8 @@ void ods_table_state::start_cell_text()
 		text_a_->common_xlink_attlist_.type_ = xlink_type(xlink_type::Simple);
 		text_a_->common_xlink_attlist_.href_ = state.link;
 		
-		context_->text_context()->start_element(text_a_elm); // maybe it's worth making its own???
-		// LibreOffice acts up if the tables have a nested span in the hyperlink... oO (although this is allowed in the specification!!!)
+		context_->text_context()->start_element(text_a_elm); // maybe worth making a custom one???
+		// LibreOffice acts weird if there's a nested span in hyperlink inside tables... o_O (although it's allowed in specification!!!)
 
 		context_->text_context()->single_paragraph_ = true;
 	}
@@ -1536,7 +1426,7 @@ void ods_table_state::add_default_cell(_INT32 repeated)
 	_INT32 comment_idx = is_cell_comment(current_table_column_ + 1, current_table_row_, repeated);
 	if (comment_idx  >= 0 && repeated > 1)
 	{
-		//divide by 3 - before, with a comment, after;
+		//split into 3 - before, with comment, after;
 		_INT32 c = current_table_column_;
 
 		add_default_cell(comments_[comment_idx].col - c - 1);
@@ -1557,7 +1447,7 @@ void ods_table_state::add_default_cell(_INT32 repeated)
 			{
 				if (repeated > 1)
 				{
-					//divide by 3 - before, with spanned, after;
+					//split into 3 - before, with spanned, after;
 					_INT32 c = current_table_column_;
 
 					add_default_cell(it->first - c - 1);
@@ -1582,7 +1472,7 @@ void ods_table_state::add_default_cell(_INT32 repeated)
 
 	if (data_validation_idx >= 0 && repeated > 1 && repeated_validation != repeated)
 	{
-		//divide by 3 - before, with validation, after;
+		//split into 3 - before, with validation, after;
 		_INT32 c = current_table_column_;
 
 		add_default_cell(ref.col_start - c - 1);
@@ -2236,7 +2126,7 @@ void ods_table_state::set_conditional_value(int type, const std::wstring& value 
 			}
 			entry->calcext_value_ = value;
 		}
-		///color???? - they come to a higher level!!
+		///color???? - comes from higher level !!
 	}
 }
 void ods_table_state::set_conditional_show_value(bool value)

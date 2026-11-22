@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "RtfWriter.h"
 #include "../OOXml/Writer/OOXWriter.h"
@@ -285,7 +295,7 @@ std::wstring RtfFont::RenderToOOX(RenderParameter oRenderParameter)
 				{
 					sHint = L" w:hint=\"cs\"";
 				}break;
-				//?? is it necessary to describe default??? TODO
+				//?? should we describe default??? todooo
 				default:
 					break;
 			}
@@ -979,7 +989,7 @@ void RtfShading::SetDefault( )
 }
 void RtfShading::Merge( RtfShading& oParPr )
 {
-	//the property must be as a single whole, so if oBorPr is specified, then the entire property will be rewritten
+	//property should be treated as a whole, so if oBorPr is set, it gets overwritten completely
 	if ( st_none != oParPr.m_eType || PROP_DEF != oParPr.m_nValue || PROP_DEF != oParPr.m_nForeColor || PROP_DEF != oParPr.m_nBackColor )
 	{
 		m_eType			= oParPr.m_eType;
@@ -1112,7 +1122,7 @@ void RtfBorder::SetEmpty( )
 }
 void RtfBorder::Merge( RtfBorder& oBorPr )
 {
-	//the property must be as a single whole, so if oBorPr is specified, then the entire property will be rewritten
+	//property should be treated as a whole, so if oBorPr is set, it gets overwritten completely
 	if (PROP_DEF != oBorPr.m_eType || PROP_DEF != oBorPr.m_nWidth || PROP_DEF != oBorPr.m_nSpace || PROP_DEF != oBorPr.m_nColor )
 	{
 		m_eType		= oBorPr.m_eType;
@@ -1459,7 +1469,7 @@ void RtfCharProperty::Merge( RtfCharProperty& oCharPr, bool bAll )
 		MERGE_PROPERTY( m_bStrike,		oCharPr )
 		MERGE_PROPERTY( m_nStriked,		oCharPr )
 		MERGE_PROPERTY( m_nHightlited,	oCharPr )
-		//the property must be as a single whole, so if oBorPr is specified, then the entire property will be rewritten
+		//property should be treated as a whole, so if oBorPr is set, it gets overwritten completely
 		if ( uls_none != oCharPr.m_eUnderStyle || PROP_DEF != oCharPr.m_nUnderlineColor )
 		{
 			m_eUnderStyle = oCharPr.m_eUnderStyle;
@@ -1595,7 +1605,7 @@ std::wstring RtfCharProperty::RenderToOOX(RenderParameter oRenderParameter)
 		m_nFontSize = poRtfDocument->m_oProperty.m_nDefFontSize;
 	}
 	if( RENDER_TO_OOX_PARAM_MATH == oRenderParameter.nType)
-	{//w:rPr to m:ctrlPr
+	{//w:rPr in m:ctrlPr 
 		if (m_nRevised != PROP_DEF)
 		{
 			bInsert = true;
@@ -1619,7 +1629,7 @@ std::wstring RtfCharProperty::RenderToOOX(RenderParameter oRenderParameter)
 		sResult += L"<w:rPr>";
 	}
 
-	if ( PROP_DEF != m_nDeleted )//for rPr to pPr
+	if ( PROP_DEF != m_nDeleted )//for rPr in pPr
 	{
         std::wstring sAuthor = poRtfDocument->m_oRevisionTable.GetAuthor(m_nRevauthDel);
         std::wstring sDate(RtfUtility::convertDateTime(m_nRevdttmDel).c_str());
@@ -1760,6 +1770,12 @@ std::wstring RtfCharProperty::RenderToOOX(RenderParameter oRenderParameter)
 			sResult +=  oCurColor.RenderToOOX(oNewParam);
 		}
 	}
+	else if( PROP_DEF == m_nCharStyle && PROP_DEF != oRenderParameter.nParaStyleForeColor )
+	{
+		// run has no explicit color (e.g. after \plain) - in RTF it is auto, but the paragraph
+		// style defines a color that OOXML would otherwise inherit, so pin it to auto.
+		sResult += L"<w:color w:val=\"auto\"/>";
+	}
 
     std::wstring sUnderColor;
 	if(  PROP_DEF != m_nUnderlineColor  )
@@ -1807,7 +1823,7 @@ std::wstring RtfCharProperty::RenderToOOX(RenderParameter oRenderParameter)
 	RENDER_OOX_INT( m_nUp, sResult, L"w:position" )
 	
     if ((m_nLanguage != PROP_DEF || m_nLanguageAsian != PROP_DEF) && RENDER_TO_OOX_PARAM_MATH != oRenderParameter.nType) 
-			//TODO make a map for those used in the document
+			//todooo create map for those used in document
 	{
         std::wstring str_lang, str_lang_asian;
 #if defined(_WIN32) || defined(_WIN64)
@@ -2130,7 +2146,7 @@ std::wstring RtfListLevelProperty::RenderToRtf(RenderParameter oRenderParameter)
 	RENDER_RTF_INT( m_nStart, sResult, L"levelstartat" )
 	RENDER_RTF_INT( m_nNoRestart, sResult, L"levelnorestart" )
 	RENDER_RTF_INT( m_nPictureIndex, sResult, L"levelpicture" )
-	//so that when subsequently reading from rtf, information about the font isn't lost
+	//so that font information is not lost on subsequent rtf reading
 	sResult +=  m_oCharProp.RenderToRtf( oRenderParameter ); 
 
     sResult += L"{\\leveltext" + m_sLevelText + L";}";
@@ -2202,7 +2218,7 @@ void RtfListLevelProperty::SetLevelTextOOX(const std::wstring& sText)
 
 			m_sLevelText += L"\\'" + XmlUtils::ToString(nLevel - 1, L"%02x");
 			m_sNumber += L"\\'" + XmlUtils::ToString(nLevelOffsets + 1, L"%02x");
-			i++; //because the next character has already been taken into account
+			i++; //because we already processed the next character
 
 			nText++;
 		}
@@ -3376,7 +3392,7 @@ void RtfParagraphProperty::SetDefaultRtf()
 	SetDefault();
 
 	m_nSpaceBefore = 0; // 137.rtf
-	//4.1 Наряд_R7_M133.rtf
+	//4.1 WorkOrder_R7_M133.rtf
 	m_nSpaceAfter = 0;
 	m_nSpaceBetween = 240;
 }
@@ -3686,31 +3702,31 @@ std::wstring RtfParagraphProperty::RenderToRtf(RenderParameter oRenderParameter)
 	//RENDER_RTF_BOOL( m_bStyleSECell, sResult, L"tscsecell" );
 
 
-	//add the list text (for older readers such as wordPad)
+	//write list text (for old readers like wordPad)
 	if( PROP_DEF != m_nListId && PROP_DEF != m_nListLevel )
 	{
 		RtfListProperty oListProperty;
 		RtfDocument* poRtfDocument = static_cast<RtfDocument*>(  oRenderParameter.poDocument );
 		RtfListOverrideProperty oListOverrideProperty;
-		//search by override table
+		//search in override table
 		if( true == poRtfDocument->m_oListOverrideTable.GetList( m_nListId, oListOverrideProperty ) )
 		{
-			//Search by List Table
+			//Search in List Table
 			if( true == poRtfDocument->m_oListTable.GetList( oListOverrideProperty.m_nListID, oListProperty) )
 			{
-				//add the properties of the paragraph firstIndent Indent
+				//write paragraph properties firstIndent Indent
 				RtfListLevelProperty poLevelProp ;
 				if( true == oListProperty.GetItem( poLevelProp , m_nListLevel ) )
 				{
 					sResult += L"{\\listtext\\pard\\plain";
 					sResult +=  poLevelProp.m_oCharProp.RenderToRtf( oRenderParameter );
-					//write the text
+					//write text 
                     std::wstring strLevelProp = poLevelProp.GenerateListText();
 
                     RtfCharProperty* pCharProperty = NULL;
                     sResult +=   RtfChar::renderRtfText( strLevelProp, oRenderParameter.poDocument, pCharProperty );
 
-					//or an image
+					//or picture
 					if( PROP_DEF != poLevelProp.m_nPictureIndex )
 					{
 						int nIndex = poLevelProp.m_nPictureIndex;
@@ -3718,7 +3734,7 @@ std::wstring RtfParagraphProperty::RenderToRtf(RenderParameter oRenderParameter)
 						if( 0 < nIndex && nIndex < poRtfDocument->m_oListTable.m_aPictureList.GetCount() )
 							sResult +=  poRtfDocument->m_oListTable.m_aPictureList[nIndex]->RenderToRtf( oRenderParameter );
 					}
-					//put tab
+					//add tab
 					if( PROP_DEF != poLevelProp.m_nFollow )
 					{
 						switch( poLevelProp.m_nFollow )
@@ -3984,7 +4000,7 @@ std::wstring RtfParagraphProperty::RenderToOOX(RenderParameter oRenderParameter)
 	}
 
 	if (styleTabs.m_aTabs.size() != m_oTabs.m_aTabs.size() && m_oTabs.m_aTabs.size() > 0)
-	{//clearing style tabs (positions in ascending order)
+	{//clear style tabs (positions in ascending order)
 		for (int i = (int)styleTabs.m_aTabs.size() - 1; i >= 0; i--)
 		{
 			bool bPreset = false;
@@ -4202,12 +4218,12 @@ std::wstring RtfCellProperty::RenderToRtf(RenderParameter oRenderParameter)
 	RENDER_RTF_BOOL( m_bNoWrap,				sResult, L"clNoWrap" )
 
 //https://www.office-forums.com/threads/rtf-file-weirdness-clpadt-vs-clpadl.2163500/
-	RENDER_RTF_INT( m_nPaddingLeft,			sResult, L"clpadt" )	//top & left mixed up
-	RENDER_RTF_INT( m_ePaddingLeftUnit,		sResult, L"clpadft" )	//top & left mixed up
+	RENDER_RTF_INT( m_nPaddingLeft,			sResult, L"clpadt" )	//top & left are swapped
+	RENDER_RTF_INT( m_ePaddingLeftUnit,		sResult, L"clpadft" )	//top & left are swapped
 	RENDER_RTF_INT( m_nPaddingRight,		sResult, L"clpadr" )
 	RENDER_RTF_INT( m_ePaddingRightUnit,	sResult, L"clpadfr" )
-	RENDER_RTF_INT( m_nPaddingTop,			sResult, L"clpadl" )	//top & left mixed up
-	RENDER_RTF_INT( m_ePaddingTopUnit,		sResult, L"clpadfl" )	//top & left mixed up
+	RENDER_RTF_INT( m_nPaddingTop,			sResult, L"clpadl" )	//top & left are swapped
+	RENDER_RTF_INT( m_ePaddingTopUnit,		sResult, L"clpadfl" )	//top & left are swapped
 	RENDER_RTF_INT( m_nPaddingBottom,		sResult, L"clpadb" )
 	RENDER_RTF_INT( m_ePaddingBottomUnit,	sResult, L"clpadfb" )
 
@@ -4407,8 +4423,8 @@ std::wstring RtfCellProperty::RenderToOOX(RenderParameter oRenderParameter)
 	{
 		if (PROP_DEF != m_nShadingPctFrom && PROP_DEF != m_oShading.m_nValue && m_oShading.m_nValue != 0)
 		{
-			// TODO here the background color is based on a cell, table or something else
-			// for now we take the second color of the Romanization_Armenian.rtf pattern
+			// todooo here the background color comes from cell, table or something else
+			// for now we take second pattern color Romanization_Armenian.rtf
 			m_oShading.m_nBackColor = (int)(m_oShading.m_nForeColor * (m_oShading.m_nValue / 10000.));
 		}
 		sResult +=  m_oShading.RenderToOOX(oRenderParameter);
@@ -4769,7 +4785,7 @@ std::wstring RtfTableProperty::RenderToOOX(RenderParameter oRenderParameter)
 	else if( 1 == m_nAutoFit )
 		sResult += L"<w:tblLayout w:type=\"autofit\"/>";
 
-	//Do it not according to the documentation, but like all other units!!!
+	//do it not as per documentation, but like all other units !!!
 	if( PROP_DEF != nTableIndent && 3 == eTableIndentUnit  )
 	{
 		sResult += L"<w:tblInd w:w=\"" + std::to_wstring(nTableIndent) + L"\" w:type=\"dxa\"/>";
@@ -4928,7 +4944,7 @@ void RtfRowProperty::SetDefaultRtf()
 void RtfRowProperty::SetDefaultOOX()
 {
 	SetDefault();
-	//not SetEmpty()!!!
+	//not SetEmpty() !!!
 	m_oBorderLeft.SetDefault();
 	m_oBorderRight.SetDefault();
 	m_oBorderTop.SetDefault();

@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "AXS.h"
@@ -37,9 +47,22 @@
 #include "../Biff_records/Font.h"
 #include "../Biff_records/StartObject.h"
 #include "../Biff_records/EndObject.h"
+#include "../Biff_records/ShapePropsStream.h"
 namespace XLS
 {
 
+static ShapePropsStream* find_shape_props_stream(const std::vector<BaseObjectPtr> & shape_props, _UINT16 obj_context)
+{
+	for (size_t i = 0; i < shape_props.size(); i++)
+	{
+		SHAPEPROPS *props = dynamic_cast<SHAPEPROPS*>(shape_props[i].get());
+		if (!props) continue;
+
+		ShapePropsStream *stream = dynamic_cast<ShapePropsStream*>(props->m_ShapePropsStream.get());
+		if ((stream) && (stream->wObjContext == obj_context)) return stream;
+	}
+	return NULL;
+}
 
 AXS::AXS()
 {
@@ -137,6 +160,12 @@ const bool AXS::loadContent(BinProcessor& proc)
 	}
 	
 	count = proc.repeated<SHAPEPROPS>(0, 4);
+	while(count > 0)
+	{
+		ShapeProps.insert(ShapeProps.begin(), elements_.back());
+		elements_.pop_back();
+		count--;
+	}
 
 	if(proc.optional<TextPropsStream>())
 	{
@@ -165,6 +194,51 @@ const bool AXS::saveContent(BinProcessor& proc)
 		proc.mandatory(*m_AreaFormat);
 	if(m_GELFRAME != nullptr)
 		proc.optional(*m_GELFRAME);
+	{
+		auto calcChecksum = [](const std::vector<uint8_t>& data, _UINT32 &checksum)
+		{
+			for (BYTE byte : data) {
+				checksum ^= (static_cast<_UINT32>(byte) << 24);
+
+				for (int i = 0; i < 8; ++i) {
+					if (checksum & 0x80000000U) {
+						checksum = (checksum << 1) ^ 0x000000AFU;
+					} else {
+						checksum <<= 1;
+					}
+				}
+			}
+		};
+
+		for(auto prop:ShapeProps)
+		{
+			auto castedProp = static_cast<SHAPEPROPS*>(prop.get());
+			auto propHeader = static_cast<ShapePropsStream*>(castedProp->m_ShapePropsStream.get());
+			LineFormat* castedLine = nullptr;
+			for(auto lnFmt : m_AxisLine_Format)
+			{
+				if(lnFmt.axisLine != nullptr)
+				{
+					auto castedlnType = static_cast<AxisLine*>(lnFmt.axisLine.get());
+					if(castedlnType->id == propHeader->wObjContext && lnFmt.lineFormat != nullptr)
+					{
+						castedLine = static_cast<LineFormat*>(lnFmt.lineFormat.get());
+						break;
+					}
+				}
+			}
+			if(castedLine == nullptr)
+				continue;
+			{
+				auto CheckSumData = std::vector<BYTE>();
+				_UINT32 AxsCheckSum = 0;
+				castedLine->setChecksum(CheckSumData);
+				calcChecksum(CheckSumData, AxsCheckSum);
+				propHeader->dwChecksum = AxsCheckSum;
+			}
+			proc.mandatory(*prop);
+		}
+	}
 	return true;
 }
 
@@ -173,32 +247,43 @@ int AXS::serialize(std::wostream & _stream)
 	BaseObjectPtr axis_line_format;
 	Tick * tick = dynamic_cast<Tick*>(m_Tick.get());
 
-	CP_XML_WRITER(_stream)    
+	CP_XML_WRITER(_stream)
 	{
 		for (size_t i = 0 ; i < m_AxisLine_Format.size(); i++)
 		{
 			std::wstring grid;
-			
+			std::wstring spPr;
+
 			AxisLine *axis_line = dynamic_cast<AxisLine*>(m_AxisLine_Format[i].axisLine.get());
 			if (axis_line)
 			{
 				if (axis_line->id == (_UINT16)0) axis_line_format = m_AxisLine_Format[i].lineFormat;
 				if (axis_line->id == (_UINT16)1) grid = L"c:majorGridlines";
 				if (axis_line->id == (_UINT16)2) grid = L"c:minorGridlines";
-				if (axis_line->id == (_UINT16)3) {}//wall || floor TODO
+				if (axis_line->id == (_UINT16)3) {}//wall || floor todooo
+
+				ShapePropsStream *propStream = find_shape_props_stream(ShapeProps, axis_line->id);
+				if (propStream)	spPr = propStream->getChartSpPr();
 			}
-			
+
 			if (!grid.empty() && m_AxisLine_Format[i].lineFormat)
 			{
 				CP_XML_NODE(grid)
 				{
-					CP_XML_NODE(L"c:spPr")
-					{			
-						m_AxisLine_Format[i].lineFormat->serialize(CP_XML_STREAM());
+					if (false == spPr.empty())
+					{
+						CP_XML_STREAM() << spPr;
+					}
+					else
+					{
+						CP_XML_NODE(L"c:spPr")
+						{
+							m_AxisLine_Format[i].lineFormat->serialize(CP_XML_STREAM());
+						}
 					}
 				}
 			}
-				
+
 		}
 
 		if (tick)
@@ -207,9 +292,21 @@ int AXS::serialize(std::wostream & _stream)
 		}
 		if (axis_line_format)
 		{
-			CP_XML_NODE(L"c:spPr")
+			std::wstring spPr;
+
+			ShapePropsStream *lineFmtStream = find_shape_props_stream(ShapeProps, (_UINT16)0);
+			if (lineFmtStream)	spPr = lineFmtStream->getChartSpPr();
+
+			if (false == spPr.empty())
 			{
-				axis_line_format->serialize(CP_XML_STREAM());
+				_stream << spPr;
+			}
+			else
+			{
+				CP_XML_NODE(L"c:spPr")
+				{
+					axis_line_format->serialize(CP_XML_STREAM());
+				}
 			}
 		}
 		if ((m_FontX) || ((tick) && (!tick->fAutoRot)))
@@ -240,7 +337,7 @@ int AXS::serialize(std::wostream & _stream)
 								else
 								{
 									CP_XML_ATTR(L"rot",	-tick->trot			* 60000);
-									CP_XML_ATTR(L"vert", L"horz");		//(1-333.xls) .. TODO maybe here check the horizontal axis or not
+									CP_XML_ATTR(L"vert", L"horz");		//(1-333.xls) .. todoooo maybe need to check if horizontal axis or not
 								}
 								
 

@@ -550,6 +550,7 @@ Gfx::Gfx(PDFDoc *docA, OutputDev *outA, int pageNum, Dict *resDict,
   contentStreamStack = new GList();
   abortCheckCbk = abortCheckCbkA;
   abortCheckCbkData = abortCheckCbkDataA;
+  dIgnoreStampOpacity = 1;
 
   // set crop box
   if (cropBox) {
@@ -594,6 +595,7 @@ Gfx::Gfx(PDFDoc *docA, OutputDev *outA, Dict *resDict,
   contentStreamStack = new GList();
   abortCheckCbk = abortCheckCbkA;
   abortCheckCbkData = abortCheckCbkDataA;
+  dIgnoreStampOpacity = 1;
 
   // set crop box
   if (cropBox) {
@@ -1006,9 +1008,23 @@ void Gfx::opSetExtGState(Object args[], int numArgs) {
     printf("\n");
   }
 
+  if (dIgnoreStampOpacity != 1)
+  {
+	  if (obj1.dictLookup("ca", &obj2)->isNum() && fabs(obj2.getNum() - dIgnoreStampOpacity) < 0.001)
+	  {
+		  obj2.free();
+		  if (obj1.dictLookup("CA", &obj2)->isNum() && fabs(obj2.getNum() - dIgnoreStampOpacity) < 0.001)
+		  {
+			  obj2.free(); obj1.free();
+			  dIgnoreStampOpacity = 1;
+			  return;
+		  }
+	  }
+  }
+
   if (out->useNameOp())
   {
-	out->setExtGState(args[0].getName());
+	out->setExtGState(state, &obj1, args[0].getName());
 	obj1.free();
 	return;
   }
@@ -3924,7 +3940,7 @@ void Gfx::doShowText(GString *s) {
       state->setStrokeColor(state->getFillColor());
       out->updateStrokeColor(state);
 #endif
-      if (!out->beginType3Char(state, curX + riseX, curY + riseY, ddx, ddy,
+      if (!out->beginType3Char(savedState, curX + riseX, curY + riseY, tdx, tdy,
 			       code, u, uLen)) {
 	((Gfx8BitFont *)font)->getCharProcNF(code, &charProcRef);
 	charProcRef.fetch(xref, &charProc);
@@ -4081,6 +4097,15 @@ void Gfx::opXObject(Object args[], int numArgs) {
 #if OPI_SUPPORT
   Object opiDict;
 #endif
+
+  double *ctm;
+  double det;
+
+  ctm = state->getCTM();
+  det = ctm[0] * ctm[3] - ctm[1] * ctm[2];
+  if (fabs(det) <= 1e-10) {
+	return;
+  }
 
   if (!ocState && !out->needCharCount()) {
     return;
@@ -5104,14 +5129,14 @@ void Gfx::opEndIgnoreUndef(Object args[], int numArgs) {
 void Gfx::SkipBDC()
 {
   Object obj;
-  // Argument stack (as in the main loop)
+  // Argument stack (as in the main processing loop)
   Object args[maxArgs];
   int numArgs = 0;
 
   getContentObj(&obj);
   while (!obj.isEOF()) {
 	if (obj.isCmd("BMC") || obj.isCmd("BDC")) {
-	  // Resetting accumulated arguments before recursion
+	  // Reset accumulated arguments before recursion
 	  for (int i = 0; i < numArgs; ++i) args[i].free();
 	  numArgs = 0;
 	  SkipBDC();
@@ -5125,11 +5150,11 @@ void Gfx::SkipBDC()
 	  for (int i = 0; i < numArgs; ++i) args[i].free();
 	  numArgs = 0;
 	} else if (obj.isCmd()) {
-	  // Any other command - just reset the arguments
+	  // Any other command - just reset arguments
 	  for (int i = 0; i < numArgs; ++i) args[i].free();
 	  numArgs = 0;
 	} else {
-	  // Operand - put on the argument stack
+	  // Operand - put on argument stack
 	  if (numArgs < maxArgs) {
 		obj.copy(&args[numArgs]);
 		++numArgs;
@@ -5162,6 +5187,8 @@ void Gfx::opBeginMarkedContent(Object args[], int numArgs) {
       res->lookupPropertiesNF(args[1].getName(), &obj)) {
     if (doc->getOptionalContent()->evalOCObject(&obj, &ocStateNew)) {
       ocState &= ocStateNew;
+	  if (out->useNameOp() && ocState)
+		out->beginMarkedContent(state, args, numArgs);
     }
     obj.free();
     mcKind = gfxMCOptionalContent;
@@ -5209,6 +5236,8 @@ void Gfx::opEndMarkedContent(Object args[], int numArgs) {
     mcKind = mc->kind;
     delete mc;
     if (mcKind == gfxMCOptionalContent) {
+	  if (out->useNameOp() && ocState)
+		out->endMarkedContent(state);
       if (markedContentStack->getLength() > 0) {
 	mc = (GfxMarkedContent *)
 	         markedContentStack->get(markedContentStack->getLength() - 1);

@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #ifndef _PDF_WRITER_H
 #define _PDF_WRITER_H
@@ -29,13 +39,13 @@
 #include <vector>
 #include <math.h>
 
-#include "../../DesktopEditor/graphics/IRenderer.h"
-#include "../../DesktopEditor/graphics/pro/Fonts.h"
-#include "../../DesktopEditor/graphics/pro/Image.h"
-#include "../../DesktopEditor/graphics/commands/FormField.h"
-#include "../../DesktopEditor/graphics/commands/DocInfo.h"
-#include "../../DesktopEditor/graphics/commands/AnnotField.h"
-#include "../../DesktopEditor/xmlsec/src/include/Certificate.h"
+#include "../DesktopEditor/graphics/IRenderer.h"
+#include "../DesktopEditor/graphics/pro/Fonts.h"
+#include "../DesktopEditor/graphics/pro/Image.h"
+#include "../DesktopEditor/graphics/commands/FormField.h"
+#include "../DesktopEditor/graphics/commands/DocInfo.h"
+#include "../DesktopEditor/graphics/commands/AnnotField.h"
+#include "../DesktopEditor/xmlsec/src/include/Certificate.h"
 #include "SrcWriter/States.h"
 #include "SrcWriter/Annotation.h"
 
@@ -60,17 +70,18 @@ namespace Aggplus
 class CPdfWriter
 {
 public:
-	CPdfWriter(NSFonts::IApplicationFonts* pAppFonts, bool isPDFA = false, IRenderer* pRenderer = NULL, bool bCreate = true, const std::wstring& wsTempDirectory = L"");
+	CPdfWriter(NSFonts::IApplicationFonts* pAppFonts, bool isPDFA = false, bool isPDFUA = false, IRenderer* pRenderer = NULL, bool bCreate = true, const std::wstring& wsTempDirectory = L"");
 	~CPdfWriter();
 	int          SaveToFile(const std::wstring& wsPath);
-	int          SaveToMemory(BYTE** pData, int* pLength);
+	int          SaveToMemory(BYTE** pData, int* pLength, bool bForWasm = false);
 	void         SetPassword(const std::wstring& wsPassword);
 	void         SetDocumentID(const std::wstring& wsDocumentID);
 	void         SetDocumentInfo(const std::wstring& wsTitle, const std::wstring& wsCreator, const std::wstring& wsSubject, const std::wstring& wsKeywords);
 	std::wstring GetTempFile(const std::wstring& wsDirectory);
 	void SetTempDirectory(const std::wstring& wsTempDirectory);
+	void SetCorrector(IMetafileToRenderter* pCorrector);
 	//----------------------------------------------------------------------------------------
-	// Functions for working with the page
+	// Functions for working with page
 	//----------------------------------------------------------------------------------------
 	HRESULT NewPage();
 	HRESULT get_Height(double* dHeight);
@@ -78,7 +89,7 @@ public:
 	HRESULT get_Width(double* dWidth);
 	HRESULT put_Width(const double& dWidth, bool bMM2PT = true);
 	//----------------------------------------------------------------------------------------
-	// Pen functions
+	// Functions for working with Pen
 	//----------------------------------------------------------------------------------------
 	HRESULT get_PenColor(LONG* lColor);
 	HRESULT put_PenColor(const LONG& lColor);
@@ -162,7 +173,7 @@ public:
 	//----------------------------------------------------------------------------------------
 	HRESULT EndCommand(const DWORD& lType);
 	//----------------------------------------------------------------------------------------
-	// Functions for working with paths
+	// Functions for working with path
 	//----------------------------------------------------------------------------------------
 	HRESULT PathCommandMoveTo(const double& dX, const double& dY);
 	HRESULT PathCommandLineTo(const double& dX, const double& dY);
@@ -180,29 +191,29 @@ public:
 	HRESULT PathCommandText      (const std::wstring& wsUnicodeText,                                                           const double& dX, const double& dY, const double& dW, const double& dH);
 	HRESULT PathCommandTextEx    (const std::wstring& wsUnicodeText, const unsigned int* pGids, const unsigned int nGidsCount, const double& dX, const double& dY, const double& dW, const double& dH);
 	//----------------------------------------------------------------------------------------
-	// Functions for displaying images
+	// Functions for image output
 	//----------------------------------------------------------------------------------------
 	HRESULT DrawImage(IGrObject* pImage, const double& dX, const double& dY, const double& dW, const double& dH);
 	HRESULT DrawImageFromFile(NSFonts::IApplicationFonts* pAppFonts, const std::wstring& wsTempDirectory, const std::wstring& wsImagePath, const double& dX, const double& dY, const double& dW, const double& dH, const BYTE& nAlpha = 255);
 	//----------------------------------------------------------------------------------------
-	// Functions for setting conversion
+	// Functions for setting transformation
 	//----------------------------------------------------------------------------------------
 	HRESULT SetTransform(const double& dM11, const double& dM12, const double& dM21, const double& dM22, const double& dX, const double& dY);
 	HRESULT GetTransform(double* dM11, double* dM12, double* dM21, double* dM22, double* dX, double* dY);
 	HRESULT ResetTransform();
 	//----------------------------------------------------------------------------------------
-	// Additional features
+	// Additional functions
 	//----------------------------------------------------------------------------------------
 	HRESULT AddHyperlink(const double& dX, const double& dY, const double& dW, const double& dH, const std::wstring& wsUrl, const std::wstring& wsTooltip);
 	HRESULT AddLink(const double& dX, const double& dY, const double& dW, const double& dH, const double& dDestX, const double& dDestY, const int& nPage);
 	HRESULT AddFormField (NSFonts::IApplicationFonts* pAppFonts, CFormFieldInfo* pFieldInfo, const std::wstring& wsTempDirectory);
-	HRESULT AddAnnotField(NSFonts::IApplicationFonts* pAppFonts, CAnnotFieldInfo* pFieldInfo);
+	HRESULT AddAnnotField(NSFonts::IApplicationFonts* pAppFonts, CAnnotFieldInfo* pFieldInfo, bool bRedact = false);
 	HRESULT AddMetaData(const std::wstring& sMetaName, BYTE* pMetaData, DWORD nMetaLength);
 	HRESULT AddRedact(const std::vector<double>& arrRedact);
 	HRESULT get_ClipMode(LONG* lMode);
 	HRESULT put_ClipMode(const LONG& lMode);
 	//----------------------------------------------------------------------------------------
-	// Additional functions of PDF renderer
+	// Additional Pdf renderer functions
 	//----------------------------------------------------------------------------------------
 	HRESULT DrawImage1bpp(NSImages::CPixJbig2* pImageBuffer, const unsigned int& unWidth, const unsigned int& unHeight, const double& dX, const double& dY, const double& dW, const double& dH);
 	HRESULT EnableBrushRect(const LONG& lEnable);
@@ -210,7 +221,7 @@ public:
 	HRESULT SetRadialGradient(const double& dX1, const double& dY1, const double& dR1, const double& dX2, const double& dY2, const double& dR2);
 	HRESULT DrawImageWith1bppMask(IGrObject* pImage, NSImages::CPixJbig2* pMaskBuffer, const unsigned int& unMaskWidth, const unsigned int& unMaskHeight, const double& dX, const double& dY, const double& dW, const double& dH);
 	//----------------------------------------------------------------------------------------
-	// Additional functions for adding Pdf
+	// Additional functions for incremental Pdf writing
 	//----------------------------------------------------------------------------------------
 	HRESULT EditWidgetParents(NSFonts::IApplicationFonts* pAppFonts, CWidgetsInfo* pFieldInfo, const std::wstring& wsTempDirectory);
 	void SetPage(PdfWriter::CPage* pPage);
@@ -230,8 +241,11 @@ public:
 	void SetNeedAddHelvetica(bool bNeedAddHelvetica);
 	void SetSplit(bool bSplit) { m_bSplit = bSplit; }
 
+	void DrawWidgetAP(PdfWriter::CAnnotation* pAnnot, BYTE* pRender, LONG nLenRender, int nRotate = 0, bool bDiff = true);
+
 private:
 	PdfWriter::CAction* GetAction(CAnnotFieldInfo::CActionFieldPr* pAction, bool bDeferred = false);
+	void UpdateWidgetActions(CAnnotFieldInfo::CWidgetAnnotPr* pPr, PdfWriter::CWidgetAnnotation* pWidgetAnnot);
 	bool SkipRedact(const double& dX, const double& dY, const double& dW, const double& dH);
 	bool SkipRedact(const double& dX, const double& dY);
 	PdfWriter::CImageDict* LoadImage(Aggplus::CImage* pImage, BYTE nAlpha);
@@ -262,7 +276,6 @@ private:
 	unsigned char* EncodeGID(const unsigned int& unGID, const unsigned int* pUnicodes, const unsigned int& unUnicodesCount);
 	std::wstring GetDownloadFile(const std::wstring& sUrl, const std::wstring& wsTempDirectory);
 	PdfWriter::CAnnotAppearanceObject* DrawAP(PdfWriter::CAnnotation* pAnnot, BYTE* pRender, LONG nLenRender);
-	void DrawWidgetAP(PdfWriter::CAnnotation* pAnnot, BYTE* pRender, LONG nLenRender, int nRotate = 0, bool bDiff = true);
 	void DrawTextWidget  (NSFonts::IApplicationFonts* pAppFonts, PdfWriter::CTextWidget* pTextWidget, const std::wstring& wsValue);
 	void DrawChoiceWidget(NSFonts::IApplicationFonts* pAppFonts, PdfWriter::CChoiceWidget* pChoiceWidget, const std::vector<std::wstring>& arrValue);
 	void DrawButtonWidget(NSFonts::IApplicationFonts* pAppFonts, PdfWriter::CPushButtonWidget* pButtonWidget, BYTE nAP, PdfWriter::CXObject* pForm);
@@ -279,6 +292,7 @@ private:
 	PdfWriter::CExtGrState*      m_pShadingExtGrState;
 
 	std::wstring                 m_wsTempDirectory;
+	IMetafileToRenderter*        m_pCorrector;
 	CCommandManager              m_oCommandManager;
 	CPenState                    m_oPen;
 	CBrushState                  m_oBrush;

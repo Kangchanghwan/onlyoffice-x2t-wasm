@@ -169,7 +169,7 @@ namespace agg
 	private:
 		inline agg::point_d project(const double& x, const double& y)
 		{
-			// projection of a point (x, y) onto a straight line, with a direction vector (cos, sin)
+			// projection of point (x, y) onto a line with direction vector (cos, sin)
 			// perpendicular line x*m_cos + y*m_sin + c = 0;
 			double c = -(x * m_cos + y * m_sin);
 			point_d ret;
@@ -304,7 +304,7 @@ namespace agg
 				{
 					if (i == 1 && t < m_pPosSubColors[0])
 					{
-						// below the minimum
+						// less than minimum
 						m_color_table[index] = m_pSubColors[0];
 						bFindColor = true;
 						break;
@@ -442,7 +442,7 @@ namespace agg
 			{
 				if (i == 1 && t < m_pPosSubColors[0])
 				{
-					// below the minimum
+					// less than minimum
 					m_color_table[index] = m_pSubColors[0];
 					bFindColor = true;
 					break;

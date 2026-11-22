@@ -1,3 +1,38 @@
+/*
+ * Copyright (C) Ascensio System SIA, 2009-2026
+ *
+ * This program is a free software product. You can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License (AGPL)
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
+ * Section 5 of the GNU AGPL version 3.
+ *
+ * No trademark rights are granted under this License.
+ *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 #include "WriterContext.h"
 #include "../HWPFile.h"
 #include "../HWPXFile.h"
@@ -141,7 +176,7 @@ bool CWriterContext::Detect()
 	}
 }
 
-bool CWriterContext::Open(const HWP_STRING& sPathToFile, EHanType eHanType)
+bool CWriterContext::Open(const HWP_STRING& sPathToFile, EHanType eHanType, const HWP_STRING& sPassword)
 {
 	Clear();
 
@@ -152,16 +187,30 @@ bool CWriterContext::Open(const HWP_STRING& sPathToFile, EHanType eHanType)
 	if (nullptr == variable_name)\
 		return false;\
 	return variable_name->Open()
-	
+
 	switch (m_eType)
 	{
 		case EHanType::HWP:
 		{
-			OPEN(m_pHWPFile, CHWPFile);
+			m_pHWPFile = new CHWPFile(sPathToFile);
+
+			if (nullptr == m_pHWPFile)
+				return false;
+
+			m_pHWPFile->SetPassword(sPassword);
+
+			return m_pHWPFile->Open();
 		}
 		case EHanType::HWPX:
 		{
-			OPEN(m_pHWPXFile, CHWPXFile);
+			m_pHWPXFile = new CHWPXFile(sPathToFile);
+
+			if (nullptr == m_pHWPXFile)
+				return false;
+
+			m_pHWPXFile->SetPassword(sPassword);
+
+			return m_pHWPXFile->Open();
 		}
 		case EHanType::HWPML:
 		{
@@ -172,6 +221,26 @@ bool CWriterContext::Open(const HWP_STRING& sPathToFile, EHanType eHanType)
 	}
 
 	return false;
+}
+
+bool CWriterContext::Encrypted()
+{
+	switch (m_eType)
+	{
+		case EHanType::HWP:  return (nullptr != m_pHWPFile)  && m_pHWPFile->Encrypted();
+		case EHanType::HWPX: return (nullptr != m_pHWPXFile) && m_pHWPXFile->Encrypted();
+		default:             return false;
+	}
+}
+
+EHwpxCryptResult CWriterContext::GetCryptResult()
+{
+	switch (m_eType)
+	{
+		case EHanType::HWP:  return (nullptr != m_pHWPFile)  ? m_pHWPFile->GetCryptResult()  : EHwpxCryptResult::NOT_ENCRYPTED;
+		case EHanType::HWPX: return (nullptr != m_pHWPXFile) ? m_pHWPXFile->GetCryptResult() : EHwpxCryptResult::NOT_ENCRYPTED;
+		default:             return EHwpxCryptResult::NOT_ENCRYPTED;
+	}
 }
 
 void CWriterContext::Close()
@@ -371,7 +440,7 @@ bool CWriterContext::GetBinBytes(const HWP_STRING& sId, CHWPStream& oBuffer, HWP
 
 HWP_STRING CWriterContext::GetBinFormat(const HWP_STRING& sId)
 {
-	//TODO::implement
+	//TODO:: Implement
 	return HWP_STRING();
 }
 }

@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 // FontConverter.h : Declaration of the CFontConverter
 
@@ -102,18 +112,18 @@ public:
 
 		FT_Face pFace = NULL;
 
-		// open the file
+		// open file
 		HANDLE hFile = CreateFile( (LPCWSTR)bsFontIn, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 		if (INVALID_HANDLE_VALUE == hFile)
-			return NULL; // Can't open file
+			return NULL; // Cannot open file
 
-		// map this file into memory - this way data from the file is read faster
+		// map this file to memory - this way data is read faster from the file
 		DWORD nFileSize = GetFileSize(hFile, NULL);
 		HANDLE hMapFile = CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, nFileSize, NULL);
 		if (NULL == hMapFile)
 		{
 			CloseHandle( hFile );
-			return NULL; // Unable to create file mapping
+			return NULL; // Cannot create file mapping
 		}
 
 		void *pBaseAddress = MapViewOfFile( hMapFile, FILE_MAP_READ, 0, 0, 0 );
@@ -143,7 +153,7 @@ public:
 
 		CString sFontFormat( FT_Get_X11_Font_Format( pFace ) );
 
-		// Check the conversion flag and the original font format
+		// Check conversion flag and source font format
 		bool bNeedConvert = false;
 
 		if ( nFlag == c_lFromAll || ( _T("TrueType") == sFontFormat && nFlag & c_lFromTT ) || ( _T("CFF") == sFontFormat && nFlag & c_lFromCFF ) || ( _T("Type 1") == sFontFormat && nFlag & c_lFromT1 ) )
@@ -159,18 +169,18 @@ public:
 				CFontFileType1C *pT1C = NULL;
 				if ( _T("Type 1") == sFontFormat )
 				{
-					// First, convert Type1 to CFF
+					// First convert Type1 to CFF
 					CFontFileType1* pT1 = CFontFileType1::LoadFromFile( bsFontIn );
 					pT1->ToCFF( &CharBufferWrite, &oCFF );
 					delete pT1;
 
-					// Converting CFF to OpenTypeCFF
+					// Convert CFF to OpenTypeCFF
 					pT1C = CFontFileType1C::LoadFromBuffer( oCFF.sBuffer, oCFF.nLen );
 				}
 				else
 				{
-					// FreeType gives the font type CFF in cases where the file is OpenType(CFF).
-					// If so, the file doesn't need to be changed.
+					// FreeType returns CFF font type when the file is actually OpenType(CFF).
+					// If that's the case, we don't need to do anything with the file.
 					pT1C = CFontFileType1C::LoadFromFile( bsFontIn );
 				}
 
@@ -195,7 +205,7 @@ public:
 
 					if ( pUnicodeArray )
 					{		
-						// First, build the list of required GIDs
+						// First compile a list of GIDs we need
 						LONG lCount = pUnicodeArray->rgsabound[0].cElements;
 						unsigned short* pUnicode = (unsigned short*)pUnicodeArray->pvData;
 						unsigned short* pGIDs = new unsigned short[lCount];
@@ -222,7 +232,7 @@ public:
 
 						pUseGlyfs = new unsigned char[lGlyfsCount];
 						::memset( pUseGlyfs, 0x00, lGlyfsCount * sizeof(unsigned char) );
-						pUseGlyfs[0] = 1; // always write the zero GID
+						pUseGlyfs[0] = 1; // always write the zero glyph
 						for ( int nGID = 1; nGID < lGlyfsCount; nGID++ )
 						{
 							if ( 1 != pUseGlyfs[nGID] )
@@ -237,7 +247,7 @@ public:
 									}
 								}
 
-								// If a given symbol is a composite (composite glyph), then we must take into account all its child symbols (subglyphs)
+								// If this glyph is composite (CompositeGlyf), we must account for all its child glyphs (subglyfs)
 								if ( bFound && 0 == FT_Load_Glyph( pFace, nGID, FT_LOAD_NO_SCALE | FT_LOAD_NO_RECURSE ) )
 								{
 									for ( int nSubIndex = 0; nSubIndex < pFace->glyph->num_subglyphs; nSubIndex++ )
@@ -290,7 +300,7 @@ public:
 
 	STDMETHOD(ToOTF2)(BSTR bsFontIn, SAFEARRAY *pUnicodeArray, BSTR bsName, long nFlag, long lFaceIndex, SAFEARRAY** ppData)
 	{
-		// the function was simply copied and slightly modified. it's all due to lack of time.
+		// function is simply copied and slightly modified. all due to lack of time.
 
 		FT_Library pLibrary = NULL;
 		if ( FT_Init_FreeType( &pLibrary ) ) 
@@ -298,18 +308,18 @@ public:
 
 		FT_Face pFace = NULL;
 
-		// open the file
+		// open file
 		HANDLE hFile = CreateFile( (LPCWSTR)bsFontIn, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 		if (INVALID_HANDLE_VALUE == hFile || NULL == ppData)
-			return NULL; // Can't open file
+			return NULL; // Cannot open file
 
-		// map this file into memory - this way data from the file is read faster
+		// map this file to memory - this way data is read faster from the file
 		DWORD nFileSize = GetFileSize(hFile, NULL);
 		HANDLE hMapFile = CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, nFileSize, NULL);
 		if (NULL == hMapFile)
 		{
 			CloseHandle( hFile );
-			return NULL; // Unable to create file mapping
+			return NULL; // Cannot create file mapping
 		}
 
 		void *pBaseAddress = MapViewOfFile( hMapFile, FILE_MAP_READ, 0, 0, 0 );
@@ -339,7 +349,7 @@ public:
 
 		CString sFontFormat( FT_Get_X11_Font_Format( pFace ) );
 
-		// Check the conversion flag and the original font format
+		// Check conversion flag and source font format
 		bool bNeedConvert = false;
 
 		if ( nFlag == c_lFromAll || ( _T("TrueType") == sFontFormat && nFlag & c_lFromTT ) || ( _T("CFF") == sFontFormat && nFlag & c_lFromCFF ) || ( _T("Type 1") == sFontFormat && nFlag & c_lFromT1 ) )
@@ -358,18 +368,18 @@ public:
 				CFontFileType1C *pT1C = NULL;
 				if ( _T("Type 1") == sFontFormat )
 				{
-					// First, convert Type1 to CFF
+					// First convert Type1 to CFF
 					CFontFileType1* pT1 = CFontFileType1::LoadFromFile( bsFontIn );
 					pT1->ToCFF( &CharBufferWrite, &oCFF );
 					delete pT1;
 
-					// Converting CFF to OpenTypeCFF
+					// Convert CFF to OpenTypeCFF
 					pT1C = CFontFileType1C::LoadFromBuffer( oCFF.sBuffer, oCFF.nLen );
 				}
 				else
 				{
-					// FreeType gives the font type CFF in cases where the file is OpenType(CFF).
-					// If so, the file doesn't need to be changed.
+					// FreeType returns CFF font type when the file is actually OpenType(CFF).
+					// If that's the case, we don't need to do anything with the file.
 					pT1C = CFontFileType1C::LoadFromFile( bsFontIn );
 				}
 
@@ -392,7 +402,7 @@ public:
 
 					if ( pUnicodeArray )
 					{		
-						// First, build the list of required GIDs
+						// First compile a list of GIDs we need
 						LONG lCount = pUnicodeArray->rgsabound[0].cElements;
 						unsigned short* pUnicode = (unsigned short*)pUnicodeArray->pvData;
 						unsigned short* pGIDs = new unsigned short[lCount];
@@ -419,7 +429,7 @@ public:
 						
 						pUseGlyfs = new unsigned char[lGlyfsCount];
 						::memset( pUseGlyfs, 0x00, lGlyfsCount * sizeof(unsigned char) );
-						pUseGlyfs[0] = 1; // always write the zero GID
+						pUseGlyfs[0] = 1; // always write the zero glyph
 						for ( int nGID = 1; nGID < lGlyfsCount; nGID++ )
 						{
 							if ( 1 != pUseGlyfs[nGID] )
@@ -434,7 +444,7 @@ public:
 									}
 								}
 
-								// If a given symbol is a composite (composite glyph), then we must take into account all its child symbols (subglyphs)
+								// If this glyph is composite (CompositeGlyf), we must account for all its child glyphs (subglyfs)
 								if ( bFound && 0 == FT_Load_Glyph( pFace, nGID, FT_LOAD_NO_SCALE | FT_LOAD_NO_RECURSE ) )
 								{
 									for ( int nSubIndex = 0; nSubIndex < pFace->glyph->num_subglyphs; nSubIndex++ )

@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #pragma once
 
@@ -101,8 +111,8 @@ namespace OOX
 			virtual std::wstring      toXML() const;
 			virtual EElementType getType() const;
 
-			nullable<OOX::Logic::CChr>			m_oChr;
-			nullable<OOX::Logic::CCtrlPr>		m_oCtrlPr;
+			nullable<OOX::Logic::CChr> m_oChr;
+			nullable<OOX::Logic::CCtrlPr> m_oCtrlPr;
 		};
 
 		//--------------------------------------------------------------------------------
@@ -121,8 +131,8 @@ namespace OOX
 			std::wstring      toXML() const;
 			virtual EElementType getType() const;
 
-			nullable<OOX::Logic::CAccPr>		m_oAccPr;
-			nullable<OOX::Logic::CElement>		m_oElement;
+			nullable<OOX::Logic::CAccPr> m_oAccPr;
+			nullable<OOX::Logic::CElement> m_oElement;
 		};
 
 		//--------------------------------------------------------------------------------
@@ -157,7 +167,7 @@ namespace OOX
 			virtual void fromXML(XmlUtils::CXmlNode& oNode);
 			virtual void fromXML(XmlUtils::CXmlLiteReader& oReader);
 
-			virtual std::wstring      toXML() const;
+			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
 			nullable<OOX::Logic::CCtrlPr> m_oCtrlPr;
@@ -177,11 +187,11 @@ namespace OOX
 			virtual void fromXML(XmlUtils::CXmlNode& oNode);
 			virtual void fromXML(XmlUtils::CXmlLiteReader& oReader);
 
-			virtual std::wstring      toXML() const;
+			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
-			nullable<OOX::Logic::CBarPr>		m_oBarPr;
-			nullable<OOX::Logic::CElement>		m_oElement;
+			nullable<OOX::Logic::CBarPr> m_oBarPr;
+			nullable<OOX::Logic::CElement> m_oElement;
 
 		};
 
@@ -198,18 +208,18 @@ namespace OOX
 			virtual void fromXML(XmlUtils::CXmlNode& oNode);
 			virtual void fromXML(XmlUtils::CXmlLiteReader& oReader);
 
-			virtual std::wstring      toXML() const;
+			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
-			nullable<OOX::Logic::CCtrlPr>			 m_oCtrlPr;
-			nullable<OOX::Logic::CHideBot>			 m_oHideBot;
-			nullable<OOX::Logic::CHideLeft>			 m_oHideLeft;
-			nullable<OOX::Logic::CHideRight>		 m_oHideRight;
-			nullable<OOX::Logic::CHideTop>			 m_oHideTop;
-			nullable<OOX::Logic::CStrikeBLTR>		 m_oStrikeBLTR;
-			nullable<OOX::Logic::CStrikeH>			 m_oStrikeH;
-			nullable<OOX::Logic::CStrikeTLBR>		 m_oStrikeTLBR;
-			nullable<OOX::Logic::CStrikeV>			 m_oStrikeV;
+			nullable<OOX::Logic::CCtrlPr> m_oCtrlPr;
+			nullable<OOX::Logic::CHideBot> m_oHideBot;
+			nullable<OOX::Logic::CHideLeft> m_oHideLeft;
+			nullable<OOX::Logic::CHideRight> m_oHideRight;
+			nullable<OOX::Logic::CHideTop> m_oHideTop;
+			nullable<OOX::Logic::CStrikeBLTR> m_oStrikeBLTR;
+			nullable<OOX::Logic::CStrikeH> m_oStrikeH;
+			nullable<OOX::Logic::CStrikeTLBR> m_oStrikeTLBR;
+			nullable<OOX::Logic::CStrikeV> m_oStrikeV;
 		};
 
 		//--------------------------------------------------------------------------------
@@ -225,11 +235,11 @@ namespace OOX
 			virtual void fromXML(XmlUtils::CXmlNode& oNode);
 			virtual void fromXML(XmlUtils::CXmlLiteReader& oReader);
 
-			virtual std::wstring      toXML() const;
+			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
-			nullable<OOX::Logic::CBorderBoxPr>	 m_oBorderBoxPr;
-			nullable<OOX::Logic::CElement>		 m_oElement;
+			nullable<OOX::Logic::CBorderBoxPr> m_oBorderBoxPr;
+			nullable<OOX::Logic::CElement> m_oElement;
 		};		 
 
 		//--------------------------------------------------------------------------------
@@ -245,7 +255,7 @@ namespace OOX
 			virtual void  fromXML(XmlUtils::CXmlNode& oNode);
 			virtual void fromXML(XmlUtils::CXmlLiteReader& oReader);
 
-			virtual std::wstring      toXML() const;
+			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
 		private:
@@ -268,15 +278,15 @@ namespace OOX
 			virtual void fromXML(XmlUtils::CXmlNode& oNode);
 			virtual void fromXML(XmlUtils::CXmlLiteReader& oReader);
 
-			virtual std::wstring      toXML() const;
+			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
-			nullable<OOX::Logic::CAln>			 m_oAln;
-			nullable<OOX::Logic::CBrk>			 m_oBrk;
-			nullable<OOX::Logic::CCtrlPr>		 m_oCtrlPr;
-			nullable<OOX::Logic::CDiff>			 m_oDiff;
-			nullable<OOX::Logic::CNoBreak>		 m_oNoBreak;
-			nullable<OOX::Logic::COpEmu>		 m_oOpEmu;
+			nullable<OOX::Logic::CAln> m_oAln;
+			nullable<OOX::Logic::CBrk> m_oBrk;
+			nullable<OOX::Logic::CCtrlPr> m_oCtrlPr;
+			nullable<OOX::Logic::CDiff> m_oDiff;
+			nullable<OOX::Logic::CNoBreak> m_oNoBreak;
+			nullable<OOX::Logic::COpEmu> m_oOpEmu;
 		};		
 
 		//--------------------------------------------------------------------------------
@@ -292,7 +302,7 @@ namespace OOX
 			virtual void fromXML(XmlUtils::CXmlNode& oNode);
 			virtual void fromXML(XmlUtils::CXmlLiteReader& oReader);
 
-			virtual std::wstring      toXML() const;
+			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
 			nullable<OOX::Logic::CBoxPr> m_oBoxPr;
@@ -312,15 +322,15 @@ namespace OOX
 			virtual void fromXML(XmlUtils::CXmlNode& oNode);
 			virtual void fromXML(XmlUtils::CXmlLiteReader& oReader);
 
-			virtual std::wstring      toXML() const;
+			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
-			nullable<OOX::Logic::CBegChr>		m_oBegChr;
-			nullable<OOX::Logic::CCtrlPr>		m_oCtrlPr;
-			nullable<OOX::Logic::CEndChr>		m_oEndChr;
-			nullable<OOX::Logic::CGrow>			m_oGrow;
-			nullable<OOX::Logic::CSepChr>		m_oSepChr;
-			nullable<OOX::Logic::CShp>			m_oShp;
+			nullable<OOX::Logic::CBegChr> m_oBegChr;
+			nullable<OOX::Logic::CCtrlPr> m_oCtrlPr;
+			nullable<OOX::Logic::CEndChr> m_oEndChr;
+			nullable<OOX::Logic::CGrow> m_oGrow;
+			nullable<OOX::Logic::CSepChr> m_oSepChr;
+			nullable<OOX::Logic::CShp> m_oShp;
 		};		
 
 		//--------------------------------------------------------------------------------
@@ -359,12 +369,12 @@ namespace OOX
 			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
-			nullable<OOX::Logic::CBaseJc>		m_oBaseJc;
-			nullable<OOX::Logic::CCtrlPr>		m_oCtrlPr;
-			nullable<OOX::Logic::CMaxDist>		m_oMaxDist;
-			nullable<OOX::Logic::CObjDist>		m_oObjDist;
-			nullable<OOX::Logic::CRSp>			m_oRSp;
-			nullable<OOX::Logic::CRSpRule>		m_oRSpRule;
+			nullable<OOX::Logic::CBaseJc> m_oBaseJc;
+			nullable<OOX::Logic::CCtrlPr> m_oCtrlPr;
+			nullable<OOX::Logic::CMaxDist> m_oMaxDist;
+			nullable<OOX::Logic::CObjDist> m_oObjDist;
+			nullable<OOX::Logic::CRSp> m_oRSp;
+			nullable<OOX::Logic::CRSpRule> m_oRSpRule;
 		};
 
 		//--------------------------------------------------------------------------------
@@ -383,7 +393,7 @@ namespace OOX
 			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
-			LONG    m_lRow;
+			LONG m_lRow;
 		};				
 
 		//--------------------------------------------------------------------------------
@@ -402,8 +412,8 @@ namespace OOX
 			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
-			nullable<OOX::Logic::CCtrlPr>		m_oCtrlPr;
-			nullable<OOX::Logic::CType>			m_oType;
+			nullable<OOX::Logic::CCtrlPr> m_oCtrlPr;
+			nullable<OOX::Logic::CType> m_oType;
 		};		
 
 		//--------------------------------------------------------------------------------
@@ -419,12 +429,12 @@ namespace OOX
 			virtual void fromXML(XmlUtils::CXmlNode& oNode);
 			virtual void fromXML(XmlUtils::CXmlLiteReader& oReader);
 
-			virtual std::wstring      toXML() const;
+			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
-			nullable<OOX::Logic::CDen>			m_oDen;
-			nullable<OOX::Logic::CFPr>			m_oFPr;
-			nullable<OOX::Logic::CNum>			m_oNum;
+			nullable<OOX::Logic::CDen> m_oDen;
+			nullable<OOX::Logic::CFPr> m_oFPr;
+			nullable<OOX::Logic::CNum> m_oNum;
 		};		
 
 		//--------------------------------------------------------------------------------
@@ -443,7 +453,7 @@ namespace OOX
 			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
-			nullable<OOX::Logic::CCtrlPr>		m_oCtrlPr;
+			nullable<OOX::Logic::CCtrlPr> m_oCtrlPr;
 		};		
 
 		//--------------------------------------------------------------------------------
@@ -462,9 +472,9 @@ namespace OOX
 			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
-			nullable<OOX::Logic::CElement>		m_oElement;
-			nullable<OOX::Logic::CFName>		m_oFName;
-			nullable<OOX::Logic::CFuncPr>		m_oFuncPr;
+			nullable<OOX::Logic::CElement> m_oElement;
+			nullable<OOX::Logic::CFName> m_oFName;
+			nullable<OOX::Logic::CFuncPr> m_oFuncPr;
 		};		
 
 		//--------------------------------------------------------------------------------
@@ -483,10 +493,10 @@ namespace OOX
 			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
-			nullable<OOX::Logic::CChr>			m_oChr;
-			nullable<OOX::Logic::CCtrlPr>		m_oCtrlPr;
-			nullable<OOX::Logic::CPos>			m_oPos;
-			nullable<OOX::Logic::CVertJc>		m_oVertJc;
+			nullable<OOX::Logic::CChr> m_oChr;
+			nullable<OOX::Logic::CCtrlPr> m_oCtrlPr;
+			nullable<OOX::Logic::CPos> m_oPos;
+			nullable<OOX::Logic::CVertJc> m_oVertJc;
 		};
 
 		//--------------------------------------------------------------------------------
@@ -505,8 +515,8 @@ namespace OOX
 			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
-			nullable<OOX::Logic::CElement>		m_oElement;
-			nullable<OOX::Logic::CGroupChrPr>	m_oGroupChrPr;
+			nullable<OOX::Logic::CElement> m_oElement;
+			nullable<OOX::Logic::CGroupChrPr> m_oGroupChrPr;
 		};
 
 		//--------------------------------------------------------------------------------
@@ -544,9 +554,9 @@ namespace OOX
 			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
-			nullable<OOX::Logic::CElement>		 m_oElement;
-			nullable<OOX::Logic::CLim>			 m_oLim;
-			nullable<OOX::Logic::CLimLowPr>		 m_oLimLowPr;
+			nullable<OOX::Logic::CElement> m_oElement;
+			nullable<OOX::Logic::CLim> m_oLim;
+			nullable<OOX::Logic::CLimLowPr> m_oLimLowPr;
 		};		
 
 		//--------------------------------------------------------------------------------
@@ -584,9 +594,9 @@ namespace OOX
 			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
-			nullable<OOX::Logic::CElement>		 m_oElement;
-			nullable<OOX::Logic::CLim>			 m_oLim;
-			nullable<OOX::Logic::CLimUppPr>		 m_oLimUppPr;
+			nullable<OOX::Logic::CElement> m_oElement;
+			nullable<OOX::Logic::CLim> m_oLim;
+			nullable<OOX::Logic::CLimUppPr> m_oLimUppPr;
 		};			
 
 		//--------------------------------------------------------------------------------
@@ -717,15 +727,15 @@ namespace OOX
 			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
-			nullable<OOX::Logic::CBaseJc>		m_oBaseJc;
-			nullable<OOX::Logic::CCGp>			m_oCGp;
-			nullable<OOX::Logic::CCGpRule>		m_oCGpRule;
-			nullable<OOX::Logic::CCSp>			m_oCSp;
-			nullable<OOX::Logic::CCtrlPr>		m_oCtrlPr;
-			nullable<OOX::Logic::CMcs>			m_oMcs;
-			nullable<OOX::Logic::CPlcHide>		m_oPlcHide;
-			nullable<OOX::Logic::CRSp>			m_oRSp;
-			nullable<OOX::Logic::CRSpRule>		m_oRSpRule;
+			nullable<OOX::Logic::CBaseJc> m_oBaseJc;
+			nullable<OOX::Logic::CCGp> m_oCGp;
+			nullable<OOX::Logic::CCGpRule> m_oCGpRule;
+			nullable<OOX::Logic::CCSp> m_oCSp;
+			nullable<OOX::Logic::CCtrlPr> m_oCtrlPr;
+			nullable<OOX::Logic::CMcs> m_oMcs;
+			nullable<OOX::Logic::CPlcHide> m_oPlcHide;
+			nullable<OOX::Logic::CRSp> m_oRSp;
+			nullable<OOX::Logic::CRSpRule> m_oRSpRule;
 		};
 
 		//--------------------------------------------------------------------------------
@@ -746,7 +756,7 @@ namespace OOX
 
 			LONG GetCol();
 
-			LONG	 m_lCol;
+			LONG m_lCol;
 		};
 
 		//--------------------------------------------------------------------------------
@@ -784,12 +794,12 @@ namespace OOX
 			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
-			nullable<OOX::Logic::CChr>				m_oChr;
-			nullable<OOX::Logic::CCtrlPr>			m_oCtrlPr;
-			nullable<OOX::Logic::CGrow>				m_oGrow;
-			nullable<OOX::Logic::CLimLoc>			m_oLimLoc;
-			nullable<OOX::Logic::CSubHide>			m_oSubHide;
-			nullable<OOX::Logic::CSupHide>			m_oSupHide;
+			nullable<OOX::Logic::CChr> m_oChr;
+			nullable<OOX::Logic::CCtrlPr> m_oCtrlPr;
+			nullable<OOX::Logic::CGrow> m_oGrow;
+			nullable<OOX::Logic::CLimLoc> m_oLimLoc;
+			nullable<OOX::Logic::CSubHide> m_oSubHide;
+			nullable<OOX::Logic::CSupHide> m_oSupHide;
 		};		
 
 		//--------------------------------------------------------------------------------
@@ -805,13 +815,13 @@ namespace OOX
 			virtual void fromXML(XmlUtils::CXmlNode& oNode);
 			virtual void fromXML(XmlUtils::CXmlLiteReader& oReader);
 
-			virtual std::wstring      toXML() const;
+			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
-			nullable<OOX::Logic::CElement>		m_oElement;
-			nullable<OOX::Logic::CNaryPr>		m_oNaryPr;
-			nullable<OOX::Logic::CSub>			m_oSub;
-			nullable<OOX::Logic::CSup>			m_oSup;
+			nullable<OOX::Logic::CElement> m_oElement;
+			nullable<OOX::Logic::CNaryPr> m_oNaryPr;
+			nullable<OOX::Logic::CSub> m_oSub;
+			nullable<OOX::Logic::CSup> m_oSup;
 		};		
 
 		//--------------------------------------------------------------------------------
@@ -849,12 +859,12 @@ namespace OOX
 			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
-			nullable<OOX::Logic::CCtrlPr>			m_oCtrlPr;
-			nullable<OOX::Logic::CShow>				m_oShow;
-			nullable<OOX::Logic::CTransp>			m_oTransp;
-			nullable<OOX::Logic::CZeroAsc>			m_oZeroAsc;
-			nullable<OOX::Logic::CZeroDesc>			m_oZeroDesc;
-			nullable<OOX::Logic::CZeroWid>			m_oZeroWid;
+			nullable<OOX::Logic::CCtrlPr> m_oCtrlPr;
+			nullable<OOX::Logic::CShow> m_oShow;
+			nullable<OOX::Logic::CTransp> m_oTransp;
+			nullable<OOX::Logic::CZeroAsc> m_oZeroAsc;
+			nullable<OOX::Logic::CZeroDesc> m_oZeroDesc;
+			nullable<OOX::Logic::CZeroWid> m_oZeroWid;
 		};		 
 
 		//--------------------------------------------------------------------------------
@@ -971,13 +981,12 @@ namespace OOX
 			void ReadAttributes(XmlUtils::CXmlLiteReader& oReader);
 
 		public:
-			nullable<std::wstring>					m_sAuthor;
-			nullable<SimpleTypes::CDateTime>		m_oDate;
-			nullable<SimpleTypes::CDecimalNumber>	m_oId;
-			nullable<std::wstring>					m_sUserId;
+			nullable<std::wstring> m_sAuthor;
+			nullable<SimpleTypes::CDateTime> m_oDate;
+			nullable<SimpleTypes::CDecimalNumber> m_oId;
+			nullable<std::wstring> m_sUserId;
 
-			// Childs
-			nullable<CMRun>							m_oRun;
+			nullable<CMRun> m_oRun;
 		};
 
 		class CMIns : public WritingElement
@@ -997,13 +1006,12 @@ namespace OOX
 			void ReadAttributes(XmlUtils::CXmlLiteReader& oReader);
 
 		public:
-			nullable<std::wstring                  >	m_sAuthor;
-			nullable<SimpleTypes::CDateTime        >	m_oDate;
-			nullable<SimpleTypes::CDecimalNumber   >	m_oId;
-			nullable<std::wstring                  >	m_sUserId;
+			nullable<std::wstring>	m_sAuthor;
+			nullable<SimpleTypes::CDateTime> m_oDate;
+			nullable<SimpleTypes::CDecimalNumber> m_oId;
+			nullable<std::wstring> m_sUserId;
 
-			// Childs
-			nullable<CMRun>								m_oRun;
+			nullable<CMRun> m_oRun;
 		};
 
 		//--------------------------------------------------------------------------------
@@ -1022,9 +1030,8 @@ namespace OOX
 			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
-	//Childs
-			nullable<OOX::Logic::CCtrlPr>				m_oCtrlPr;
-			nullable<OOX::Logic::CDegHide>				m_oDegHide;
+			nullable<OOX::Logic::CCtrlPr> m_oCtrlPr;
+			nullable<OOX::Logic::CDegHide> m_oDegHide;
 		};		
 
 		//--------------------------------------------------------------------------------
@@ -1043,10 +1050,9 @@ namespace OOX
 			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
-	//Childs
-			nullable<OOX::Logic::CDeg>				m_oDeg;
-			nullable<OOX::Logic::CElement>			m_oElement;
-			nullable<OOX::Logic::CRadPr>			m_oRadPr;
+			nullable<OOX::Logic::CDeg> m_oDeg;
+			nullable<OOX::Logic::CElement> m_oElement;
+			nullable<OOX::Logic::CRadPr> m_oRadPr;
 		};		 
 
 		//--------------------------------------------------------------------------------
@@ -1085,11 +1091,10 @@ namespace OOX
 			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
-	//Childs
-			nullable<OOX::Logic::CElement>		m_oElement;
-			nullable<OOX::Logic::CSPrePr>		m_oSPrePr;
-			nullable<OOX::Logic::CSub>			m_oSub;
-			nullable<OOX::Logic::CSup>			m_oSup;
+			nullable<OOX::Logic::CElement> m_oElement;
+			nullable<OOX::Logic::CSPrePr> m_oSPrePr;
+			nullable<OOX::Logic::CSub> m_oSub;
+			nullable<OOX::Logic::CSup> m_oSup;
 		};
 
 		//--------------------------------------------------------------------------------
@@ -1108,8 +1113,7 @@ namespace OOX
 			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
-	//Childs
-			nullable<OOX::Logic::CCtrlPr>		m_oCtrlPr;
+			nullable<OOX::Logic::CCtrlPr> m_oCtrlPr;
 		};		
 
 		//--------------------------------------------------------------------------------
@@ -1128,10 +1132,9 @@ namespace OOX
 			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
-	//Childs
-			nullable<OOX::Logic::CElement>		m_oElement;
-			nullable<OOX::Logic::CSSubPr>		m_oSSubPr;
-			nullable<OOX::Logic::CSub>			m_oSub;
+			nullable<OOX::Logic::CElement> m_oElement;
+			nullable<OOX::Logic::CSSubPr> m_oSSubPr;
+			nullable<OOX::Logic::CSub> m_oSub;
 		};
 
 		//--------------------------------------------------------------------------------
@@ -1150,9 +1153,8 @@ namespace OOX
 			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
-	//Childs
-			nullable<OOX::Logic::CAlnScr>		m_oAlnScr;
-			nullable<OOX::Logic::CCtrlPr>		m_oCtrlPr;
+			nullable<OOX::Logic::CAlnScr> m_oAlnScr;
+			nullable<OOX::Logic::CCtrlPr> m_oCtrlPr;
 		};		
 
 		//--------------------------------------------------------------------------------
@@ -1171,11 +1173,10 @@ namespace OOX
 			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
-	//Childs
-			nullable<OOX::Logic::CElement>		m_oElement;
-			nullable<OOX::Logic::CSSubSupPr>	m_oSSubSupPr;
-			nullable<OOX::Logic::CSub>			m_oSub;
-			nullable<OOX::Logic::CSup>			m_oSup;
+			nullable<OOX::Logic::CElement> m_oElement;
+			nullable<OOX::Logic::CSSubSupPr> m_oSSubSupPr;
+			nullable<OOX::Logic::CSub> m_oSub;
+			nullable<OOX::Logic::CSup> m_oSup;
 		};		
 
 		//--------------------------------------------------------------------------------
@@ -1194,8 +1195,7 @@ namespace OOX
 			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
-	//Childs
-			nullable<OOX::Logic::CCtrlPr>		m_oCtrlPr;
+			nullable<OOX::Logic::CCtrlPr> m_oCtrlPr;
 		};		
 
 		//--------------------------------------------------------------------------------
@@ -1214,10 +1214,9 @@ namespace OOX
 			virtual std::wstring toXML() const;
 			virtual EElementType getType() const;
 
-	//Childs
-			nullable<OOX::Logic::CElement>		m_oElement;
-			nullable<OOX::Logic::CSSupPr>		m_oSSupPr;
-			nullable<OOX::Logic::CSup>			m_oSup;
+			nullable<OOX::Logic::CElement> m_oElement;
+			nullable<OOX::Logic::CSSupPr> m_oSSupPr;
+			nullable<OOX::Logic::CSup> m_oSup;
 		};
 
 	} // namespace OMath	

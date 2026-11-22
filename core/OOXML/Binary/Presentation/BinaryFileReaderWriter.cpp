@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "BinaryFileReaderWriter.h"
 #include "BinReaderWriterDefines.h"
@@ -36,6 +46,7 @@
 #include "../../DocxFormat/Media/JsaProject.h"
 
 #include "../../../Common/Base64.h"
+#include "../../../Common/MediaFileFormatChecker.h"
 
 #include "./imagemanager.h"
 #include "./XmlWriter.h"
@@ -176,7 +187,7 @@ namespace NSBinPptxRW
 	int CImageManager2::IsDisplayedImage(const std::wstring& strInput)
 	{
 		int nRes = 0;
-		//template display[N]image.ext
+		//pattern display[N]image.ext
 		std::wstring sFind1 = L"display";
 		int nIndex1 = (int)strInput.find(sFind1);
 		if (-1 != nIndex1)
@@ -219,28 +230,89 @@ namespace NSBinPptxRW
 
 		return oImageManagerInfo;
 	}
+	static std::wstring GetUrlFileExtension(const std::wstring& strUrl)
+	{
+		std::wstring strFileName = strUrl;
+
+		size_t nIndex = strFileName.find_first_of(L"?#");
+		if (std::wstring::npos != nIndex)
+			strFileName = strFileName.substr(0, nIndex);
+
+		nIndex = strFileName.find_last_of(L"/\\");
+		if (std::wstring::npos != nIndex)
+			strFileName = strFileName.substr(nIndex + 1);
+
+		nIndex = strFileName.rfind(wchar_t('.'));
+		if (std::wstring::npos == nIndex)
+			return L"";
+
+		return strFileName.substr(nIndex);
+	}
 	_imageManager2Info CImageManager2::GenerateImage(const std::wstring& strInput, std::vector<NSCommon::smart_ptr<OOX::File>>& additionalFiles, const std::wstring& oleData, std::wstring strBase64Image)
 	{
-		if (IsNeedDownload(strInput))
-			return DownloadImage(strInput);
+		const bool bDownload = IsNeedDownload(strInput);
 
 		std::map<std::wstring, _imageManager2Info>::const_iterator pPair = m_mapImages.find((strBase64Image.empty()) ? strInput + oleData : strBase64Image + oleData);
 
 		std::wstring strExts = L".jpg";
 		std::wstring strImage = strInput;
 
-		//use GetFileName to avoid defining '.' in the directory as extension
-		std::wstring strFileName = NSFile::GetFileName(strInput);
-		int sizeExt = (int)strFileName.rfind(wchar_t('.'));
-		if (-1 != sizeExt)
+		std::wstring strFileName;
+		int sizeExt = 0;
+
+		if (bDownload)
 		{
-			strExts = strFileName.substr(sizeExt);
-			sizeExt = (int)strFileName.length() - sizeExt;
+			std::wstring strUrlExts = GetUrlFileExtension(strInput);
+			if (false == strUrlExts.empty())
+				strExts = strUrlExts;
 		}
-		else sizeExt = 0;
+		else
+		{
+			//use GetFileName to avoid defining '.' in the directory as extension
+			strFileName = NSFile::GetFileName(strInput);
+			sizeExt = (int)strFileName.rfind(wchar_t('.'));
+			if (-1 != sizeExt)
+			{
+				strExts = strFileName.substr(sizeExt);
+				sizeExt = (int)strFileName.length() - sizeExt;
+			}
+			else sizeExt = 0;
+		}
 		
 		int nDisplayType = IsDisplayedImage(strInput);
 		size_t nFileNameLength = strFileName.length();
+
+		// display preview must fall back to the original metafile for every image, not only those with additional files
+		// TODO: find the metafile by a neighbour file with the same name like the doctrenderer does, not by the display type
+		if (false == bDownload && 0 != (nDisplayType & 3) && nFileNameLength > sizeExt)
+		{
+			OOX::CPath oPath = strInput;
+
+			std::wstring strFolder = oPath.GetDirectory();
+			std::wstring strFileName = oPath.GetFilename();
+
+			strFileName.erase(strFileName.length() - sizeExt, sizeExt);
+
+			if (0 != (nDisplayType & 1))
+			{
+				std::wstring strVector = strFolder + strFileName + L".wmf";
+				if (OOX::CSystemUtility::IsFileExist(strVector))
+				{
+					strImage = strVector;
+					strExts = L".wmf";
+				}
+			}
+			if (0 != (nDisplayType & 2))
+			{
+				std::wstring strVector = strFolder + strFileName + L".emf";
+				if (OOX::CSystemUtility::IsFileExist(strVector))
+				{
+					m_pContentTypes->AddDefault(L"emf");
+					strImage = strVector;
+					strExts = L".emf";
+				}
+			}
+		}
 
 		std::vector<std::pair<std::wstring, int>> addit;		
 		for (auto additionalFile : additionalFiles)
@@ -260,7 +332,7 @@ namespace NSBinPptxRW
 			int	typeAdditional = 0;
 			std::wstring strAdditional;
 
-			if (0 != nDisplayType && nFileNameLength > sizeExt)
+			if (false == bDownload && 0 != nDisplayType && nFileNameLength > sizeExt)
 			{
 				OOX::CPath oPath = strInput;
 
@@ -269,25 +341,6 @@ namespace NSBinPptxRW
 
 				strFileName.erase(strFileName.length() - sizeExt, sizeExt);
 
-				if (0 != (nDisplayType & 1))
-				{
-					std::wstring strVector = strFolder + strFileName + L".wmf";
-					if (OOX::CSystemUtility::IsFileExist(strVector))
-					{
-						strImage = strVector;
-						strExts = L".wmf";
-					}
-				}
-				if (0 != (nDisplayType & 2))
-				{
-					std::wstring strVector = strFolder + strFileName + L".emf";
-					if (OOX::CSystemUtility::IsFileExist(strVector))
-					{
-						m_pContentTypes->AddDefault(L"emf");
-						strImage = strVector;
-						strExts = L".emf";
-					}
-				}
 				if (0 != (nDisplayType & 4))
 				{
 					smart_ptr<OOX::OleObject> oleFile = additionalFile.smart_dynamic_cast<OOX::OleObject>();
@@ -354,14 +407,22 @@ namespace NSBinPptxRW
 		
 		if (pPair != m_mapImages.end())
 		{
+			if (additionalFiles.empty() && false == pPair->second.additionalFiles.empty())
+				additionalFiles = pPair->second.additionalFiles;
 			return pPair->second;
+		}
+
+		std::wstring strDownloadedFile;
+		if (bDownload)
+		{
+			strImage = strDownloadedFile = DownloadImageExec(strInput, nDisplayType, strExts);
 		}
 
 		if (false == strExts.empty())
 		{
 			m_pContentTypes->AddDefault(strExts.substr(1));
 		}
-		if (strExts == L".svg")
+		if (strExts == L".svg" && false == strImage.empty())
 		{
 			additionalFiles.emplace_back();
 			additionalFiles.back() = new OOX::SvgBlip(NULL);
@@ -375,6 +436,11 @@ namespace NSBinPptxRW
 			}
 		}
 		_imageManager2Info oImageManagerInfo = GenerateImageExec(strImage, strExts, addit, oleData);
+
+		if (false == strDownloadedFile.empty())
+		{
+			CDirectory::DeleteFile(strDownloadedFile);
+		}
 		
 		//oImageManagerInfo.sFilepathAdditionals <-> additionalFiles 
 
@@ -394,6 +460,8 @@ namespace NSBinPptxRW
 				}
 			}
 		}
+		
+		oImageManagerInfo.additionalFiles = additionalFiles;
 
 		if (strBase64Image.empty())
 			m_mapImages[strInput + oleData] = oImageManagerInfo;
@@ -517,10 +585,17 @@ namespace NSBinPptxRW
 			}break;
 			default:
 			{
-				strExts = L".png";
-				oPathOutput = m_strDstMedia + FILE_SEPARATOR_STR + strImage + strExts;
-				SaveImageAsPng(strInput, oPathOutput.GetPath());
-				oImageManagerInfo.sFilepathImage = oPathOutput.GetPath();
+				oPathOutput = m_strDstMedia + FILE_SEPARATOR_STR + strImage + L".png";
+
+				CBgraFrame oBgraFrame;
+				if (oBgraFrame.OpenFile(strInput))
+				{
+					if (oBgraFrame.SaveFile(oPathOutput.GetPath(), _CXIMAGE_FORMAT_PNG))
+					{
+						strExts = L".png";
+						oImageManagerInfo.sFilepathImage = oPathOutput.GetPath();
+					}
+				}
 			}break;
 		}
 		for (auto add : additional)
@@ -575,29 +650,8 @@ namespace NSBinPptxRW
 				}
 			}
 		}
-
 		return oImageManagerInfo;
 	}
-	bool CImageManager2::SaveImageAsPng(const std::wstring& strFileSrc, const std::wstring& strFileDst)
-	{
-		CBgraFrame oBgraFrame;
-		if (oBgraFrame.OpenFile(strFileSrc))
-		{
-			return oBgraFrame.SaveFile(strFileDst, _CXIMAGE_FORMAT_PNG);
-		}
-		return false;
-	}
-
-	bool CImageManager2::SaveImageAsJPG(const std::wstring& strFileSrc, const std::wstring& strFileDst)
-	{
-		CBgraFrame oBgraFrame;
-		if (oBgraFrame.OpenFile(strFileSrc))
-		{
-			return oBgraFrame.SaveFile(strFileDst, _CXIMAGE_FORMAT_JPG);
-		}
-		return false;
-	}
-
 	bool CImageManager2::IsNeedDownload(const std::wstring& strFile)
 	{
 		size_t n1 = strFile.find(L"www");
@@ -605,83 +659,96 @@ namespace NSBinPptxRW
 		size_t n3 = strFile.find(L"ftp");
 		size_t n4 = strFile.find(L"https://");
 
-        //if nI is compared with something other than 0, there will be problems
-        //because in the installation we put the files in /var/www...
+        //if nI is compared not with 0, there will be problems
+        //because in installation we put files in /var/www...
         if (0 == n1 || 0 == n2 || 0 == n3 || 0 == n4)
 			return true;
 		return false;
 	}
-	_imageManager2Info CImageManager2::DownloadImage(const std::wstring& strUrl)
+	std::wstring CImageManager2::DownloadImageExec(const std::wstring& strUrl, int nDisplayType, std::wstring& sExts)
 	{
-		std::map<std::wstring, _imageManager2Info>::const_iterator pPair = m_mapImages.find (strUrl);
+		std::wstring strExts = sExts;
+		std::wstring strDownloadUrl = strUrl;
 
-		if (pPair != m_mapImages.end())
-			return pPair->second;
-
-		std::wstring strExts = L".jpg";
-        size_t nIndexExt = strUrl.rfind(wchar_t('.'));
-		if (nIndexExt!= std::wstring::npos)
-			strExts = strUrl.substr(nIndexExt);
-
-		std::wstring strImage;
-		
-		int nDisplayType = IsDisplayedImage(strUrl);
-		
-		if (0 != nDisplayType)
+		if (0 != (nDisplayType & 3) && strUrl.length() > strExts.length() &&
+			0 == strUrl.compare(strUrl.length() - strExts.length(), strExts.length(), strExts))
 		{
 			std::wstring strInputMetafile = strUrl.substr(0, strUrl.length() - strExts.length());
-			std::wstring sDownloadRes;
 
-			if (0 != (nDisplayType & 1))
-			{
-				strImage = DownloadImageExec(strInputMetafile + L".wmf");
-				strExts = L".wmf";
-			}
-			else if (0 != (nDisplayType & 2))
-			{
-				strImage = DownloadImageExec(strInputMetafile + L".emf");
-				strExts = L".emf";
-			}
-			else
-			{
-				strImage = DownloadImageExec(strUrl);
-			}
+			strExts = (0 != (nDisplayType & 1)) ? L".wmf" : L".emf";
+			strDownloadUrl = strInputMetafile + strExts;
 		}
-		else
+
+		std::wstring tempFilePath = NSFile::CFileBinary::CreateTempFileWithUniqueName(m_strDstMedia + FILE_SEPARATOR_STR, L"DW");
+		if (false == tempFilePath.empty())
+			NSFile::CFileBinary::Remove(tempFilePath);
+
+		std::wstring strImage = DownloadMediaExec(strDownloadUrl, tempFilePath.empty() ? tempFilePath : tempFilePath + strExts);
+
+		if (false == strImage.empty())
 		{
-			strImage = DownloadImageExec(strUrl);
-		}
+			std::wstring strDataExts;
 
-		if (!strExts.empty())
-		{
-			m_pContentTypes->AddDefault(strExts.substr(1));
-		}
+			CImageFileFormatChecker oImageChecker(strImage);
+			switch (oImageChecker.eFileType)
+			{
+				case _CXIMAGE_FORMAT_BMP:	strDataExts = L".bmp"; break;
+				case _CXIMAGE_FORMAT_GIF:	strDataExts = L".gif"; break;
+				case _CXIMAGE_FORMAT_JPG:	strDataExts = L".jpg"; break;
+				case _CXIMAGE_FORMAT_PNG:	strDataExts = L".png"; break;
+				case _CXIMAGE_FORMAT_TIF:	strDataExts = L".tiff"; break;
+				case _CXIMAGE_FORMAT_WMF:	strDataExts = L".wmf"; break;
+				case _CXIMAGE_FORMAT_EMF:	strDataExts = L".emf"; break;
+				case _CXIMAGE_FORMAT_SVM:	strDataExts = L".svm"; break;
+				case _CXIMAGE_FORMAT_SVG:	strDataExts = L".svg"; break;
+				case _CXIMAGE_FORMAT_WEBP:	strDataExts = L".webp"; break;
+				default: break;
+			}
+			if (!strDataExts.empty() && strDataExts != strExts)
+			{
+				strExts = strDataExts;
 
-		_imageManager2Info oImageManagerInfo;
-		if (!strImage.empty())
-		{
-			std::vector<std::pair<std::wstring, int>> additional;
-			oImageManagerInfo = GenerateImageExec(strImage, strExts, additional, L"");
-			CDirectory::DeleteFile(strImage);
-		}
+				std::wstring strRenamed = strImage;
 
-		m_mapImages[strUrl] = oImageManagerInfo;
-		return oImageManagerInfo;
+				size_t nIndexExt = strRenamed.find_last_of(L"./\\");
+				if (std::wstring::npos != nIndexExt && L'.' == strRenamed[nIndexExt])
+					strRenamed = strRenamed.substr(0, nIndexExt);
+
+				strRenamed += strExts;
+
+				if (strRenamed != strImage && NSFile::CFileBinary::Move(strImage, strRenamed))
+					strImage = strRenamed;
+			}
+		}
+		sExts = strExts;
+		return strImage;
 	}
-	std::wstring CImageManager2::DownloadImageExec(const std::wstring& strFile)
+	std::wstring CImageManager2::DownloadMediaExec(const std::wstring& strFile, const std::wstring& tmpFile)
 	{
 #ifndef DISABLE_FILE_DOWNLOADER
         NSNetwork::NSFileTransport::CFileDownloader oDownloader(strFile, false);
 
+		if (false == tmpFile.empty())
+		{
+			oDownloader.SetFilePath(tmpFile);
+		}
+
 		if ( oDownloader.DownloadSync() )
 		{
 			std::wstring file_name = oDownloader.GetFilePath();
-			
+
 			CImageFileFormatChecker checker;
 			if (checker.isImageFile(file_name))
 			{
 				return file_name;
 			}
+
+			CMediaFileFormatChecker mediaChecker;
+			if (mediaChecker.isAudioFile(file_name) || mediaChecker.isVideoFile(file_name))
+			{
+				return file_name;
+			}
+			NSFile::CFileBinary::Remove(file_name);
 		}
 #endif
 		return L"";
@@ -1263,7 +1330,7 @@ namespace NSBinPptxRW
 
 		StartMainRecord(NSBinPptxRW::NSMainTables::FontsEmbedded);
 
-		// add a master font
+		// add mega font
 		m_pCommon->m_pNativePicker->m_oEmbeddedFonts.CheckString(L".)abcdefghijklmnopqrstuvwxyz");
 		m_pCommon->m_pNativePicker->m_oEmbeddedFonts.CheckFont(L"Wingdings 3", m_pCommon->m_pNativePicker->m_pFontManager);
 		m_pCommon->m_pNativePicker->m_oEmbeddedFonts.CheckFont(L"Arial", m_pCommon->m_pNativePicker->m_pFontManager);
@@ -2123,7 +2190,7 @@ namespace NSBinPptxRW
 		_INT32 sz = (_INT32)GetULong();
 		if (m_lPos + sz > m_lSize)
 		{
-			//TODO - redo
+			//todo - refactor
 			throw;
 		}
 		return sz;
@@ -2371,9 +2438,9 @@ namespace NSBinPptxRW
 	{
 		++m_nCurrentRelsStack;
 
-		//It is good to clear the current m_pRels when writing autoshapes sequentially in word.
-		//bad in the case of writing presentations, from the moment of switching to a single m_pReader object.
-		//example: presentations have recorded several Rels, write a chart, call SetDstContentRels and overwrite the Rels of the presentations
+		//clearing current m_pRels is good for sequential autoshape writing in word.
+		//bad for presentation writing, since transition to single m_pReader object.
+		//example: presentations wrote several Rels, writing chart, SetDstContentRels is called and presentation Rels are erased
 		//if (0 == m_pReader->m_nCurrentRelsStack)
 		//{
 		//	m_pReader->m_pRels->Clear();
@@ -2385,6 +2452,22 @@ namespace NSBinPptxRW
 
 			m_pRels = new NSBinPptxRW::CRelsGenerator(m_pRels->m_pManager);
 			m_pRels->StartRels();
+		}
+	}
+	void CBinaryFileReader::RemoveDstContentRels()
+	{
+		--m_nCurrentRelsStack;
+		if (-1 > m_nCurrentRelsStack)
+			m_nCurrentRelsStack = -1;
+
+		int nIndex = (int)m_stackRels.size() - 1;
+
+		if (0 <= nIndex)
+		{
+			NSBinPptxRW::CRelsGenerator* pCur = m_pRels;
+			m_pRels = m_stackRels[nIndex];
+			m_stackRels.erase(m_stackRels.begin() + nIndex);
+			RELEASEOBJECT(pCur);
 		}
 	}
 	void CBinaryFileReader::SaveDstContentRels(const std::wstring& bsRelsPath)

@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "Xfs.h"
@@ -38,6 +48,8 @@
 #include "../../../MsBinaryFile/XlsFile/Format/Logic/Biff_unions/XFS.h"
 #include "../../../MsBinaryFile/XlsFile/Format/Logic/Biff_records/XF.h"
 
+#include "../../DocxFormat/Drawing/DrawingExt.h"
+
 namespace OOX
 {
 	namespace Spreadsheet
@@ -53,7 +65,7 @@ namespace OOX
 		}
 		std::wstring CAligment::toXML() const
 		{
-			return _T("");
+			return L"";
 		}
 		void CAligment::toXML(NSStringUtils::CStringBuilder& writer) const
 		{
@@ -160,23 +172,23 @@ namespace OOX
 			nullable_double rotate;
 
 			WritingElement_ReadAttributes_Start( oReader )
-				WritingElement_ReadAttributes_Read_if( oReader, _T("horizontal"),			m_oHorizontal )
-				WritingElement_ReadAttributes_Read_else_if( oReader, _T("indent"),			m_oIndent )
-				WritingElement_ReadAttributes_Read_else_if( oReader, _T("justifyLastLine"),	m_oJustifyLastLine )
-				WritingElement_ReadAttributes_Read_else_if( oReader, _T("readingOrder"),	m_oReadingOrder )
-				WritingElement_ReadAttributes_Read_else_if( oReader, _T("relativeIndent"),	m_oRelativeIndent )
-				WritingElement_ReadAttributes_Read_else_if( oReader, _T("shrinkToFit"),		m_oShrinkToFit )
-				WritingElement_ReadAttributes_Read_else_if( oReader, _T("textRotation"),	m_oTextRotation )
-				WritingElement_ReadAttributes_Read_else_if( oReader, _T("vertical"),		m_oVertical )
-				WritingElement_ReadAttributes_Read_else_if( oReader, _T("wrapText"),		m_oWrapText )
+				WritingElement_ReadAttributes_Read_if( oReader, L"horizontal",			m_oHorizontal )
+				WritingElement_ReadAttributes_Read_else_if( oReader, L"indent",			m_oIndent )
+				WritingElement_ReadAttributes_Read_else_if( oReader, L"justifyLastLine",	m_oJustifyLastLine )
+				WritingElement_ReadAttributes_Read_else_if( oReader, L"readingOrder",	m_oReadingOrder )
+				WritingElement_ReadAttributes_Read_else_if( oReader, L"relativeIndent",	m_oRelativeIndent )
+				WritingElement_ReadAttributes_Read_else_if( oReader, L"shrinkToFit",		m_oShrinkToFit )
+				WritingElement_ReadAttributes_Read_else_if( oReader, L"textRotation",	m_oTextRotation )
+				WritingElement_ReadAttributes_Read_else_if( oReader, L"vertical",		m_oVertical )
+				WritingElement_ReadAttributes_Read_else_if( oReader, L"wrapText",		m_oWrapText )
 		// 2003
-				WritingElement_ReadAttributes_Read_else_if(oReader, _T("ss:Horizontal"),	m_oHorizontal)
-				WritingElement_ReadAttributes_Read_else_if(oReader, _T("ss:Vertical"),		m_oVertical)
-				WritingElement_ReadAttributes_Read_else_if(oReader, _T("ss:WrapText"),		m_oWrapText)
-				WritingElement_ReadAttributes_Read_else_if(oReader, _T("ss:Indent"),		m_oIndent)
-				WritingElement_ReadAttributes_Read_else_if(oReader, _T("ss:ReadingOrder"),	readingOrder)
-				WritingElement_ReadAttributes_Read_else_if(oReader, _T("ss:Rotate"),		rotate)
-				WritingElement_ReadAttributes_Read_else_if(oReader, _T("ss:ShrinkToFit"),	m_oShrinkToFit)
+				WritingElement_ReadAttributes_Read_else_if(oReader, L"ss:Horizontal",	m_oHorizontal)
+				WritingElement_ReadAttributes_Read_else_if(oReader, L"ss:Vertical",		m_oVertical)
+				WritingElement_ReadAttributes_Read_else_if(oReader, L"ss:WrapText",		m_oWrapText)
+				WritingElement_ReadAttributes_Read_else_if(oReader, L"ss:Indent",		m_oIndent)
+				WritingElement_ReadAttributes_Read_else_if(oReader, L"ss:ReadingOrder",	readingOrder)
+				WritingElement_ReadAttributes_Read_else_if(oReader, L"ss:Rotate",		rotate)
+				WritingElement_ReadAttributes_Read_else_if(oReader, L"ss:ShrinkToFit",	m_oShrinkToFit)
 			WritingElement_ReadAttributes_End( oReader )
 
 			if (readingOrder.IsInit())
@@ -257,7 +269,7 @@ namespace OOX
 		}
 		std::wstring CProtection::toXML() const
 		{
-			return _T("");
+			return L"";
 		}
 		void CProtection::toXML(NSStringUtils::CStringBuilder& writer) const
 		{
@@ -308,8 +320,8 @@ namespace OOX
 		void CProtection::ReadAttributes(XmlUtils::CXmlLiteReader& oReader)
 		{
 			WritingElement_ReadAttributes_Start( oReader )
-				WritingElement_ReadAttributes_Read_if ( oReader, _T("hidden"), m_oHidden )
-				WritingElement_ReadAttributes_Read_else_if ( oReader, _T("locked"), m_oLocked )
+				WritingElement_ReadAttributes_Read_if ( oReader, L"hidden", m_oHidden )
+				WritingElement_ReadAttributes_Read_else_if ( oReader, L"locked", m_oLocked )
 			WritingElement_ReadAttributes_End( oReader )
 		}
 		void CProtection::ReadAttributes(XLS::BaseObjectPtr& obj)
@@ -333,11 +345,11 @@ namespace OOX
 		}
 		std::wstring CXfs::toXML() const
 		{
-			return _T("");
+			return L"";
 		}
 		void CXfs::toXML(NSStringUtils::CStringBuilder& writer) const
 		{
-			writer.WriteString(_T("<xf"));
+			writer.WriteString(L"<xf");
 			WritingStringNullableAttrInt(L"fontId", m_oFontId, m_oFontId->GetValue());
 			WritingStringNullableAttrInt(L"fillId", m_oFillId, m_oFillId->GetValue());
 			WritingStringNullableAttrInt(L"borderId", m_oBorderId, m_oBorderId->GetValue());
@@ -351,17 +363,18 @@ namespace OOX
 			WritingStringNullableAttrBool(L"applyProtection", m_oApplyProtection);
 			WritingStringNullableAttrBool(L"quotePrefix", m_oQuotePrefix);
 			WritingStringNullableAttrBool(L"pivotButton", m_oPivotButton);
-			if (m_oAligment.IsInit() || m_oProtection.IsInit())
+			if (m_oAligment.IsInit() || m_oProtection.IsInit() || m_oExtLst.IsInit())
 			{
-				writer.WriteString(_T(">"));
+				writer.WriteString(L">");
 
-				if (m_oAligment.IsInit())m_oAligment->toXML(writer);
-				if (m_oProtection.IsInit())m_oProtection->toXML(writer);
+				if (m_oAligment.IsInit()) m_oAligment->toXML(writer);
+				if (m_oProtection.IsInit()) m_oProtection->toXML(writer);
+				if (m_oExtLst.IsInit()) writer.WriteString(m_oExtLst->toXMLWithNS(L""));
 
-				writer.WriteString(_T("</xf>"));
+				writer.WriteString(L"</xf>");
 			}
 			else
-				writer.WriteString(_T("/>"));
+				writer.WriteString(L"/>");
 		}
 		void CXfs::fromXML(XmlUtils::CXmlLiteReader& oReader)
 		{
@@ -374,10 +387,12 @@ namespace OOX
 			{
 				std::wstring sName = XmlUtils::GetNameNoNS(oReader.GetName());
 
-				if ( _T("alignment") == sName )
+				if ( L"alignment" == sName )
 					m_oAligment = oReader;
-				else if( _T("protection") == sName )
+				else if( L"protection" == sName )
 					m_oProtection = oReader;
+				else if (L"extLst" == sName)
+					m_oExtLst = oReader;
 			}
 		}
 		EElementType CXfs::getType () const
@@ -469,7 +484,7 @@ namespace OOX
 				ptr->f123Prefix = m_oQuotePrefix->GetValue();
 
 			if (m_oXfId.IsInit())
-				ptr->ixfParent = m_oXfId->GetValue();
+				ptr->ixfParent = m_oXfId->GetValue() + 16;
 			else
 				ptr->ixfParent = 0xFFF;
 
@@ -504,19 +519,19 @@ namespace OOX
 		void CXfs::ReadAttributes(XmlUtils::CXmlLiteReader& oReader)
 		{
 			WritingElement_ReadAttributes_Start( oReader )
-				WritingElement_ReadAttributes_Read_if     ( oReader, _T("applyAlignment"),      m_oApplyAlignment )
-				WritingElement_ReadAttributes_Read_if     ( oReader, _T("applyBorder"),      m_oApplyBorder )
-				WritingElement_ReadAttributes_Read_if     ( oReader, _T("applyFill"),      m_oApplyFill )
-				WritingElement_ReadAttributes_Read_if     ( oReader, _T("applyFont"),      m_oApplyFont )
-				WritingElement_ReadAttributes_Read_if     ( oReader, _T("applyNumberFormat"),      m_oApplyNumberFormat )
-				WritingElement_ReadAttributes_Read_if     ( oReader, _T("applyProtection"),      m_oApplyProtection )
-				WritingElement_ReadAttributes_Read_if     ( oReader, _T("borderId"),      m_oBorderId )
-				WritingElement_ReadAttributes_Read_if     ( oReader, _T("fillId"),      m_oFillId )
-				WritingElement_ReadAttributes_Read_if     ( oReader, _T("fontId"),      m_oFontId )
-				WritingElement_ReadAttributes_Read_if     ( oReader, _T("numFmtId"),      m_oNumFmtId )
-				WritingElement_ReadAttributes_Read_if     ( oReader, _T("pivotButton"),      m_oPivotButton )
-				WritingElement_ReadAttributes_Read_if     ( oReader, _T("quotePrefix"),      m_oQuotePrefix )
-				WritingElement_ReadAttributes_Read_if     ( oReader, _T("xfId"),      m_oXfId )
+				WritingElement_ReadAttributes_Read_if     ( oReader, L"applyAlignment",      m_oApplyAlignment )
+				WritingElement_ReadAttributes_Read_if     ( oReader, L"applyBorder",      m_oApplyBorder )
+				WritingElement_ReadAttributes_Read_if     ( oReader, L"applyFill",      m_oApplyFill )
+				WritingElement_ReadAttributes_Read_if     ( oReader, L"applyFont",      m_oApplyFont )
+				WritingElement_ReadAttributes_Read_if     ( oReader, L"applyNumberFormat",      m_oApplyNumberFormat )
+				WritingElement_ReadAttributes_Read_if     ( oReader, L"applyProtection",      m_oApplyProtection )
+				WritingElement_ReadAttributes_Read_if     ( oReader, L"borderId",      m_oBorderId )
+				WritingElement_ReadAttributes_Read_if     ( oReader, L"fillId",      m_oFillId )
+				WritingElement_ReadAttributes_Read_if     ( oReader, L"fontId",      m_oFontId )
+				WritingElement_ReadAttributes_Read_if     ( oReader, L"numFmtId",      m_oNumFmtId )
+				WritingElement_ReadAttributes_Read_if     ( oReader, L"pivotButton",      m_oPivotButton )
+				WritingElement_ReadAttributes_Read_if     ( oReader, L"quotePrefix",      m_oQuotePrefix )
+				WritingElement_ReadAttributes_Read_if     ( oReader, L"xfId",      m_oXfId )
 			WritingElement_ReadAttributes_End( oReader )
 		}
 		void CXfs::ReadAttributes(XLS::BaseObjectPtr& obj)
@@ -554,13 +569,13 @@ namespace OOX
 		}
 		std::wstring CCellXfs::toXML() const
 		{
-			return _T("");
+			return L"";
 		}
 		void CCellXfs::toXML(NSStringUtils::CStringBuilder& writer) const
 		{
-			writer.WriteString(_T("<cellXfs"));
+			writer.WriteString(L"<cellXfs");
 			WritingStringNullableAttrInt(L"count", m_oCount, m_oCount->GetValue());
-			writer.WriteString(_T(">"));
+			writer.WriteString(L">");
 
 			for ( size_t i = 0; i < m_arrItems.size(); ++i)
 			{
@@ -569,7 +584,7 @@ namespace OOX
 					m_arrItems[i]->toXML(writer);
 				}
 			}
-			writer.WriteString(_T("</cellXfs>"));
+			writer.WriteString(L"</cellXfs>");
 		}
 		void CCellXfs::fromXML(XmlUtils::CXmlLiteReader& oReader)
 		{
@@ -583,11 +598,23 @@ namespace OOX
 			{
 				std::wstring sName = XmlUtils::GetNameNoNS(oReader.GetName());
 
-				if ( _T("xf") == sName )
+				if ( L"xf" == sName )
 				{
 					CXfs* pXfs = new CXfs();
 					*pXfs = oReader;
 					m_arrItems.push_back( pXfs );
+				}
+				else if (L"AlternateContent" == sName)
+				{
+					int nSubDepth = oReader.GetDepth();
+					while (oReader.ReadNextSiblingNode(nSubDepth))
+					{
+						std::wstring sSubName = XmlUtils::GetNameNoNS(oReader.GetName());
+						if (L"Choice" == sSubName)
+						{
+							fromXML(oReader);
+						}
+					}
 				}
 			}
 		}
@@ -629,12 +656,10 @@ namespace OOX
 		}
 		void CCellXfs::ReadAttributes(XmlUtils::CXmlLiteReader& oReader)
 		{
-			// Reading the attributes
+			
 			WritingElement_ReadAttributes_Start( oReader )
-
-				WritingElement_ReadAttributes_Read_if     ( oReader, _T("count"),      m_oCount )
-
-				WritingElement_ReadAttributes_End( oReader )
+				WritingElement_ReadAttributes_Read_if ( oReader, L"count", m_oCount )
+			WritingElement_ReadAttributes_End( oReader )
 		}
 		void CCellXfs::ReadAttributes(std::vector<XLS::BaseObjectPtr>& obj)
 			{
@@ -652,13 +677,13 @@ namespace OOX
 		}
 		std::wstring CCellStyleXfs::toXML() const
 		{
-			return _T("");
+			return L"";
 		}
 		void CCellStyleXfs::toXML(NSStringUtils::CStringBuilder& writer) const
 		{
-			writer.WriteString(_T("<cellStyleXfs"));
+			writer.WriteString(L"<cellStyleXfs");
 			WritingStringNullableAttrInt(L"count", m_oCount, m_oCount->GetValue());
-			writer.WriteString(_T(">"));
+			writer.WriteString(L">");
 
 			for ( size_t i = 0; i < m_arrItems.size(); ++i)
 			{
@@ -668,7 +693,7 @@ namespace OOX
 				}
 			}
 
-			writer.WriteString(_T("</cellStyleXfs>"));
+			writer.WriteString(L"</cellStyleXfs>");
 		}
 		void CCellStyleXfs::fromXML(XmlUtils::CXmlLiteReader& oReader)
 		{
@@ -682,11 +707,23 @@ namespace OOX
 			{
 				std::wstring sName = XmlUtils::GetNameNoNS(oReader.GetName());
 
-				if ( _T("xf") == sName )
+				if ( L"xf" == sName )
 				{
 					CXfs* pXfs = new CXfs();
 					*pXfs = oReader;
 					m_arrItems.push_back( pXfs );
+				}
+				else if (L"AlternateContent" == sName)
+				{
+					int nSubDepth = oReader.GetDepth();
+					while (oReader.ReadNextSiblingNode(nSubDepth))
+					{
+						std::wstring sSubName = XmlUtils::GetNameNoNS(oReader.GetName());
+						if (L"Choice" == sSubName)
+						{
+							fromXML(oReader);
+						}
+					}
 				}
 			}
 		}
@@ -730,7 +767,7 @@ namespace OOX
 		void CCellStyleXfs::ReadAttributes(XmlUtils::CXmlLiteReader& oReader)
 		{
 			WritingElement_ReadAttributes_Start( oReader )
-				WritingElement_ReadAttributes_Read_if     ( oReader, _T("count"),      m_oCount )
+				WritingElement_ReadAttributes_Read_if ( oReader, L"count", m_oCount )
 			WritingElement_ReadAttributes_End( oReader )
 		}
 		void CCellStyleXfs::ReadAttributes(std::vector<XLS::BaseObjectPtr>& obj)

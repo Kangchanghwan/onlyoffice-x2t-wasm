@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #pragma once
 
@@ -36,6 +46,7 @@
 #include "../../VsdxFormat/Vsdx.h"
 
 #include "../../PPTXFormat/Logic/SpTree.h"
+#include "../../PPTXFormat/Logic/CNvPr.h"
 #include "../../Binary/Presentation/BinaryFileReaderWriter.h"
 
 namespace OOX
@@ -700,7 +711,8 @@ namespace OOX
 			pWriter->WriteString2(19, m_loTypeId);
 			pWriter->WriteBool2(20, m_phldr);
 			pWriter->WriteString2(21, m_phldrT);
-			pWriter->WriteString2(22, m_presAssocID);
+			if (m_presAssocID.IsInit())
+				pWriter->WriteString1(22, m_presAssocID->ToString());
 			pWriter->WriteString2(23, m_presName);
 			pWriter->WriteInt2(24, m_presStyleCnt);
 			pWriter->WriteInt2(25, m_presStyleIdx);
@@ -741,7 +753,8 @@ namespace OOX
 			pWriter->WriteAttribute(L"custSzX", m_custSzX);
 			pWriter->WriteAttribute(L"custSzY", m_custSzY);
 			pWriter->WriteAttribute(L"custT", m_custT);
-			pWriter->WriteAttribute(L"presAssocID", m_presAssocID);
+			if (m_presAssocID.IsInit())
+				pWriter->WriteAttribute(L"presAssocID", m_presAssocID->ToString());
 			pWriter->WriteAttribute(L"presName", m_presName);
 			pWriter->WriteAttribute(L"presStyleLbl", m_presStyleLbl);
 			pWriter->WriteAttribute(L"presStyleIdx", m_presStyleIdx);
@@ -819,11 +832,21 @@ namespace OOX
 			std::wstring sName = oReader.GetName();
 
 			if (L"dgm:spPr" == sName)
+			{
 				m_oSpPr = oReader;
+			}
 			else if (L"dgm:t" == sName)
+			{
 				m_oTxBody = oReader;
+			}
 			else if (L"dgm:prSet" == sName)
+			{
 				m_oPrSet = oReader;
+			}
+			else if (L"dgm:extLst" == sName)
+			{
+				m_oExtLst = oReader;
+			}
 		}
 	}
 
@@ -872,6 +895,15 @@ namespace OOX
 					m_oPrSet.Init();
 					m_oPrSet->fromPPTY(pReader);
 				}break;
+				case 3:
+				{
+					if (false == m_oExtLst.IsInit()) m_oExtLst.Init();
+					m_oExtLst->m_arrExt.push_back(new OOX::Drawing::COfficeArtExtension());
+					m_oExtLst->m_arrExt.back()->m_sUri = L"{E40237B7-FDA0-4F09-8148-C483321AD2D9}";
+					m_oExtLst->m_arrExt.back()->m_oCNvPr.Init();
+					m_oExtLst->m_arrExt.back()->m_oCNvPr->fromPPTY(pReader);
+					m_oExtLst->m_arrExt.back()->m_oCNvPr->m_namespace = L"dgm14";
+				}break;
 				default:
 				{
 					pReader->SkipRecord();
@@ -884,25 +916,49 @@ namespace OOX
 	void Diagram::CPt::toPPTY(NSBinPptxRW::CBinaryFileWriter* pWriter) const
 	{
 		pWriter->WriteBYTE(NSBinPptxRW::g_nodeAttributeStart);
-			pWriter->WriteString2(0, m_sModelId);
+			if (m_sModelId.IsInit())
+			{
+				pWriter->WriteString1(0, m_sModelId->ToString());
+			}
 			if (m_oType.IsInit())
+			{
 				pWriter->WriteByte1(1, m_oType->GetValue());
-			pWriter->WriteString2(2, m_sCxnId);			
+			}
+			if (m_sCxnId.IsInit())
+			{
+				pWriter->WriteString1(2, m_sCxnId->ToString());
+			}	
 		pWriter->WriteBYTE(NSBinPptxRW::g_nodeAttributeEnd);
 
 		pWriter->WriteRecord2(0, m_oSpPr);
 		pWriter->WriteRecord2(1, m_oTxBody);
 		pWriter->WriteRecord2(2, m_oPrSet);
 
+		if (m_oExtLst.IsInit())
+		{
+			for (auto ext : m_oExtLst->m_arrExt)
+			{
+				pWriter->WriteRecord2(3, ext->m_oCNvPr);
+			}
+		}
+
 	}
 
 	void Diagram::CPt::toXmlWriter(NSBinPptxRW::CXmlWriter* pWriter) const
 	{
 		pWriter->StartNode(L"dgm:pt");
-			pWriter->WriteAttribute(L"modelId", m_sModelId);
+			if (m_sModelId.IsInit())
+			{
+				pWriter->WriteAttribute(L"modelId", m_sModelId->ToString());
+			}
 			if (m_oType.IsInit())
+			{
 				pWriter->WriteAttribute2(L"type", m_oType->ToString());
-			pWriter->WriteAttribute(L"cxnId", m_sCxnId);
+			}
+			if (m_sCxnId.IsInit())
+			{
+				pWriter->WriteAttribute(L"cxnId", m_sCxnId->ToString());
+			}
 		pWriter->EndAttributes();
 
 		if (m_oPrSet.IsInit())
@@ -913,6 +969,9 @@ namespace OOX
 		
 		if (m_oTxBody.IsInit())
 			m_oTxBody->toXmlWriter(pWriter);		
+
+		if (m_oExtLst.IsInit()) 
+			m_oExtLst->toXmlWriter(pWriter);
 
 		pWriter->WriteNodeEnd(L"dgm:pt");
 	}
@@ -1091,7 +1150,10 @@ namespace OOX
 	void Diagram::CCxn::toPPTY(NSBinPptxRW::CBinaryFileWriter* pWriter) const
 	{
 		pWriter->WriteBYTE(NSBinPptxRW::g_nodeAttributeStart);
-			pWriter->WriteString2(0, m_sModelId);
+		if (m_sModelId.IsInit())
+		{
+			pWriter->WriteString1(0, m_sModelId->ToString());
+		}
 			pWriter->WriteString2(1, m_sType);
 			pWriter->WriteString2(2, m_sDestId);
 			pWriter->WriteString2(3, m_sDestOrd);
@@ -1107,7 +1169,10 @@ namespace OOX
 	{
 		pWriter->StartNode(L"dgm:cxn");
 		
-		pWriter->WriteAttribute(L"modelId", m_sModelId);
+		if (m_sModelId.IsInit())
+		{
+			pWriter->WriteAttribute(L"modelId", m_sModelId->ToString());
+		}
 		pWriter->WriteAttribute(L"type", m_sType);
 		pWriter->WriteAttribute(L"srcId", m_sSrcId);
 		pWriter->WriteAttribute(L"destId", m_sDestId);

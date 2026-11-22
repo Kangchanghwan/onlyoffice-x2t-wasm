@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "ShapeContainer.h"
@@ -580,7 +590,7 @@ void CPPTElement::SetUpProperty(CElementPtr pElement, CTheme* pTheme, CSlideInfo
         bool bUseShadowOk				= (0x20 == (0x20 & flag3));
 
         //if (bUseLineOk)
-        //	pElement->m_bLine = bLineOk;//?? TODO check - it doesn't work! 1 (82).ppt
+        //	pElement->m_bLine = bLineOk;//?? todooo check - doesn't work ! 1 (82).ppt
 
         if (bUseFillOk)
             pElement->m_bIsFilled = bFillOk;
@@ -717,7 +727,7 @@ void CPPTElement::SetUpProperty(CElementPtr pElement, CTheme* pTheme, CSlideInfo
     }break;
     case shadowHighlight:
     {
-        //double shadow shade
+        //double shadow tint
     }break;
     case shadowOffsetX:
     {//signed
@@ -763,7 +773,7 @@ void CPPTElement::SetUpProperty(CElementPtr pElement, CTheme* pTheme, CSlideInfo
 
         if (!fUsefShadow && fUsefshadowObscured)
         {
-            //contour
+            //outline
             pElement->m_oShadow.Visible = fshadowObscured;
         }
     }break;
@@ -871,7 +881,7 @@ void CPPTElement::SetUpPropertyImage(CElementPtr pElement, CTheme* pTheme, CSlid
     case pibName:
     {
         image_element->m_sImageName = NSFile::CUtf8Converter::GetWStringFromUTF16((unsigned short*)pProperty->m_pOptions, pProperty->m_lValue /2-1);
-        // TextMining05.ppt, slide 20 - incorrect name ( - TODO then clean it up
+        // TextMining05.ppt, slide 20  - incorrect name ( - todooo clean it up later
     }break;
     case cropFromTop:
     {
@@ -1180,7 +1190,7 @@ void CPPTElement::SetUpPropertyShape(CElementPtr pElement, CTheme* pTheme, CSlid
     }
     case ODRAW::geometryTextBooleanProperties:
     {
-        // here - convert the units to pixels
+        // here - need to convert units to pixels
         BYTE flag1 = (BYTE)(pProperty->m_lValue);
         BYTE flag2 = (BYTE)(pProperty->m_lValue >> 8);
         BYTE flag3 = (BYTE)(pProperty->m_lValue >> 16);
@@ -1585,7 +1595,7 @@ CElementPtr CRecordShapeContainer::GetElement (bool inGroup, CExMedia* pMapIDs,
                             {
                                 if (pLayout->m_arElements[nIndex]->m_bPlaceholderSet == false)
                                 {
-                                    pElementLayout			= pLayout->m_arElements[nIndex]; //to transfer settings
+                                    pElementLayout			= pLayout->m_arElements[nIndex]; //for transferring settings
                                     pElementLayout->m_lID	= lMasterID;
 
                                     if (placeholder_id >= 0 && pLayout->m_arElements[nIndex]->m_lPlaceholderID < 0 )
@@ -1624,7 +1634,7 @@ CElementPtr CRecordShapeContainer::GetElement (bool inGroup, CExMedia* pMapIDs,
 
             CExFilesInfo oInfo;
             CExFilesInfo oInfoDefault;
-            // default image (or ole object)
+            // by default image (or ole object)
             CExFilesInfo::ExFilesType exType = CExFilesInfo::eftNone;
             CExFilesInfo* pInfo = pMapIDs->Lock(0xFFFFFFFF, exType);
             if (NULL != pInfo)
@@ -1653,7 +1663,7 @@ CElementPtr CRecordShapeContainer::GetElement (bool inGroup, CExMedia* pMapIDs,
             }
             else if (CExFilesInfo::eftAudio == exType)
             {
-                CAudioElement* pAudioElem		= new CAudioElement();
+                CAudioElement* pAudioElem = new CAudioElement();
                 pElement = CElementPtr(pAudioElem);
 
                 pAudioElem->m_strAudioFileName	= oInfo.m_strFilePath;
@@ -1662,7 +1672,7 @@ CElementPtr CRecordShapeContainer::GetElement (bool inGroup, CExMedia* pMapIDs,
                 pAudioElem->m_dClipStartTime	= oInfo.m_dStartTime;
                 pAudioElem->m_dClipEndTime		= oInfo.m_dEndTime;
 
-                pAudioElem->m_bLoop				= oInfo.m_bLoop;
+                pAudioElem->m_bLoop = oInfo.m_bLoop;
 
                 if (NULL != pSlide)
                 {
@@ -1811,7 +1821,7 @@ CElementPtr CRecordShapeContainer::GetElement (bool inGroup, CExMedia* pMapIDs,
         if (format_data)
         {
             pElement->m_nFormatDate			= 1;
-            //TODO make formatted output
+            //todooo make formatted output
         }
         else
         {
@@ -1819,7 +1829,7 @@ CElementPtr CRecordShapeContainer::GetElement (bool inGroup, CExMedia* pMapIDs,
             pElement->m_nFormatDate			= 2;
         }
     }
-    //------------- bindings ------------------------------------------------------------------
+    //------------- bindings ---------------------------------------------------------------------------------
     std::vector<CRecordGroupShape*> oArrayGroupShape;
     this->GetRecordsByType(&oArrayGroupShape, true, true);
 
@@ -1890,7 +1900,7 @@ CElementPtr CRecordShapeContainer::GetElement (bool inGroup, CExMedia* pMapIDs,
     }
 
 
-    //--------- Availability of text --------------------------------------------------------------------------
+    //--------- text presence --------------------------------------------------------------------------
     CShapeElement* pShapeElem = dynamic_cast<CShapeElement*>(pElement.get());
 
     if (NULL != pShapeElem)
@@ -1919,7 +1929,7 @@ CElementPtr CRecordShapeContainer::GetElement (bool inGroup, CExMedia* pMapIDs,
             oElementInfo.m_lMasterTextType					= NoPresent;
         }
 
-        // check for link in persistent
+        // check for persist reference
         std::vector<CRecordOutlineTextRefAtom*> oArrayTextRefs;
         GetRecordsByType(&oArrayTextRefs, true, true);
 
@@ -2214,12 +2224,12 @@ void CRecordShapeContainer::ApplyThemeStyle(CElementPtr pElem, CTheme* pTheme, C
 void CRecordShapeContainer::SetUpTextStyle(std::wstring& strText, CTheme* pTheme, CLayout* pLayout, CElementPtr pElem, CSlideInfo* pThemeWrapper, CSlideInfo* pSlideWrapper, CSlide* pSlide, CRecordMasterTextPropAtom* master_levels)
 {
     // first check for shape
-    // then apply all the settings one by one
+    // then apply all settings in order
     // 1) master + TextMasterStyles
     // 2) persist + TextMasterStyles
     // 3) own settings + TextMasterStyles
-    // Moreover, "own settings" are purely "advanced settings"
-    // because all common ones (through properties) are already set
+    // where "own settings" are purely "advanced settings"
+    // because all common ones (via properties) - are already set
 
     if (NULL == pElem)
         return;
@@ -2233,10 +2243,10 @@ void CRecordShapeContainer::SetUpTextStyle(std::wstring& strText, CTheme* pTheme
 
     CTextAttributesEx* pTextSettings = &(pShape->m_pShape->m_oText);
 
-    // first apply references to masterstyle (for template element)
-    // how to find out whether there are simply arrays (since they could only appear from there so far)
-    // - now this no longer needs to be done - because this function is also called in the master -
-    // and all this should already apply there
+    // first apply links to masterstyle (for template element)
+    // how to know - just check if arrays exist (since they could only appear from there)
+    // - now this is not needed - since this function is also called in master -
+    // and everything should already be applied there
     bool bIsPersistPresentSettings	= false;
     bool bIsOwnPresentSettings		= false;
 
@@ -2305,7 +2315,7 @@ void CRecordShapeContainer::SetUpTextStyle(std::wstring& strText, CTheme* pTheme
 
     if (NULL != oElemInfo.m_pStream && -1 != oElemInfo.m_lOffsetTextStyle)
     {
-        // Now we need to load text styles from the stream.
+        // now we need to load text styles from the stream.
         LONG lPosition = 0; StreamUtils::StreamPosition(lPosition, oElemInfo.m_pStream);
 
         StreamUtils::StreamSeek(oElemInfo.m_lOffsetTextStyle - 8, oElemInfo.m_pStream);
@@ -2331,7 +2341,7 @@ void CRecordShapeContainer::SetUpTextStyle(std::wstring& strText, CTheme* pTheme
 
     //  ------------------------------------------------------------------------------
 
-    // Now set all the text settings (styles)
+    // now set all text settings (styles)
     if (NULL == pSlide)
     {
         int nTextMasterType = (int)eTypeMaster;
@@ -2422,7 +2432,7 @@ void CRecordShapeContainer::SetUpTextStyle(std::wstring& strText, CTheme* pTheme
             //}
         }
 
-        // now look at all the other styles (persist and own) - just apply them to m_oStyles
+        // now look at all other styles (persist and own) - just apply them to m_oStyles
         if (eTypePersist != NoPresent && eTypePersist != eTypeMaster)
         {
             int nIndexType = (int)eTypePersist;
@@ -2491,7 +2501,7 @@ void CRecordShapeContainer::SetUpTextStyle(std::wstring& strText, CTheme* pTheme
             pTextSettings->m_lStyleThemeIndex = -1;
         }
 
-        // now look at all the other styles (persist and own) - just apply them to m_oStyles
+        // now look at all other styles (persist and own) - just apply them to m_oStyles
         if (eTypePersist != NoPresent && eTypePersist != eTypeMaster)
         {
             int nIndexType = (int)eTypePersist;
@@ -2524,7 +2534,7 @@ void CRecordShapeContainer::SetUpTextStyle(std::wstring& strText, CTheme* pTheme
 
     if ((L"" != strText) && 0 == pTextSettings->m_arParagraphs.size())
     {
-        // This means there are no settings of its own. It means its own settings are just empty
+        // means no own settings. So just empty own settings
         std::vector<CTextPFRunRecord> oArrayPF;
 
         CTextPFRunRecord elm;
@@ -2572,7 +2582,7 @@ void CRecordShapeContainer::SetUpTextStyle(std::wstring& strText, CTheme* pTheme
 
     if (pShape->m_oTextActions.m_bPresent)
     {
-        //TODO figure out whether the hyperlink color needs to change - 1-(34).ppt
+        //todooo figure out if we need to change color for hyperlink - 1-(34).ppt
         ODRAW::CColor oColor;
         if ((NULL != pSlide) && !pSlide->m_bUseLayoutColorScheme)			oColor = pSlide->GetColor(11);
         else if ((NULL != pLayout) && (!pLayout->m_bUseThemeColorScheme))	oColor = pLayout->GetColor(11);
@@ -2584,7 +2594,7 @@ void CRecordShapeContainer::SetUpTextStyle(std::wstring& strText, CTheme* pTheme
 
     CPPTShape* pPPTShape = dynamic_cast<CPPTShape*>(pShape->m_pShape->getBaseShape().get());
 
-    if (NULL != pPPTShape)		// check on wordart
+    if (NULL != pPPTShape)		// check for wordart
     {
         switch (pPPTShape->m_eType)
         {

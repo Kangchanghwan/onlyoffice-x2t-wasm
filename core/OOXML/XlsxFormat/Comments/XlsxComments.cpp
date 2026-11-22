@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "Comments.h"
@@ -53,6 +63,7 @@
 #include "../../../MsBinaryFile/XlsFile/Format/Logic/Biff_records/TxO.h"
 #include "../../../MsBinaryFile/XlsFile/Format/Logic/Biff_records/MsoDrawing.h"
 #include "../../../MsBinaryFile/XlsFile/Format/Logic/Biff_structures/XLUnicodeRichExtendedString.h"
+#include "../../../MsBinaryFile/XlsFile/Format/Logic/Biff_structures/ODRAW/SimpleOfficeArtContainers.h"
 
 namespace OOX
 {
@@ -272,6 +283,23 @@ namespace OOX
 
 			auto objectsPtr = static_cast<XLS::OBJECTS*>(objectsPointer.get());
 			{
+				std::pair<XLS::BaseObjectPtr, std::vector<XLS::BaseObjectPtr>> objPair;
+				auto drawingPtr = new XLS::MsoDrawing(false);
+				if(objectsPtr->m_MsoDrawing == nullptr)
+				{
+					objectsPtr->m_MsoDrawing = XLS::MsoDrawingPtr(drawingPtr);
+					objPair.first = objectsPtr->m_MsoDrawing;
+				}
+				else
+				{
+					drawingPtr->rgChildRec.first = false;
+					objPair.first = XLS::MsoDrawingPtr(drawingPtr);
+				}
+				drawingPtr->prepareDrawing(XLS::MsoDrawing::DrawingType::comment, id, ptr->note_sh.row, ptr->note_sh.col+1, ptr->note_sh.row+4, ptr->note_sh.col+3);
+				objectsPtr->m_arrObject.push_back(objPair);
+			}
+
+			{
 				auto objUnion = new XLS::OBJ(boost::dynamic_pointer_cast<XLS::MsoDrawing>(objectsPtr->m_arrObject.back().first));
 				//object writing
 				auto objPtr = new XLS::Obj(objUnion->mso_drawing_);
@@ -287,6 +315,15 @@ namespace OOX
 				objectsPtr->m_arrObject.back().second.push_back(XLS::BaseObjectPtr(objUnion));
 
 				//txo writing
+				auto txDrawingObj = new XLS::MsoDrawing(false);
+				txDrawingObj->rgChildRec.first = false;
+				auto textboxPtr = new ODRAW::OfficeArtClientTextbox;
+				txDrawingObj->rgChildRec.m_OfficeArtSpContainer.push_back(ODRAW::OfficeArtRecordPtr(textboxPtr));
+				std::pair<XLS::BaseObjectPtr, std::vector<XLS::BaseObjectPtr>> ObjPair;
+
+				ObjPair.first = XLS::BaseObjectPtr(txDrawingObj);
+				objectsPtr->m_arrObject.push_back(ObjPair);
+
 				auto textUnion = new XLS::TEXTOBJECT(objUnion->mso_drawing_);
 				objectsPtr->m_arrObject.back().second.push_back(XLS::BaseObjectPtr(textUnion));
 				auto textPtr = new XLS::TxO(objUnion->mso_drawing_);
@@ -297,6 +334,12 @@ namespace OOX
 					auto castedText = static_cast<XLS::XLUnicodeRichExtendedString*>(extendedText.get());
 					textPtr->rawText = castedText->str_;
 					textPtr->TxOruns.lastRun.cchText = castedText->str_.size();
+					{
+						XLS::RunPtr TextRun(new XLS::Run);
+						TextRun->formatRun.ich = 0;
+						TextRun->formatRun.ifnt.setValue(0);
+						textPtr->TxOruns.rgTxoRuns.push_back(TextRun);
+					}
 					for(auto i : castedText->rgRun)
 					{
 						XLS::RunPtr TextRun(new XLS::Run);
@@ -473,16 +516,10 @@ namespace OOX
 		std::vector<XLS::BaseObjectPtr> CComments::toXLS(XLS::BaseObjectPtr objectsPointer) const
 		{
 			std::vector<XLS::BaseObjectPtr> objectVector;
+			auto objectsPtr = static_cast<XLS::OBJECTS*>(objectsPointer.get());
 			if(m_oCommentList.IsInit())
 			{
-				auto objectsPtr = static_cast<XLS::OBJECTS*>(objectsPointer.get());
-				std::pair<XLS::BaseObjectPtr, std::vector<XLS::BaseObjectPtr>> objPair;
-
-				auto drawingPtr = new XLS::MsoDrawing(false);
-				drawingPtr->prepareComment(1);
-				objPair.first = XLS::BaseObjectPtr(drawingPtr);
-				objectsPtr->m_arrObject.push_back(objPair);
-				unsigned int id = 1;
+				unsigned int id = objectsPtr->m_arrObject.size();
 				for(auto i : m_oCommentList->m_arrItems)
 				{
 					std::wstring authorName = L"none";

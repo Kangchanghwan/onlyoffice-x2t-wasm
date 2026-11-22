@@ -374,7 +374,7 @@ int main(int argc, char *argv[])
 // Bug tests
 /*
     // Standard katana_parser doesn't read @page
-    // Also, if all tests preceding the bug tests are commented out, then everything crashes with the error "-1073741819"
+    // Also, if you uncomment everything before bug tests, it will crash with error "-1073741819"
 
     const char* css = "#page{margin:10px; padding:5pt} "
                       "@page{color:white;}";
@@ -382,7 +382,7 @@ int main(int argc, char *argv[])
     katana_dump_output(output);
     katana_destroy_output(output);
 
-    // Due to the fact that the standard katana_parser doesn't read @page, CCssCalculator doesn't read either
+    // Because standard katana_parser doesn't read @page, CCssCalculator doesn't read it either
 
     std::wstring sFilePath = NSFile::GetProcessDirectory() + L"../../../../cssFiles/test.css";
     NSCSS::CCssCalculator oCSS;

@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #ifdef WIN32
@@ -352,7 +362,7 @@ int CHtmlFile::Convert(const std::vector<std::wstring>& arFiles, const std::wstr
             std::wstring sTmpDir = L"";
             if (m_internal->m_bIsEpub)
             {
-                // so that the links to the images remain
+                // so that image links remain
                 sTmpDir = NSFile::GetDirectoryName(sFilePath);
                 if (!NSDirectory::Exists(sTmpDir))
                     sTmpDir = NSDirectory::GetTempPath();
@@ -731,7 +741,7 @@ int CHtmlFile::ConvertEpub(const std::wstring& sFolder, std::wstring& sMetaInfo,
         return 1;
 
     std::wstring::size_type findMime = sMimeType.find(L"application/epub+zip");
-    if (findMime == std::wstring::npos || findMime > 10) // 10 is just a number. Stub for large EPUBs
+    if (findMime == std::wstring::npos || findMime > 10) // 10 - just a number. Workaround for mega epubs
         return 1;
 
     std::wstring sContainer = sFolderWithSlash + L"META-INF/container.xml";
@@ -1054,7 +1064,7 @@ namespace NSMht
             m_sFolder = L"D:\\test\\Document\\MHT";
 #endif
 
-            // under Linux the previous function creates a file!!!
+            // on linux the previous function creates a file!!!
             if (NSFile::CFileBinary::Exists(m_sFolder))
                 NSFile::CFileBinary::Remove(m_sFolder);
 
@@ -1147,13 +1157,13 @@ namespace NSMht
 
         void Convert()
         {
-            // first create a file map
+            // first make a map of files
             int nNumber = 0;
             for (std::list<CInnerFile>::iterator i = m_arFiles.begin(); i != m_arFiles.end(); i++)
             {
                 nNumber++;
                 CInnerFile* pFile = i.operator ->();
-                std::wstring sFileExt = L".png"; // L".bin" - usually these are images. Save them this way
+                std::wstring sFileExt = L".png"; // L".bin" - usually these are images. Will save them this way
                 if (pFile->m_sContentType.find(Names::cssFileType) != std::string::npos)
                 {
                     sFileExt = L".css";
@@ -1303,19 +1313,19 @@ namespace NSMht
             std::string boundary;
             std::wstring doc_location;
 
-            //Go through the parts of the MHT file
+            //iterate through MHT file lines
             for (std::list<std::string>::iterator i = content.begin(); i != content.end();)
             {
-                // convert the string with the file encoding
+                // convert string with file encoding
                 std::string sLowerLine = GetLower(*i);
 
-                //Find boundary initialization in the document header MHT (boundary - internal file separator) - required parameter
+                //Find boundary initialization in MHT document header (boundary - separator of internal files) - required parameter
                 if (CheckProperty(sLowerLine, *i, Names::boundary_str, boundary))
                 {
                     boundary = "--" + boundary;
                     i++;
                 }
-                //Find contentLocation initialization in the header (the name of the main internal file) - it may be missing
+                //Find contentLocation initialization in header (main internal file name) - may be absent
                 else if (CheckPropertyW(sLowerLine, *i, Names::contentLocation_str, doc_location))
                 {
                     i++;
@@ -1325,12 +1335,12 @@ namespace NSMht
                 {
                     CInnerFile oInnerFile;
 
-                    //First, the header of the internal file is read, which is separated from the main text of the file by at least one empty line
+                    //first read the internal file header, which is separated from the main text by at least one empty line
                     while ( i->length() != 0 )
                     {
                         sLowerLine = GetLower(*i);
 
-                        // Check, perhaps the separator has changed from this place
+                        // Check if the separator may have changed from this point
                         if (CheckProperty(sLowerLine, *i, Names::boundary_str, boundary))
                         {
                             boundary = "--" + boundary;
@@ -1397,14 +1407,14 @@ namespace NSMht
                     i++;
             }
 
-            //There are documents where there is no boundary
+            //there are documents where boundary is absent
             if (boundary == "")
             {
                 for(std::list<std::string>::iterator i = content.begin(); i != content.end();)
                 {
                     CInnerFile oInnerFile;
 
-                    //First, the header of the internal file is read, which is separated from the main text of the file by at least one empty line
+                    //first read the internal file header, which is separated from the main text by at least one empty line
                     while ( i->length() != 0 )
                     {
                         std::string sLowerLine = GetLower(*i);

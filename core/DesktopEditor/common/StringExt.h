@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #ifndef _BUILD_STRING_CROSSPLATFORM_H_
 #define _BUILD_STRING_CROSSPLATFORM_H_
@@ -31,6 +41,7 @@
 #include <string.h>
 #include <string>
 #include <vector>
+#include <wctype.h>
 
 #include "../../Common/kernel_config.h"
 
@@ -118,7 +129,7 @@ public:
 		SINGLE_BYTE_ENCODING_CP874 = 0xDE,	 // THAI_CHARSET            222 (xDE)
 		SINGLE_BYTE_ENCODING_CP1361 = 0x82,	 // JOHAB_CHARSET	        130 (x82)
 		SINGLE_BYTE_ENCODING_CP1258 = 0xA3,	 // VIETNAMESE_CHARSET      163 (xA3)
-		SINGLE_BYTE_ENCODING_CP866 = 0xFF	 // OEM_CHARSET 255 (xFF) // Check that OEM matches CP866
+		SINGLE_BYTE_ENCODING_CP866 = 0xFF	 // OEM_CHARSET             255 (xFF) // Verify that OEM corresponds to CP866
 	} ESingleByteEncoding;
 
 	static std::wstring GetUnicodeFromSingleByteString(const unsigned char* pData, long lCount, ESingleByteEncoding eType = SINGLE_BYTE_ENCODING_DEFAULT);
@@ -297,14 +308,14 @@ static inline long FindLastNotOf(const wchar_t* str, unsigned int unLen, const w
 static bool FromHumanReadableByteCount(const std::wstring& wsString, long long& res)
 {
 	res = 0;
-	long long coeff = 0;
 	int unit = 1000;
 	int exp = 0;
+	double coeff = 0;
 	// Parse leading numeric factor
 	std::size_t pos = 0;
 	try
 	{
-		coeff = std::stoll(wsString, &pos);
+		coeff = std::stod(wsString, &pos);
 	}
 	catch (...)
 	{
@@ -312,13 +323,13 @@ static bool FromHumanReadableByteCount(const std::wstring& wsString, long long& 
 	}
 
 	// Skip any intermediate white space
-	while (pos < wsString.length() && isspace(wsString[pos]))
+	while (pos < wsString.length() && iswspace(wsString[pos]))
 		++pos;
 
 	// Read off first character which should be an SI prefix
 	if (pos < wsString.length())
 	{
-		switch (toupper(wsString[pos]))
+		switch (towupper(wsString[pos]))
 		{
 		case 'B':
 			exp = 0;
@@ -335,14 +346,17 @@ static bool FromHumanReadableByteCount(const std::wstring& wsString, long long& 
 		case 'T':
 			exp = 12;
 			break;
-		case 'E':
+		case 'P':
 			exp = 15;
 			break;
-		case 'Z':
+		case 'E':
 			exp = 18;
 			break;
-		case 'Y':
+		case 'Z':
 			exp = 21;
+			break;
+		case 'Y':
+			exp = 24;
 			break;
 
 		default:
@@ -354,7 +368,7 @@ static bool FromHumanReadableByteCount(const std::wstring& wsString, long long& 
 	// If an 'i' or 'I' is present use IEC standard 1024 units
 	if (pos < wsString.length())
 	{
-		if (toupper(wsString[pos]) == 'I')
+		if (towupper(wsString[pos]) == 'I')
 		{
 			++pos;
 			unit = 1024;
@@ -364,7 +378,7 @@ static bool FromHumanReadableByteCount(const std::wstring& wsString, long long& 
 	// Next character must be one of B/empty/whitespace
 	if (pos < wsString.length())
 	{
-		switch (toupper(wsString[pos]))
+		switch (towupper(wsString[pos]))
 		{
 		case 'B':
 		case ' ':
@@ -378,14 +392,18 @@ static bool FromHumanReadableByteCount(const std::wstring& wsString, long long& 
 	}
 
 	// Skip any remaining white space
-	while (pos < wsString.length() && isspace(wsString[pos]))
+	while (pos < wsString.length() && iswspace(wsString[pos]))
 		++pos;
 
 	// Parse error on anything but a null terminator
 	if (pos < wsString.length())
 		return false;
 
-	res = exp ? (long long)(coeff * pow(unit, exp / 3)) : coeff;
+	// 2^63 is the first double above the long long range, LLONG_MAX itself rounds up to it
+	double total = coeff * pow(unit, exp / 3);
+	if (!(total > -9223372036854775808.0 && total < 9223372036854775808.0))
+		return false;
+	res = (long long)total;
 	return true;
 }
 } // namespace NSStringExt

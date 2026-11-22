@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #pragma once
 
@@ -37,6 +47,7 @@
 #include "oox_conversion_context.h"
 #include "oox_chart_context.h"
 #include "xlsx_drawing_context.h"
+#include "xlsx_num_format_context.h"
 
 #include "headers_footers.h"
 #include "hyperlinks.h"
@@ -460,54 +471,35 @@ private:
 class comments_context : boost::noncopyable
 {
 public:
-	comments_context(){}
-	
+	comments_context() {}
+
 	struct _comment_desc
 	{
-		_comment_desc(const std::wstring & c, int _id, const std::wstring & a, const std::wstring & d) :
-		content(c), id(_id), author(a), date(d)
+		_comment_desc(const std::wstring& c, int _id, const std::wstring& a, const std::wstring& d) :
+			content(c), id(_id), author(a), date(d)
 		{}
-		std::wstring content;
 		int id;
+
+		std::wstring content;
 		std::wstring date;
 		std::wstring author;
 		std::wstring initials;
+
+		bool bEnd = false;
 	};
-	void end_comment(const std::wstring & name)
-	{
-		std::map<std::wstring, int>::iterator pFind = comments_map_.find(name);
-		if (pFind != comments_map_.end())
-		{
-			ref_end_.push_back(pFind->second);		
-		}
-	}
-	void start_comment(const std::wstring & content, const std::wstring & author, const std::wstring & date, _CP_OPT(std::wstring) name)
-	{
-		int id = comments_.size() + 1;
-		_comment_desc new_comment(content, id, author, date);
-		
-		if ((name) && (false == name->empty()))
-		{
-			comments_map_.insert(std::make_pair(*name, id));
-			ref_start_.push_back(id);
-		}
-		else
-		{
-			ref_.push_back(id);
-		}
-		comments_.push_back(new_comment);
-	}
-	
-	rels& get_rels(){return internal_rels_;}
+	void end_comment(const std::wstring& name = L"");
+	bool start_comment(const std::wstring& content, const std::wstring& author, const std::wstring& date, _CP_OPT(std::wstring) & name);
 
-	std::vector<_comment_desc>	comments_;
-	std::vector<int>			ref_start_;
-	std::vector<int>			ref_end_;
-	std::vector<int>			ref_;
+	rels& get_rels() { return internal_rels_; }
+	std::map<std::wstring, _comment_desc>& content() { return comments_map_; }
 
+//active
+	std::vector<int> ref_start_;
+	std::vector<int> ref_end_;
+	std::vector<int> ref_;
 private:
+	std::map<std::wstring, _comment_desc> comments_map_;
 	rels internal_rels_;//this is for hyperlinks or media in comments
-	std::map<std::wstring, int> comments_map_;
 };
 
 class text_tracked_context
@@ -760,9 +752,9 @@ public:
 	void add_user_field			(const std::wstring & name, const std::wstring & value);	
 	std::wstring get_user_field	(const std::wstring & name);
 
-	void add_element_to_run		(std::wstring parenStyleId = _T(""));
+	bool add_element_to_run		(std::wstring parenStyleId = L"");
     void finish_run				();
-	void add_new_run			(std::wstring parentStyleId = _T(""));    
+	void add_new_run			(std::wstring parentStyleId = L"");
   
     void start_paragraph		(bool is_header = false);
     void finish_paragraph		();
@@ -872,7 +864,7 @@ public:
     void set_page_break_before(int val);
     int get_page_break_before();
 
-	void set_page_break		(bool val);
+	void set_page_break	(bool val);
     bool get_page_break		();
 
 	void set_temp_style_name( const std::wstring& val );
@@ -923,7 +915,8 @@ public:
 	forms_context		& get_forms_context()		{ return forms_context_; }
 	tabs_context		& get_tabs_context()		{ return tabs_context_;}
 	table_content_context & get_table_content_context()	{ return table_content_context_;}
-	
+	num_format_context	& get_num_format_context()	{ return num_format_context_; }
+
 	xlsx_drawing_context_handle_ptr & get_chart_drawing_handle() { return chart_drawing_handle_;} 
 
 	void set_drawing_text_props (const std::wstring &props);
@@ -936,14 +929,14 @@ public:
     StreamsManPtr	get_stream_man() const				{ return streams_man_; }
     void			set_stream_man(StreamsManPtr Sm)	{ streams_man_ = Sm; }
 
-    void set_rtl(bool val)			{ is_rtl_ = val; }
-    bool get_rtl() const			{return is_rtl_;}
+    void set_rtl(bool val) { is_rtl_ = val; }
+    bool get_rtl() const {return is_rtl_;}
    
-	double get_current_fontSize()	{return current_fontSize.empty() ? 0 : current_fontSize.back();}
-	void pop_current_fontSize()		{if (!current_fontSize.empty()) current_fontSize.pop_back();}
+	double get_current_fontSize();
+	void pop_current_fontSize();
 	
 	void set_outline_level(int val)	{current_outline_level_ = val;}
-	int get_outline_level()			{return current_outline_level_;}
+	int get_outline_level() {return current_outline_level_;}
 
 	void set_process_note		(NoteType Val) { current_process_note_ = Val; }
 	NoteType get_process_note	() const		{ return current_process_note_; }
@@ -1005,9 +998,9 @@ public:
 
 	void		add_jsaProject(const std::string &content);
 
-    void set_implicit_end( bool _flag );
+    void set_section_break_after( bool _flag );
 
-    bool get_implicit_end() const;
+    bool get_section_break_after() const;
 
 	void set_inside_frame( bool flag );
 
@@ -1025,7 +1018,7 @@ private:
 
 	std::wstring temp_name;
 
-    bool flag_implicit_end = false;
+    bool flag_section_break_after = false;
 
 	bool inside_frame = false;
 
@@ -1070,7 +1063,7 @@ private:
 	forms_context			forms_context_;
 	tabs_context			tabs_context_;
 	table_content_context	table_content_context_;
-       
+	num_format_context		num_format_context_;
     boost::shared_ptr<streams_man> streams_man_;
 
     package::docx_document		* output_document_;
@@ -1110,12 +1103,12 @@ private:
 	std::wstring		current_alphabetic_index_;
 	int					current_margin_left_;
 	int					current_outline_level_;
-    int					new_list_style_number_;	// counter for numbering the names of styles created during the conversion process
+    int					new_list_style_number_;	// counter for numbering names created during style conversion
     
 	std::vector<odf_reader::office_element*>							delayed_elements_;
 
 	std::map<std::wstring, text_tracked_context::_state>				map_current_changes_;    
-    boost::unordered_map<std::wstring, std::wstring>					list_style_renames_;// numbering renaming chains
+    boost::unordered_map<std::wstring, std::wstring>					list_style_renames_;// chains of numbering renames
 	
 	std::map<std::wstring, std::wstring>								map_user_fields;
 	std::map<std::wstring, int>											mapBookmarks;

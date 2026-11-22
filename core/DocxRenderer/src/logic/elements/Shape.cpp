@@ -1,3 +1,38 @@
+/*
+ * Copyright (C) Ascensio System SIA, 2009-2026
+ *
+ * This program is a free software product. You can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License (AGPL)
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
+ * Section 5 of the GNU AGPL version 3.
+ *
+ * No trademark rights are granted under this License.
+ *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 #include "Shape.h"
 
 #include <limits.h>
@@ -106,7 +141,7 @@ namespace NSDocxRenderer
 
 	bool CShape::TryMergeShape(std::shared_ptr<CShape>& pShape)
 	{
-		// could try to select dynamically, for example depending on the size
+		// can try to select dynamically, for example depending on size
 		double dHorNearby = 30;
 		double dVerNearby = 30;
 
@@ -133,7 +168,7 @@ namespace NSDocxRenderer
 		        (fabs(pShape->m_dRight - this->m_dLeft) < dHorNearby ||
 		         fabs(pShape->m_dLeft - this->m_dRight) < dHorNearby ||
 
-		         // Also take each other into account
+		         // also consider when inside each other
 		         fabs(pShape->m_dRight - this->m_dRight) < dHorNearby ||
 		         fabs(pShape->m_dLeft - this->m_dLeft) < dHorNearby) &&
 
@@ -141,7 +176,7 @@ namespace NSDocxRenderer
 		        (fabs(pShape->m_dBot - this->m_dTop) < dVerNearby ||
 		         fabs(pShape->m_dTop - this->m_dBot) < dVerNearby ||
 
-		         // in each other
+		         // inside each other
 		         fabs(pShape->m_dBot - this->m_dBot) < dVerNearby ||
 		         fabs(pShape->m_dTop - this->m_dTop) < dVerNearby))
 		{
@@ -245,12 +280,12 @@ namespace NSDocxRenderer
 	{
 		if ((m_bIsNoStroke && m_bIsNoFill) || (m_oBrush.Color1 == c_iWhiteColor && m_oPen.Color == c_iWhiteColor))
 			m_eGraphicsType = eGraphicsType::gtNoGraphics;
-		else if ((nPeacks == 5 || nPeacks == 2) && !nCurves) //1 move + 4 peaks or 2 peaks
+		else if ((nPeacks == 5 || nPeacks == 2) && !nCurves) //1 move + 4 Peacks or 2 Peacks
 		{
 			m_eGraphicsType = eGraphicsType::gtRectangle;
 			if (dHeight < 0.7)
 			{
-				if (dWidth > 2.0) // em dash - 2.8mm for times new roman
+				if (dWidth > 2.0) // long dash - 2.8mm for times new roman
 					m_eSimpleLineType = eSimpleLineType::sltHLongDash;
 				else if (dWidth > 0.7) // minimum dash - 0.75mm for dotDotDash
 					m_eSimpleLineType = eSimpleLineType::sltHDash;
@@ -259,7 +294,7 @@ namespace NSDocxRenderer
 			}
 			else if (dWidth < 0.7)
 			{
-				if (dHeight > 2.0) // em dash - 2.8mm for times new roman
+				if (dHeight > 2.0) // long dash - 2.8mm for times new roman
 					m_eSimpleLineType = eSimpleLineType::sltVLongDash;
 				else if (dHeight > 0.7) // minimum dash - 0.75mm for dotDotDash
 					m_eSimpleLineType = eSimpleLineType::sltVDash;
@@ -329,7 +364,7 @@ namespace NSDocxRenderer
 		if (!pFirstShape->IsItFitLine() || !pSecondShape->IsItFitLine() || !pFirstShape->IsCorrelated(pSecondShape) ||
 		        fabs(pFirstShape->m_dHeight - pSecondShape->m_dHeight) > c_dGRAPHICS_ERROR_IN_LINES_MM)
 		{
-			return; // the line must be the same size in height
+			return; // line must be the same height
 		}
 
 		auto set_line_type = [] (std::shared_ptr<CShape>& master, std::shared_ptr<CShape>& slave, eLineType type) {
@@ -339,7 +374,7 @@ namespace NSDocxRenderer
 			slave = nullptr;
 		};
 
-		// double line check
+		// check for double line
 		if (pFirstShape->m_eLineType == eLineType::ltDouble)
 		{
 			if (pFirstShape->m_dTop < pSecondShape->m_dTop)
@@ -363,7 +398,7 @@ namespace NSDocxRenderer
 		         fabs(pFirstShape->m_dWidth - pSecondShape->m_dWidth) < c_dGRAPHICS_ERROR_IN_LINES_MM &&
 		         fabs(pFirstShape->m_dLeft - pSecondShape->m_dLeft) < c_dGRAPHICS_ERROR_IN_LINES_MM)
 		{
-			// condition of the first definition
+			// first definition condition
 			if (pFirstShape->m_eSimpleLineType == eSimpleLineType::sltHLongDash && pSecondShape->m_eSimpleLineType == eSimpleLineType::sltHLongDash)
 			{
 				if (pFirstShape->m_dTop < pSecondShape->m_dTop)
@@ -381,10 +416,10 @@ namespace NSDocxRenderer
 			return;
 		}
 		else if (fabs(pFirstShape->m_dTop - pSecondShape->m_dTop) > c_dGRAPHICS_ERROR_IN_LINES_MM)
-			return; // everything should be on the same line
+			return; // everything must be on one line
 
-		// Now consider the graphics to be on the same line
-		// the distance between objects on the same line should be small
+		// now we assume that graphics are on one line
+		// distance between objects on one line should be small
 		if (fabs(pFirstShape->m_dLeft + pFirstShape->m_dWidth - pSecondShape->m_dLeft) > c_dGRAPHICS_ERROR_IN_LINES_MM * 5)
 		{
 			if (pFirstShape->m_eLineType == eLineType::ltUnknown && pFirstShape->m_eSimpleLineType == eSimpleLineType::sltHLongDash)
@@ -398,7 +433,7 @@ namespace NSDocxRenderer
 
 		if (bIsLast)
 		{
-			// if we have only 2 shapes in a line, then we need to specifically determine the type
+			// if we have only 2 shapes in line, need to specifically determine type
 			if (pFirstShape->m_eLineType == eLineType::ltUnknown)
 			{
 				switch (pFirstShape->m_eSimpleLineType)
@@ -563,21 +598,21 @@ namespace NSDocxRenderer
 	void CShape::BuildGeneralProperties(NSStringUtils::CStringBuilder &oWriter) const
 	{
 		oWriter.WriteString(L"<wp:anchor");
-		oWriter.WriteString(L" distT=\"0\""); //Defines the minimum distance that must be maintained between edges
-		oWriter.WriteString(L" distB=\"0\""); //this drawing object and any subsequent text in the document when
-		oWriter.WriteString(L" distL=\"0\""); //this graphic object is the object that appears in the content of the document.
+		oWriter.WriteString(L" distT=\"0\""); // Specifies the minimum distance to maintain between the edge
+		oWriter.WriteString(L" distB=\"0\""); // of this drawing object and any subsequent text in document when
+		oWriter.WriteString(L" distL=\"0\""); // this graphic object is displayed in document content.
 		oWriter.WriteString(L" distR=\"0\"");
-		oWriter.WriteString(L" simplePos=\"0\""); //true/1 Specifies that this object should be positioned using positioning information in the simplePos child element
-		oWriter.WriteString(L" relativeHeight=\""); //Defines the relative Z ordering of all DrawingML objects in this document.
+		oWriter.WriteString(L" simplePos=\"0\""); // true/1 Specifies that this object should be positioned using positioning info in simplePos child element
+		oWriter.WriteString(L" relativeHeight=\""); // Specifies relative Z-ordering of all DrawingML objects in this document.
 		oWriter.AddUInt(m_nRelativeHeight);
 		oWriter.WriteString(L"\"");
-		oWriter.WriteString(L" behindDoc=\""); //behind the text - 1, before the text - 0
+		oWriter.WriteString(L" behindDoc=\""); // behind text - 1, in front of text - 0
 		oWriter.AddUInt(static_cast<UINT>(m_bIsBehindDoc));
 		oWriter.WriteString(L"\"");
-		oWriter.WriteString(L" locked=\"0\""); //true/1 Specifies that the anchor location for this object shouldn't be changed at run time when the application edits the contents of this document.
-		oWriter.WriteString(L" layoutInCell=\"0\""); //the object will be positioned as specified, but the table will be resized and/or moved in the document as needed to accommodate the object.
-		oWriter.WriteString(L" allowOverlap=\"1\""); //allowed to overlap the contents of another object
-		oWriter.WriteString(L" hidden=\"0\""); //Determines whether this floating DrawingML object will be drawn.
+		oWriter.WriteString(L" locked=\"0\""); // true/1 Specifies that anchor location for this object should not be changed at runtime when app edits document content.
+		oWriter.WriteString(L" layoutInCell=\"0\""); // object will be positioned as specified, but table will be resized and/or moved in document as needed to accommodate object.
+		oWriter.WriteString(L" allowOverlap=\"1\""); // allowed to overlap content of another object
+		oWriter.WriteString(L" hidden=\"0\""); // Specifies whether this floating DrawingML object will be displayed.
 		oWriter.WriteString(L">");
 
 		oWriter.WriteString(L"<wp:simplePos x=\"0\" y=\"0\"/>");
@@ -602,7 +637,7 @@ namespace NSDocxRenderer
 		oWriter.WriteString(L"</wp:posOffset>");
 		oWriter.WriteString(L"</wp:positionV>");
 
-		//coordinates of the end of the shape boundary
+		// shape boundary end coordinates
 		oWriter.WriteString(L"<wp:extent");
 		oWriter.WriteString(L" cx=\"");
 		oWriter.AddUInt(static_cast<unsigned int>(width * c_dMMToEMU));
@@ -610,7 +645,7 @@ namespace NSDocxRenderer
 		oWriter.AddUInt(static_cast<unsigned int>(height * c_dMMToEMU));
 		oWriter.WriteString(L"\"/>");
 
-		oWriter.WriteString(L"<wp:effectExtent l=\"0\" t=\"0\" r=\"0\" b=\"0\"/>"); //This element specifies the extra distance that should be added to each edge of the image to compensate for any drawing effects applied to the DrawingML object
+		oWriter.WriteString(L"<wp:effectExtent l=\"0\" t=\"0\" r=\"0\" b=\"0\"/>"); // This element specifies additional distance to be added to each edge of image to compensate for any drawing effects applied to DrawingML object
 		oWriter.WriteString(L"<wp:wrapNone/>");
 
 		oWriter.WriteString(L"<wp:docPr id=\"");
@@ -678,7 +713,7 @@ namespace NSDocxRenderer
 
 		oWriter.WriteString(L"<wps:spPr>"); //shape properties. http://officeopenxml.com/drwSp-SpPr.php
 
-		//doesn't work
+		// does not work
 		//oWriter.WriteString(L"<wps:style/>"); //shape styles. http://officeopenxml.com/drwSp-styles.php
 		BuildForm(oWriter);
 		BuildGraphicProperties(oWriter);
@@ -785,7 +820,7 @@ namespace NSDocxRenderer
 		BuildGraphicProperties(oWriter);
 		oWriter.WriteString(L"</wpg:grpSpPr>");
 
-		//todo add any number of elements in a group
+		// todo add any number of elements in group
 		BuildPictureProperties(oWriter);
 		BuildShapeProperties(oWriter);
 
@@ -796,7 +831,7 @@ namespace NSDocxRenderer
 
 	void CShape::BuildCanvasProperties(NSStringUtils::CStringBuilder &oWriter) const
 	{
-		//todo add implementation
+		// todo add implementation
 		oWriter.WriteString(L"<a:graphicData uri=\"http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas\">");
 	}
 
@@ -804,7 +839,7 @@ namespace NSDocxRenderer
 	{
 		std::wstring strPath = PathToWString();
 
-		//If it's just text without graphics
+		// If just text without graphics
 		if (strPath.empty())
 		{
 			oWriter.WriteString(L"<a:prstGeom prst=\"rect\">");
@@ -813,7 +848,7 @@ namespace NSDocxRenderer
 		}
 		else
 		{
-			//Drawing a complex path
+			// Draw complex path
 			oWriter.WriteString(L"<a:custGeom>");
 			oWriter.WriteString(L"<a:avLst/>");
 			oWriter.WriteString(L"<a:gdLst/>");
@@ -832,7 +867,7 @@ namespace NSDocxRenderer
 		}
 		else if (m_eType != CShape::eShapeType::stVectorTexture)
 		{
-			//There is a fill
+			// Has fill
 			oWriter.WriteString(L"<a:solidFill>");
 			oWriter.WriteString(L"<a:srgbClr val=\"");
 			oWriter.WriteHexInt3(static_cast<int>(ConvertColorBGRToRGB(m_oBrush.Color1)));
@@ -851,21 +886,21 @@ namespace NSDocxRenderer
 
 		if (m_bIsNoStroke)
 		{
-			oWriter.WriteString(L"<a:ln>"); // w - default width 0.75pt = 9525
+			oWriter.WriteString(L"<a:ln>"); // w - width default is 0.75pt = 9525
 			oWriter.WriteString(L"<a:noFill/>");
 			oWriter.WriteString(L"</a:ln>");
 		}
 		else
 		{
 			oWriter.WriteString(L"<a:ln w=\"");
-			//todo Some m_oPen.Size come 10 times larger
-			oWriter.AddInt(static_cast<int>(m_oPen.Size * c_dMMToEMU)); //note can be written in mm
+			// todo Some m_oPen.Size values come multiplied by 10
+			oWriter.AddInt(static_cast<int>(m_oPen.Size * c_dMMToEMU)); // note can write in mm
 			oWriter.WriteString(L"\">");
 
 			oWriter.WriteString(L"<a:solidFill>");
 
 			oWriter.WriteString(L"<a:srgbClr val=\"");
-			oWriter.WriteHexInt3(static_cast<int>(ConvertColorBGRToRGB(m_oPen.Color))); //note words like "black" can be used instead of color
+			oWriter.WriteHexInt3(static_cast<int>(ConvertColorBGRToRGB(m_oPen.Color))); // note can use words like "black" instead of color
 			if (0xFF != m_oPen.Alpha)
 			{
 				oWriter.WriteString(L"\"><a:alpha val=\"");
@@ -913,8 +948,12 @@ namespace NSDocxRenderer
 		double height = bot - top;
 		double width = right - left;
 
-		// is responsible for the dimensions of the rectangular frame of the shape
+		// responsible for rectangular shape frame dimensions
 		oWriter.WriteString(L"<a:xfrm");
+		if (m_bImgFlipH)
+			oWriter.WriteString(L" flipH=\"1\"");
+		if (m_bImgFlipV)
+			oWriter.WriteString(L" flipV=\"1\"");
 		if (fabs(m_dRotation) > c_dMIN_ROTATION)
 		{
 			oWriter.WriteString(L" rot=\"");
@@ -948,26 +987,26 @@ namespace NSDocxRenderer
 
 	void CShape::BuildTextBoxParams(NSStringUtils::CStringBuilder &oWriter) const
 	{
-		oWriter.WriteString(L" rot=\"0\""); //Specifies the rotation that is applied to the text within the bounding box.
-		oWriter.WriteString(L" spcFirstLastPara=\"0\""); //whether the user-specified spacing between paragraphs before and after should be respected.
-		oWriter.WriteString(L" vertOverflow=\"overflow\""); //can text extend beyond the bounding box vertically
-		oWriter.WriteString(L" horzOverflow=\"overflow\""); //whether text can extend beyond the horizontal bounding box.
+		oWriter.WriteString(L" rot=\"0\""); //Defines the rotation applied to text within the bounding box.
+		oWriter.WriteString(L" spcFirstLastPara=\"0\""); //Whether user-specified paragraph spacing before and after should be respected.
+		oWriter.WriteString(L" vertOverflow=\"overflow\""); //Whether text can overflow the bounding box vertically
+		oWriter.WriteString(L" horzOverflow=\"overflow\""); //Whether text can overflow the bounding box horizontally.
 		oWriter.WriteString(L" vert=\"horz\"");
-		//oWriter.WriteString(L" wrap=\"none\""); //shape border according to text width
-		oWriter.WriteString(L" wrap=\"square\""); //Defines the wrapper options to be used for this text body.
-		//How much does the text border recede from the shape border?
-		oWriter.WriteString(L" lIns=\"0\""); //left default 0.25cm = 91440
-		oWriter.WriteString(L" tIns=\"0\""); //top default 0.13cm = 45720
-		oWriter.WriteString(L" rIns=\"0\""); //right default 0.25cm
+		//oWriter.WriteString(L" wrap=\"none\""); //Shape boundary by text width
+		oWriter.WriteString(L" wrap=\"square\""); //Defines wrap parameters to be used for this text body.
+		//How much the text boundary is indented from the shape boundary
+		oWriter.WriteString(L" lIns=\"0\""); //left   default 0.25cm = 91440
+		oWriter.WriteString(L" tIns=\"0\""); //top    default 0.13cm = 45720
+		oWriter.WriteString(L" rIns=\"0\""); //right  default 0.25cm
 		oWriter.WriteString(L" bIns=\"0\""); //bottom default 0.13cm
-		oWriter.WriteString(L" numCol=\"1\""); //Determines the number of columns of text in the bounding box.
-		oWriter.WriteString(L" spcCol=\"0\""); //Defines the space between columns of text in a text area (only if numCol >1)
-		oWriter.WriteString(L" rtlCol=\"0\""); //whether the columns are used in right-to-left (true) or left-to-right (false) order.
-		oWriter.WriteString(L" fromWordArt=\"0\""); //true/1 The text in this text box is converted text from a WordArt object.
-		oWriter.WriteString(L" anchor=\"t\""); //Vertical alignment of text in the shape (t - top, b - bottom, ctr - middle) default top
-		oWriter.WriteString(L" anchorCtr=\"0\""); //true/1 Defines the centering of the text field.
-		oWriter.WriteString(L" forceAA=\"0\""); //true/1 Causes text to appear antialiased regardless of font size.
-		oWriter.WriteString(L" compatLnSpc=\"1\""); //The line spacing for a given text is determined in a simplified way using the font metrics.
+		oWriter.WriteString(L" numCol=\"1\""); //Defines the number of text columns in the bounding rectangle.
+		oWriter.WriteString(L" spcCol=\"0\""); //Defines space between text columns in the text area (only if numCol >1)
+		oWriter.WriteString(L" rtlCol=\"0\""); //Whether columns are used right-to-left (true) or left-to-right (false).
+		oWriter.WriteString(L" fromWordArt=\"0\""); //true/1 Text in this text box is transformed text from a WordArt object.
+		oWriter.WriteString(L" anchor=\"t\""); //Vertical text alignment in shape (t - top, b - bottom, ctr - middle) default top
+		oWriter.WriteString(L" anchorCtr=\"0\""); //true/1 Defines text box centering.
+		oWriter.WriteString(L" forceAA=\"0\""); //true/1 Forces text to render anti-aliased regardless of font size.
+		oWriter.WriteString(L" compatLnSpc=\"1\""); //Line spacing for this text is determined in a simplified way using the font scene.
 		oWriter.WriteString(L">");
 
 		oWriter.WriteString(L"<a:prstTxWarp prst=\"textNoShape\">");
@@ -990,7 +1029,7 @@ namespace NSDocxRenderer
 			oWriter.WriteString(L"</w:txbxContent>");
 			oWriter.WriteString(L"</wps:txbx>");
 
-			oWriter.WriteString(L"<wps:bodyPr"); //defines the properties of the text body inside a shape
+			oWriter.WriteString(L"<wps:bodyPr"); //Defines the text body properties inside the shape
 			BuildTextBoxParams(oWriter);
 			oWriter.WriteString(L"</wps:bodyPr>");
 		}
@@ -1104,6 +1143,9 @@ namespace NSDocxRenderer
 			oWriter.WriteBYTE(1); oWriter.AddSInt(static_cast<int>(top * c_dMMToEMU));
 			oWriter.WriteBYTE(2); oWriter.AddSInt(static_cast<int>(width * c_dMMToEMU));
 			oWriter.WriteBYTE(3); oWriter.AddSInt(static_cast<int>(height * c_dMMToEMU));
+
+			oWriter.WriteBYTE(8); oWriter.WriteBool(m_bImgFlipH);
+			oWriter.WriteBYTE(9); oWriter.WriteBool(m_bImgFlipV);
 
 			if (fabs(m_dRotation) > c_dMIN_ROTATION)
 			{

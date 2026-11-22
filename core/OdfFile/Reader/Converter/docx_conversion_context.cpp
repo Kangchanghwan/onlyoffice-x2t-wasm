@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include <iostream>
@@ -76,7 +86,7 @@ void text_tracked_context::start_changes_content()
 
 void text_tracked_context::end_changes_content()
 {
-	docx_context_.finish_run();	//0106GS-GettingStartedWithWriter_el.odt - deleted header
+	docx_context_.finish_run();	//0106GS-GettingStartedWithWriter_el.odt - deleted heading
 
 	current_state_.content.push_back(changes_stream_.str());
 	
@@ -123,6 +133,50 @@ text_tracked_context::_state & text_tracked_context::get_tracked_change(std::wst
 	else 
 		return 	current_state_; //empty
 }
+void comments_context::end_comment(const std::wstring& name)
+{
+	std::map<std::wstring, comments_context::_comment_desc>::iterator pFind = comments_map_.find(name);
+	if ((pFind != comments_map_.end()) && (pFind->second.bEnd == false))
+	{
+		ref_end_.push_back(pFind->second.id);
+		pFind->second.bEnd = true;
+	}
+	else
+	{
+		//error
+	}
+}
+bool comments_context::start_comment(const std::wstring& content, const std::wstring& author, const std::wstring& date, _CP_OPT(std::wstring) & name)
+{
+	int id = comments_map_.size() + 1;
+
+	bool bSingle = false;
+
+	std::map<std::wstring, comments_context::_comment_desc>::iterator pFind = comments_map_.end();
+
+	if (!name || ((name) && (name->empty())))
+	{
+		name = L"Comment_" + comments_map_.size();
+		bSingle = true;
+	}
+
+	pFind = comments_map_.find(*name);
+
+	if (pFind != comments_map_.end())
+	{
+		id = pFind->second.id;
+		//error ?
+	}
+	else
+	{
+		_comment_desc new_comment(content, id, author, date);
+
+		comments_map_.insert(std::make_pair(*name, new_comment));
+	
+		ref_start_.push_back(id);
+	}
+	return bSingle;
+}
 
 //----------------------------------------------------------------------------------------------------------------
 docx_conversion_context::docx_conversion_context(odf_reader::odf_document * _odf_document) : 
@@ -148,7 +202,8 @@ docx_conversion_context::docx_conversion_context(odf_reader::odf_document * _odf
 	process_headers_footers_	(false),
 	current_process_comment_	(false),
 	odf_document_				(_odf_document),
-	math_context_				(_odf_document->odf_context().fontContainer(), false)
+	math_context_				(_odf_document->odf_context().fontContainer(), false),
+	num_format_context_			(_odf_document->odf_context(), true)
 {
 	mediaitems_ = boost::make_shared<mediaitems>(odf_document_->get_folder());
 	chart_drawing_handle_ =  boost::make_shared<xlsx_drawing_context_handle>(mediaitems_);
@@ -159,14 +214,14 @@ docx_conversion_context::~docx_conversion_context()
 {
 }
 
-void docx_conversion_context::set_implicit_end( bool _flag ) // fix bug with convert from docx to odt. Bug with break columns
+void docx_conversion_context::set_section_break_after( bool _flag ) 
 {
-    flag_implicit_end = _flag;
+    flag_section_break_after = _flag;
 }
 
-bool docx_conversion_context::get_implicit_end() const // fix bug with convert from docx to odt. Bug with break columns
+bool docx_conversion_context::get_section_break_after() const
 {
-    return flag_implicit_end;
+    return flag_section_break_after;
 }
 
 void docx_conversion_context::set_inside_frame( bool flag )
@@ -221,34 +276,37 @@ std::wstring styles_map::name(const std::wstring & Name, odf_types::style_family
 {
     return Name + L":" + boost::lexical_cast<std::wstring>(odf_types::style_family(Type));
 }
-void docx_conversion_context::add_element_to_run(std::wstring parenStyleId)
+bool docx_conversion_context::add_element_to_run(std::wstring parenStyleId)
 {
-	if (false == current_process_comment_)
+	bool new_run = false;
+	if (false == current_process_comment_ && (false == get_comments_context().ref_end_.empty() || false == get_comments_context().ref_start_.empty()))
 	{
+		if (state_.in_run_)
+		{
+			output_stream() << L"</w:r>";
+		}
 		for (size_t i = 0; i < get_comments_context().ref_start_.size(); i++)
 		{
 			output_stream() << L"<w:commentRangeStart w:id=\"" << get_comments_context().ref_start_[i] << L"\"/>";
+			
+			get_comments_context().ref_.push_back(get_comments_context().ref_start_[i]);
 		}
 		get_comments_context().ref_start_.clear();
 
-		if (false == get_comments_context().ref_end_.empty())
+		for (size_t i = 0; i < get_comments_context().ref_end_.size(); i++)
 		{
-			for (size_t i = 0; i < get_comments_context().ref_end_.size(); i++)
-			{
-				output_stream()<< L"<w:commentRangeEnd w:id=\"" << get_comments_context().ref_end_[i] << L"\"/>";
-			}
-			
-			for (size_t i = 0; i < get_comments_context().ref_end_.size(); i++)
-			{
-				output_stream()<< L"<w:commentReference w:id=\"" << get_comments_context().ref_end_[i] << L"\"/>";			
-			}
-		
-			get_comments_context().ref_end_.clear();		
+			output_stream() << L"<w:commentRangeEnd w:id=\"" << get_comments_context().ref_end_[i] << L"\"/>";
+		}
+		get_comments_context().ref_end_.clear();
+
+		if (state_.in_run_)
+		{
+			output_stream() << L"<w:r>";
 		}
 	}
-	if (!state_.in_run_)
+	if (false == state_.in_run_)
     {
-        state_.in_run_ = true;
+		state_.in_run_ = new_run = true;
 		output_stream() << L"<w:r>";
 
 		start_changes(true);
@@ -267,8 +325,8 @@ void docx_conversion_context::add_element_to_run(std::wstring parenStyleId)
 	        
 			get_styles_context().docx_serialize_text_style( output_stream(), parenStyleId, text_tracked_context_.dumpRPr_);
 		}
-
 	}
+	return new_run;
 }
 
 void docx_conversion_context::start_paragraph(bool is_header)
@@ -297,11 +355,11 @@ void docx_conversion_context::finish_paragraph()
 				{
 					output_stream()<< L"<w:commentRangeEnd w:id=\"" << get_comments_context().ref_end_[i] << L"\"/>";
 				}
-				
-				for (size_t i = 0; i < get_comments_context().ref_end_.size(); i++)
-				{
-					output_stream()<< L"<w:commentReference w:id=\"" << get_comments_context().ref_end_[i] << L"\"/>";			
-				}
+				//
+				//for (size_t i = 0; i < get_comments_context().ref_end_.size(); i++)
+				//{
+				//	output_stream()<< L"<w:commentReference w:id=\"" << get_comments_context().ref_end_[i] << L"\"/>";			
+				//}
 			
 				get_comments_context().ref_end_.clear();	
 		}	
@@ -621,7 +679,7 @@ void docx_conversion_context::end_alphabetical_index (const std::wstring &id)
 	if (mapAlphabeticals.empty())
 		current_alphabetic_index_.clear();
 	else
-		current_alphabetic_index_ = mapAlphabeticals.begin()->first; // TODO vector+map+level
+		current_alphabetic_index_ = mapAlphabeticals.begin()->first; // todooo vector+map+level
 }
 
 
@@ -632,7 +690,7 @@ void docx_conversion_context::start_chart(std::wstring  name)
 void docx_conversion_context::end_chart()
 {
 	//current_chart().set_drawing_link(current_sheet().get_drawing_link());
-	//unnecessary information
+	//redundant info
 }
 oox_chart_context & docx_conversion_context::current_chart()
 {
@@ -743,7 +801,7 @@ void docx_conversion_context::start_document()
 
 
 	//apply page-default prop
-	//For now, let's temporarily include processing of the properties of the document as a whole here
+	//temporarily put document-wide properties handling here
 }
 
 
@@ -1177,7 +1235,7 @@ void docx_conversion_context::end_office_text()
 {
 	finish_paragraph();
 
-	if (!delayed_converting_)//otherwise it may end up in a loop
+	if (!delayed_converting_)//otherwise possible infinite loop
 	{
 		docx_convert_delayed();
 	}
@@ -1440,10 +1498,10 @@ void docx_conversion_context::process_styles()
 						default_style = id;
 					}
 				}
-				else if (!arStyles[i]->is_default()) // default-style
-				{
-					_Wostream << L" w:customStyle=\"1\"";
-				}
+				//else if (!arStyles[i]->is_default()) // default-style
+				//{
+				//	_Wostream << L" w:customStyle=\"1\"";
+				//}
 				_Wostream << L">";
                 
 				const std::wstring displayName = StyleDisplayName(arStyles[i]->name(), arStyles[i]->display_name(), arStyles[i]->type(), bDisplayed);
@@ -1465,18 +1523,20 @@ void docx_conversion_context::process_styles()
 				{
 					_Wostream << L"<w:basedOn w:val=\"" << default_style << "\"/>";
 				}
-     //           else if (false == bDefault && false == arStyles[i]->is_default() && styles_map_.check(L"", arStyles[i]->type()))
-     //           {
-					//bDisplayed = false;
-     //               const std::wstring basedOnId = styles_map_.get(L"", arStyles[i]->type());
-     //               _Wostream << L"<w:basedOn w:val=\"" << basedOnId << "\"/>";
-     //           }
-				if (bDisplayed)
+				if (arStyles[i]->primary_format())
+				{
+					if (*arStyles[i]->primary_format())
+						_Wostream << L"<w:qFormat/>";
+					else
+						_Wostream << L"<w:semiHidden/>";
+
+				}
+				else if (bDisplayed)
 				{
 					_Wostream << L"<w:qFormat/>";
 				}
 
-				if (odf_reader::style_instance * next = arStyles[i]->next())
+				if (odf_reader::style_instance* next = arStyles[i]->next())
 				{
 				    const std::wstring nextId = styles_map_.get(next->name(), next->type());
 				    _Wostream << L"<w:next w:val=\"" << nextId << "\"/>";
@@ -1488,14 +1548,16 @@ void docx_conversion_context::process_styles()
 						_Wostream << L"<w:next w:val=\"" << curr_name_of_normal_style << "\"/>";
 					}
 				}
-                //else if (arStyles[i]->is_default())
-                //{
-                //    // self
-                //    _Wostream << L"<w:next w:val=\"" << id << "\"/>";
-                //}
+				if (odf_reader::style_instance* link = arStyles[i]->link())
+				{
+					const std::wstring linkId = styles_map_.get(link->name(), link->type());
+					_Wostream << L"<w:link w:val=\"" << linkId << "\"/>";
+				}
+
 
                 if (odf_reader::style_content * content = arStyles[i]->content())
                 {
+					set_rtl(false);
 					get_tabs_context().clear();
 					calc_tab_stops(arStyles[i].get(), get_tabs_context());					
 					get_styles_context().start_process_style(arStyles[i].get());
@@ -1545,13 +1607,14 @@ void docx_conversion_context::process_section(std::wostream & strm, odf_reader::
 					section.margin_right_	= sectPr->common_horizontal_margin_attlist_.fo_margin_right_;		
 				}
 			}
-			if (section.is_dump_)
-			{
-				get_section_context().remove_section();				
-			}
+		}
+		if (section.is_dump_)
+		{
+			section.is_dump_ = false;
+			get_section_context().remove_section();	
 		}
 	}
-	
+
 	std::vector<std::pair<double, double>> width_space;
 	if (columns)
 	{
@@ -1586,37 +1649,43 @@ void docx_conversion_context::process_section(std::wostream & strm, odf_reader::
 					page_width -= attr_page.common_horizontal_margin_attlist_.fo_margin_right_->get_length().get_value_unit(odf_types::length::pt);
 				}
 			}		
-			for (size_t i = 0; page_width > 0, i < columns->style_columns_.size(); i++)
+			double total_rel = 0;
+			for (size_t i = 0; i < columns->style_columns_.size(); i++)
 			{
 				odf_reader::style_column *col = dynamic_cast<odf_reader::style_column*>( columns->style_columns_[i].get());
 				if (!col) continue;
 
-				double percent = col->style_rel_width_ ? col->style_rel_width_->get_value() : 0;
-				if (percent > 0x7FFE)
+				double rel = col->style_rel_width_ ? col->style_rel_width_->get_value() : 0;
+				if (rel > 0x7FFE)
 				{
 					//auto
+					total_rel = 0;
 					break;
 				}
-				else
+				total_rel += rel;
+			}
+			for (size_t i = 0; page_width > 0 && total_rel > 0 && i < columns->style_columns_.size(); i++)
+			{
+				odf_reader::style_column *col = dynamic_cast<odf_reader::style_column*>( columns->style_columns_[i].get());
+				if (!col) continue;
+
+				double rel = col->style_rel_width_ ? col->style_rel_width_->get_value() : 0;
+
+				double space_end = col->fo_end_indent_ ? col->fo_end_indent_->get_value_unit(odf_types::length::pt) : 0;
+				double space_start = col->fo_start_indent_ ? col->fo_start_indent_->get_value_unit(odf_types::length::pt) : 0;
+
+				double width = page_width * rel / total_rel - space_start - space_end;
+
+				double space_next = 0;
+				if (i < columns->style_columns_.size() - 1)
 				{
-					if (percent > 1000.) percent /= 100.;
+					odf_reader::style_column *col_next = dynamic_cast<odf_reader::style_column*>(columns->style_columns_[i + 1].get());
+					if (col_next && col_next->fo_start_indent_)
+						space_next = col_next->fo_start_indent_->get_value_unit(odf_types::length::pt);
 
-					double width = page_width * percent / 100.;
-
-					double space_end = col->fo_end_indent_ ? col->fo_end_indent_->get_value_unit(odf_types::length::pt) : 0;
-					double space_start = col->fo_start_indent_ ? col->fo_start_indent_->get_value_unit(odf_types::length::pt) : 0;
-
-					width -= space_end;
-					width -= space_start;
-
-					if (i < columns->style_columns_.size() - 1)
-					{
-						col = dynamic_cast<odf_reader::style_column*>(columns->style_columns_[i + 1].get());
-						space_start = col->fo_start_indent_ ? col->fo_start_indent_->get_value_unit(odf_types::length::pt) : 0;
-					}
-
-					width_space.push_back(std::make_pair(width, space_start + space_end));
+					space_next += space_end;
 				}
+				width_space.push_back(std::make_pair(width, space_next));
 			}
 		}
 	}
@@ -1643,7 +1712,9 @@ void docx_conversion_context::process_section(std::wostream & strm, odf_reader::
 }
 bool docx_conversion_context::process_page_properties(std::wostream & strm)
 {
-    if ( is_next_dump_page_properties() || get_section_context().get_last().is_dump_ )
+	if (process_headers_footers_) return false;
+	
+	if ( is_next_dump_page_properties() || get_section_context().get_last().is_dump_ )
     {
         std::wstring pageProperties = get_page_properties();
 		odf_reader::page_layout_instance * page_layout_instance_ = root()->odf_context().pageLayoutContainer().page_layout_by_name(pageProperties);
@@ -1683,7 +1754,7 @@ void docx_conversion_context::end_process_style_content(bool in_styles)
 
 void docx_conversion_context::serialize_paragraph_style(std::wostream & strm, const std::wstring & ParentId, bool in_styles)
  //in_styles = true -> styles.xml
-//for some reason the construction <pPr><rPr/></pPr><rPr/> "doesn't work" in the part in rPr in ms2010)
+//for some reason the construct <pPr><rPr/></pPr><rPr/> "doesn't work" in the rPr part in ms2010 )
 {
 	bool in_drawing	= false;
 
@@ -1699,7 +1770,7 @@ void docx_conversion_context::serialize_paragraph_style(std::wostream & strm, co
 		////Tutor_Charlotte_Tutor_the_Entire_World_.odt
 		//if (get_section_context().dump_.empty() == false && (!ParentId.empty() || get_section_context().get().is_dump_ || in_header_) 
 		//	 && !get_table_context().in_table() && !in_drawing)
-		//{//two sections in a row or if the style is defined and can't be inserted into the headers!!!
+		//{//two sections in a row or if style is defined and can't push into headers !!!
 		//	CP_XML_NODE(L"w:pPr")
 		//	{
 		//		CP_XML_STREAM() << get_section_context().dump_;
@@ -1857,7 +1928,7 @@ void docx_conversion_context::remove_page_properties()
 
 	if (s.page_properties_.size() > 1)
 	{
-		//the first one is common (if any) for the entire document - leave it
+		//first common one (if exists) for the whole document - keep it
 		s.page_properties_.erase(s.page_properties_.begin() + 1, s.page_properties_.begin() + 2);
 	}
 	else if (s.page_properties_.size() == 1)
@@ -2023,7 +2094,8 @@ int docx_conversion_context::process_paragraph_style(_CP_OPT(std::wstring) style
 			root()->odf_context().styleContainer().style_by_name(style_name, odf_types::style_family::Paragraph, process_headers_footers_))
     {
 		double font_size = odf_reader::text_format_properties::process_font_size_impl(odf_types::font_size(odf_types::percent(100.0)), styleInst);
-		if (font_size > 0) current_fontSize.push_back(font_size);
+		if (font_size > 0) 
+			current_fontSize.push_back(font_size);
 		
 		process_page_break_after(styleInst);
 
@@ -2048,7 +2120,7 @@ int docx_conversion_context::process_paragraph_style(_CP_OPT(std::wstring) style
 
 				calc_tab_stops(styleInst, get_tabs_context());
 				
-				//pulls out rtl from the style chain!! - it simply can't be registered in the inherited one!!
+				//extracts rtl from style chain !! - can't just write it in inherited style !!
 				odf_reader::paragraph_format_properties properties = odf_reader::calc_paragraph_properties_content(styleInst);
 				if (properties.style_writing_mode_)
 				{
@@ -2123,7 +2195,9 @@ int docx_conversion_context::process_paragraph_attr(odf_reader::text::paragraph_
             )
 		{
 			double font_size = odf_reader::text_format_properties::process_font_size_impl(odf_types::font_size(odf_types::percent(100.0)), styleInst);
-			if (font_size > 0) current_fontSize.push_back(font_size);
+			
+			if (font_size > 0) 
+				current_fontSize.push_back(font_size);
 			
 			_CP_OPT(int) outline_level = calc_outline_level(Attr->outline_level_, styleInst);
 			
@@ -2150,7 +2224,7 @@ int docx_conversion_context::process_paragraph_attr(odf_reader::text::paragraph_
 
 					calc_tab_stops(styleInst, get_tabs_context());
 					
-					//pulls out rtl from the style chain!! - it simply can't be registered in the inherited one!!
+					//extracts rtl from style chain !! - can't just write it in inherited style !!
 					odf_reader::paragraph_format_properties properties = odf_reader::calc_paragraph_properties_content(styleInst);
 					if (properties.style_writing_mode_)
 					{
@@ -2185,7 +2259,7 @@ int docx_conversion_context::process_paragraph_attr(odf_reader::text::paragraph_
 						&& !in_drawing)
 					{
 						output_stream() << L"<w:pPr>";
-						if (is_paragraph_header() )
+						if (is_paragraph_header() && !get_section_break_after())
 						{
 							output_stream() << get_section_context().dump_;
 							get_section_context().dump_.clear();
@@ -2222,13 +2296,13 @@ int docx_conversion_context::process_paragraph_attr(odf_reader::text::paragraph_
 			{
 				const std::wstring id = styles_map_.get( styleInst->name(), styleInst->type() );
 				output_stream() << L"<w:pPr>";
-	//TODO clean up
+	//todooo clean up			
 				if (!get_section_context().dump_.empty()
 					&& !get_table_context().in_table()
 					&& (get_process_note() == oox::docx_conversion_context::noNote)
 					&& !in_drawing)
 				{
-					if (is_paragraph_header() )
+					if (is_paragraph_header() && !get_section_break_after())
 					{
 						output_stream() << get_section_context().dump_;
 						get_section_context().dump_.clear();
@@ -2289,7 +2363,7 @@ int docx_conversion_context::process_paragraph_attr(odf_reader::text::paragraph_
         output_stream() << L"<w:pPr>";
 			output_stream() << get_section_context().dump_;
 			get_section_context().dump_.clear();
-			//TODO find out if headers are real without styles and properties
+			//todooo find out if headers without styles and properties are real
 		output_stream() << L"</w:pPr>";
 		return 3;
 	}
@@ -2298,25 +2372,30 @@ int docx_conversion_context::process_paragraph_attr(odf_reader::text::paragraph_
 }
 
 
-void docx_conversion_context::process_page_break_after(const odf_reader::style_instance * styleInst)
+void docx_conversion_context::process_page_break_after(const odf_reader::style_instance * styleInstance)
 {
-    if (styleInst)
-    {
-        const odf_reader::style_instance * inst = styleInst;
-        while (inst)
-        {
-            if (inst->content() && inst->content()->get_style_paragraph_properties())
-            {
-                _CP_OPT(odf_types::fo_break) fo_break_val = inst->content()->get_style_paragraph_properties()->content_.fo_break_after_;
-				if (fo_break_val)
-                {
-					set_page_break_after(fo_break_val->get_type());
-					break;
-                }
-            }
-            inst = inst->parent();
-        }
-    }
+	if (!styleInstance) return;
+
+	std::map<std::wstring, int> usedStyles;
+	while (styleInstance)
+	{
+		std::wstring style_name = styleInstance->name();
+		if (usedStyles.find(style_name) != usedStyles.end())
+			break;
+
+		usedStyles.insert(std::make_pair(style_name, 0));
+
+		if (styleInstance->content() && styleInstance->content()->get_style_paragraph_properties())
+		{
+			_CP_OPT(odf_types::fo_break) fo_break_val = styleInstance->content()->get_style_paragraph_properties()->content_.fo_break_after_;
+			if (fo_break_val)
+			{
+				set_page_break_after(fo_break_val->get_type());
+				break;
+			}
+		}
+		styleInstance = styleInstance->parent();
+	}
 }
 void docx_conversion_context::serialize_list_properties(std::wostream & strm)
 {
@@ -2353,12 +2432,20 @@ void docx_conversion_context::add_delayed_element(odf_reader::office_element * E
 {
    delayed_elements_.push_back(Elm);    
 }
-
+double docx_conversion_context::get_current_fontSize()
+{ 
+	return current_fontSize.empty() ? 0 : current_fontSize.back(); 
+}
+void docx_conversion_context::pop_current_fontSize() 
+{ 
+	if (!current_fontSize.empty()) 
+		current_fontSize.pop_back(); 
+}
 void docx_conversion_context::docx_convert_delayed()
 {
 	if (delayed_elements_.empty()) return;
 
-	if (delayed_converting_) return; //looping otherwise
+	if (delayed_converting_) return; //otherwise infinite loop
 	if (get_drawing_context().get_current_level() > 0 )
 		return; //nested frame
 
@@ -2399,16 +2486,16 @@ void section_context::remove_section()
 	//sections_.erase(sections_.begin(), sections_.begin() + 1);
 	if (sections_.empty())
 	{
-		//after finishing section marking and starting (resuming) the main section, a break is needed (although the page settings may not change)
-		//there is a gap on the current page right now
-		//TODO check - maybe if the next one is a title - break it
+		//after section markup ends and main section resumes, break is needed (even if page settings don't change)
+		//currently break on current page
+		//todooo check - maybe if next is a heading - break
 		main_section_.is_dump_ = false;
 	}
 }
 namespace 
 {
     // Header/Footer processing
-    // convert the contents of header/footer and save the result as a string
+    // convert header/footer content and save result as string
     void process_one_header_footer(docx_conversion_context & Context, const std::wstring & styleName, odf_reader::office_element *elm, headers_footers::Type type)
     {
         if (!elm) return;
@@ -2420,7 +2507,7 @@ namespace
         
 		const std::wstring & dbgStr = newXml->str();
        
-		//merge if there are mediaitems, add rels and reset them to zero for the main document.
+		//merge mediaitems if any, add rels and reset them for main document.
 		rels internal_rels;
 
 		Context.get_mediaitems()->dump_rels(internal_rels, oox::header_footer_place);
@@ -2448,7 +2535,7 @@ void docx_conversion_context::process_headers_footers()
     odf_reader::odf_read_context & context =  doc->odf_context();
     odf_reader::page_layout_container & pageLayouts = context.pageLayoutContainer();
 
-    // go through all page layouts
+    // iterate through all page layouts
 	std::vector<odf_reader::style_master_page*> & master_pages = pageLayouts.master_pages();
 
 	bool bOddEvenPages = false;
@@ -2483,7 +2570,7 @@ void docx_conversion_context::process_headers_footers()
 		if (!master_pages[i]->style_header_ && !master_pages[i]->style_footer_ && !master_pages[i]->style_header_first_ && !master_pages[i]->style_footer_first_
 			&& !master_pages[i]->style_header_left_ && !master_pages[i]->style_footer_left_)
 		{
-			//disabled headers and footers
+			//disabled headers/footers
 			rels rels_;
 			get_headers_footers().add(styleName, L"", headers_footers::none, rels_);
 		}
@@ -2538,7 +2625,7 @@ void docx_conversion_context::add_note_reference ()
 {
     if (current_process_note_ == footNote || current_process_note_ ==  endNote)
     {
-        add_element_to_run(_T(""));
+        add_element_to_run(L"");
         output_stream() << ((current_process_note_ == footNote) ? L"<w:footnoteRef />" : L"<w:endnoteRef />");
         finish_run();
         current_process_note_ = (NoteType) (current_process_note_ + 1); //add ref set
@@ -2615,7 +2702,7 @@ void docx_conversion_context::start_changes(bool in_para)
 	{
 		text_tracked_context::_state  &state = it->second;
 
-		if (state.type == 0)	continue; //unknown change ... TODO
+		if (state.type == 0)	continue; //unknown change ... todooo
 		if (state.active)		continue;
 
 		state.in_para = in_para;
@@ -2740,7 +2827,7 @@ void docx_conversion_context::end_changes(bool in_para)
 	{
 		text_tracked_context::_state  &state = it->second;
 
-		if (state.type	== 0)			continue; //unknown change ... LibreOffice format change skip
+		if (state.type	== 0)			continue; //unknown change ... libra format change skip
 		if (state.type	== 3)			continue;
 		if (!state.active)				continue;
 		if (state.in_para != in_para)	continue;

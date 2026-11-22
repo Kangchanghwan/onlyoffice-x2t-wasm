@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "../../../OOXML/Base/Unit.h"
 
@@ -312,7 +322,7 @@ void odf_number_styles_context::create_default(int oox_num_fmt, std::wstring for
 	case 49:	formatCode = L"@";		state.ods_type =office_value_type::String; break;
 
 	default:
-////////////////////////////////// with undefined formatCode .. it is set in the file
+/////////////////////////////////// with undefined formatCode.. it is set in file
 			 if (oox_num_fmt >= 5  && oox_num_fmt <= 8)		state.ods_type =office_value_type::Currency; 
 		else if (oox_num_fmt >= 41 && oox_num_fmt <= 44)	state.ods_type =office_value_type::Currency; 
 		
@@ -351,7 +361,7 @@ number_format_state & odf_number_styles_context::add_or_find(int oox_num_fmt, st
 {
 	if (oox_num_fmt < 0)
 	{
-		//not spreadsheet TODO - search by formatCode
+		//not spreadsheet todooo - search by formatCode
 		oox_num_fmt = 0xffff + named_link_map_.size();
 	}	
 	
@@ -438,7 +448,7 @@ void odf_number_styles_context::create_numbers(number_format_state& state, offic
 
 	if (state.format_code[0].empty())
 	{
-		//format not defined .. default
+		// format is not defined.. default
 		min_digit = 1;
 	}
 	else
@@ -822,11 +832,11 @@ void odf_number_styles_context::create_date_style(number_format_state & state, o
 				else		number_year_->number_style_ = L"long";
 			}
 		}
-		else if (!bAM) // there is no am/pm separator in LibreOffice
-		{	//////////////////// divider ////////////////////
-			if(sz > 1) 
+		else if (!bAM) // no am.pm separator in libre
+		{	//////////////////// delimiter ////////////////////
+			if(sz > 1)
 			{
-				//Remove the "extra" slashes
+				// remove "extra" slashes
 				XmlUtils::replace_all( s, L"\\", L"");
 			}
 			create_element(L"number", L"text", elm, odf_context_);
@@ -853,7 +863,7 @@ void odf_number_styles_context::create_time_style(number_format_state & state, o
 	boost::wregex re(L"([a-zA-Z]+)(\\W+)");//(L"(\\w+)");
 	std::list<std::wstring> result;
 	bool b = boost::regex_split(std::back_inserter(result),s, re);
-	if (b)result.push_back(s);//the last one ..is taken out - that's how boost.regex_split works
+	if (b)result.push_back(s);// last one.. carried out - that's how boost.regex_split works
 
 	size_t sz=0;
 	for (std::list<std::wstring>::iterator it = result.begin(); it != result.end(); ++it)
@@ -871,7 +881,7 @@ void odf_number_styles_context::create_time_style(number_format_state & state, o
 				if (sz == 2) number_hours_->number_style_ = L"long";
 			}
 		}
-		else if (std::wstring::npos != s.find(L"am"))  //unnecessary..
+		else if (std::wstring::npos != s.find(L"am"))  // redundant..
 		{
 			create_element(L"number", L"am-pm", elm, odf_context_);
 		}
@@ -896,12 +906,12 @@ void odf_number_styles_context::create_time_style(number_format_state & state, o
 				//number_decimal_places_
 			}
 		}
-		else if (std::wstring::npos == s.find(L"pm"))//that's how the format is divided .. and we don't need this text
+		else if (std::wstring::npos == s.find(L"pm"))// that's how format is split.. and we don't need this text
 		{
-		//////////////////// divider ////////////////////
-			if(sz > 1) 
+		//////////////////// delimiter ////////////////////
+			if(sz > 1)
 			{
-				//Remove the "extra" slashes
+				// remove "extra" slashes
 				XmlUtils::replace_all( s, L"\\", L"");
 			}
 			create_element(L"number", L"text", elm, odf_context_);

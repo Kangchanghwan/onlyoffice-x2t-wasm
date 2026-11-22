@@ -1,19 +1,65 @@
+# Copyright (C) Ascensio System SIA, 2009-2026
+#
+# This program is a free software product. You can redistribute it and/or
+# modify it under the terms of the GNU Affero General Public License (AGPL)
+# version 3 as published by the Free Software Foundation, together with the
+# additional terms provided in the LICENSE file.
+#
+# This program is distributed WITHOUT ANY WARRANTY; without even the implied
+# warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+# details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+#
+# You can contact Ascensio System SIA by email at info@onlyoffice.com
+# or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+# LV-1050, Latvia, European Union.
+#
+# The interactive user interfaces in modified versions of the Program
+# are required to display Appropriate Legal Notices in accordance with
+# Section 5 of the GNU AGPL version 3.
+#
+# No trademark rights are granted under this License.
+#
+# All non-code elements of the Product, including illustrations,
+# icon sets, and technical writing content, are licensed under the
+# Creative Commons Attribution-ShareAlike 4.0 International License:
+# https://creativecommons.org/licenses/by-sa/4.0/legalcode
+#
+# This license applies only to such non-code elements and does not
+# modify or replace the licensing terms applicable to the Program's
+# source code, which remains licensed under the GNU Affero General
+# Public License v3.
+#
+# SPDX-License-Identifier: AGPL-3.0-only
+
 VERSION = $$cat(version.txt)
 
 PRODUCT_VERSION = $$(PRODUCT_VERSION)
 BUILD_NUMBER = $$(BUILD_NUMBER)
 
 !isEmpty(PRODUCT_VERSION){
-    !isEmpty(BUILD_NUMBER){
-        VERSION = $${PRODUCT_VERSION}.$${BUILD_NUMBER}
-    }
+	!isEmpty(BUILD_NUMBER){
+		VERSION = $${PRODUCT_VERSION}.$${BUILD_NUMBER}
+	}
 }
 
 DEFINES += INTVER=$$VERSION
 
+WIN_VERSION = $$replace(VERSION, \., ",")
+DEFINES += WIN_INTVER=$$WIN_VERSION
+
 PUBLISHER_NAME = $$(PUBLISHER_NAME)
 isEmpty(PUBLISHER_NAME){
-    PUBLISHER_NAME = $$cat(copyright.txt)
+	PUBLISHER_NAME = $$cat(copyright.txt)
+}
+
+DEST_MAKEFILE_NAME = $$(DEST_MAKEFILE_NAME)
+!isEmpty(DEST_MAKEFILE_NAME){
+	MAKEFILE = $${DEST_MAKEFILE_NAME}
+}
+
+APPLICATION_NAME_DEFAULT = $$(APPLICATION_NAME_DEFAULT)
+!isEmpty(APPLICATION_NAME_DEFAULT){
+	DEFINES += "APPLICATION_NAME_DEFAULT=$${APPLICATION_NAME_DEFAULT}"
 }
 
 OO_BUILD_BRANDING = $$(OO_BRANDING)
@@ -24,55 +70,64 @@ win32 {
 	CURRENT_YEAR = $$replace(CURRENT_YEAR, "\r", "")
 	CURRENT_YEAR = $$replace(CURRENT_YEAR, "\n", "")
 	CURRENT_YEAR = $$replace(CURRENT_YEAR, "\t", "")
+
+	# QMAKE_TARGET_COPYRIGHT below writes \251 (©) as an octal escape. rc.exe maps it through
+	# the code page, by default the build machine ANSI one (65001 gives U+FFFD). Pin it.
+	# Every .rc file built with base.pri is read as cp1252 now, so a hand-written .rc file
+	# with non-ASCII text (Cyrillic etc.) must be saved as UTF-8 and start with
+	#     #pragma code_page(65001)
+	# The pragma overrides /c. Keep PUBLISHER_NAME ASCII: qmake reads the environment in the
+	# ANSI code page, so other characters reach the generated .rc as '?'.
+	QMAKE_RC += /c1252
 }
 
 !win32 {
-    CURRENT_YEAR = $$system(date +%Y)
+	CURRENT_YEAR = $$system(date +%Y)
 }
 
 DEFINES += COPYRIGHT_YEAR=$${CURRENT_YEAR}
 #DEFINES += _LOGOUT_ALWAYS
 
 QMAKE_TARGET_COMPANY = $$PUBLISHER_NAME
-QMAKE_TARGET_COPYRIGHT = © $${PUBLISHER_NAME} $${CURRENT_YEAR}. All rights reserved.
+QMAKE_TARGET_COPYRIGHT = "\\251 $${PUBLISHER_NAME} $${CURRENT_YEAR}. All rights reserved."
 
 # CONFIGURATION
 CONFIG(debug, debug|release) {
-    CONFIG += core_debug
+	CONFIG += core_debug
 }
 force_debug_info:CONFIG += core_debug
 !core_debug:CONFIG += core_release
 
 not_use_dynamic_libs {
 shared {
-    CONFIG -= shared
-    CONFIG -= plugin
-    CONFIG += staticlib
+	CONFIG -= shared
+	CONFIG -= plugin
+	CONFIG += staticlib
 }
 }
 
 #PLATFORM
 win32 {
-    CONFIG += core_windows
+	CONFIG += core_windows
 
-    WINDOWS_VERSION_XP = $$(WINDOWS_VERSION_XP)
-    !isEmpty(WINDOWS_VERSION_XP) {
-        CONFIG += build_xp
-        message(xp using)
-    }
+	WINDOWS_VERSION_XP = $$(WINDOWS_VERSION_XP)
+	!isEmpty(WINDOWS_VERSION_XP) {
+		CONFIG += build_xp
+		message(xp using)
+	}
 }
 
 DST_ARCH=$$QMAKE_TARGET.arch
 isEqual(QT_MAJOR_VERSION, 5) {
-    DST_ARCH=$$QT_ARCH
-    # QT_ARCH uses 'i386' instead of 'x86',
-    # so map that value back to what we expect.
-    equals(DST_ARCH, i386) {
-        DST_ARCH=x86
-    }
+	DST_ARCH=$$QT_ARCH
+	# QT_ARCH uses 'i386' instead of 'x86',
+	# so map that value back to what we expect.
+	equals(DST_ARCH, i386) {
+		DST_ARCH=x86
+	}
 
-    lessThan(QT_MINOR_VERSION, 15) {
-	    DEFINES += QT_VERSION_LESS_5_15
+	lessThan(QT_MINOR_VERSION, 15) {
+		DEFINES += QT_VERSION_LESS_5_15
 	}
 }
 
@@ -85,19 +140,19 @@ greaterThan(QT_MAJOR_VERSION, 5) {
 }
 
 ios {
-    CONFIG += core_ios
-    DEFINES += _IOS IOS LINUX _LINUX MAC _MAC _XCODE _ARM_ALIGN_
+	CONFIG += core_ios
+	DEFINES += _IOS IOS LINUX _LINUX MAC _MAC _XCODE _ARM_ALIGN_
 }
 android {
-    CONFIG += core_android
-    DEFINES += __ANDROID__ LINUX _LINUX _ARM_ALIGN_
+	CONFIG += core_android
+	DEFINES += __ANDROID__ LINUX _LINUX _ARM_ALIGN_
 }
 
 win32:contains(QMAKE_TARGET.arch, x86_64): {
-    CONFIG += core_win_64
+	CONFIG += core_win_64
 }
 win32:!contains(QMAKE_TARGET.arch, x86_64): {
-    CONFIG += core_win_32
+	CONFIG += core_win_32
 }
 win32:contains(QMAKE_TARGET.arch, arm64): {
 	CONFIG -= core_win_32
@@ -130,36 +185,36 @@ linux-clang-32 {
 }
 
 linux-g++ {
-    CONFIG += core_linux
+	CONFIG += core_linux
 linux-g++:contains(QMAKE_HOST.arch, x86_64): {
-    message("linux-64")
-    CONFIG += core_linux_64
+	message("linux-64")
+	CONFIG += core_linux_64
 }
 linux-g++:contains(QMAKE_HOST.arch, arm64): {
-    message("linux-64")
-    CONFIG += core_linux_64
-    CONFIG += core_linux_host_arm64
+	message("linux-64")
+	CONFIG += core_linux_64
+	CONFIG += core_linux_host_arm64
 }
 linux-g++:contains(QMAKE_HOST.arch, aarch64): {
-    message("linux-64")
-    CONFIG += core_linux_64
-    CONFIG += core_linux_host_arm64
+	message("linux-64")
+	CONFIG += core_linux_64
+	CONFIG += core_linux_host_arm64
 }
 !core_linux_64: {
-    message("linux-32")
-    CONFIG += core_linux_32
+	message("linux-32")
+	CONFIG += core_linux_32
 }
 }
 
 linux-g++-64 {
-    message("linux-64")
-    CONFIG += core_linux
-    CONFIG += core_linux_64
+	message("linux-64")
+	CONFIG += core_linux
+	CONFIG += core_linux_64
 }
 linux-g++-32 {
-    message("linux-32")
-    CONFIG += core_linux
-    CONFIG += core_linux_32
+	message("linux-32")
+	CONFIG += core_linux
+	CONFIG += core_linux_32
 }
 
 
@@ -245,14 +300,14 @@ gcc {
 }
 
 core_linux_host_arm64 {
-    message("build on arm64")
-    DEFINES += _ARM_ALIGN_
+	message("build on arm64")
+	DEFINES += _ARM_ALIGN_
 }
 
 core_mac {
-    DEFINES += LINUX _LINUX MAC _MAC
-    QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.11
-    QMAKE_LFLAGS += -isysroot $$QMAKE_MAC_SDK_PATH
+	DEFINES += LINUX _LINUX MAC _MAC
+	QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.11
+	QMAKE_LFLAGS += -isysroot $$QMAKE_MAC_SDK_PATH
 
 	# xcode15 add new linker
 	greaterThan(QMAKE_XCODE_VERSION, 1499) {
@@ -285,30 +340,30 @@ core_windows {
 	QMAKE_CXXFLAGS += /Zc:strictStrings-
 	QMAKE_CXXFLAGS += /MP
 
-    MSVC_VERSION_DETECT = $$(VisualStudioVersion)
+	MSVC_VERSION_DETECT = $$(VisualStudioVersion)
 	greaterThan(MSVC_VERSION_DETECT, 15.0) {
-	    CONFIG += vs2019
+		CONFIG += vs2019
 	}
 
-    vs2019 {
-        QMAKE_CXXFLAGS_RELEASE -= -permissive-
-        QMAKE_CXXFLAGS -= -permissive-
-    }
+	vs2019 {
+		QMAKE_CXXFLAGS_RELEASE -= -permissive-
+		QMAKE_CXXFLAGS -= -permissive-
+	}
 
-    DEFINES += WINDOWS_IGNORE_PACKING_MISMATCH
+	DEFINES += WINDOWS_IGNORE_PACKING_MISMATCH
 
-    OO_WINDOWS_IGNORE_PACKING_MISMATCH = $$(OO_WINDOWS_IGNORE_PACKING_MISMATCH)
-    isEqual(OO_WINDOWS_IGNORE_PACKING_MISMATCH, 1):QMAKE_CXXFLAGS -= /Zp
+	OO_WINDOWS_IGNORE_PACKING_MISMATCH = $$(OO_WINDOWS_IGNORE_PACKING_MISMATCH)
+	isEqual(OO_WINDOWS_IGNORE_PACKING_MISMATCH, 1):QMAKE_CXXFLAGS -= /Zp
 
-    equals(TEMPLATE, app) {
-        console {
-            core_win_64:QMAKE_LFLAGS_CONSOLE = /SUBSYSTEM:CONSOLE,5.02
-            core_win_32:QMAKE_LFLAGS_CONSOLE = /SUBSYSTEM:CONSOLE,5.01
-        } else {
-            core_win_64:QMAKE_LFLAGS_WINDOWS = /SUBSYSTEM:WINDOWS,5.02
-            core_win_32:QMAKE_LFLAGS_WINDOWS = /SUBSYSTEM:WINDOWS,5.01
-        }
-    }
+	equals(TEMPLATE, app) {
+		console {
+			core_win_64:QMAKE_LFLAGS_CONSOLE = /SUBSYSTEM:CONSOLE,5.02
+			core_win_32:QMAKE_LFLAGS_CONSOLE = /SUBSYSTEM:CONSOLE,5.01
+		} else {
+			core_win_64:QMAKE_LFLAGS_WINDOWS = /SUBSYSTEM:WINDOWS,5.02
+			core_win_32:QMAKE_LFLAGS_WINDOWS = /SUBSYSTEM:WINDOWS,5.01
+		}
+	}
 }
 
 core_linux {
@@ -338,119 +393,130 @@ core_linux {
 }
 
 core_win_32 {
-    CORE_BUILDS_PLATFORM_PREFIX = win_32
+	CORE_BUILDS_PLATFORM_PREFIX = win_32
 }
 core_win_64 {
-    CORE_BUILDS_PLATFORM_PREFIX = win_64
+	CORE_BUILDS_PLATFORM_PREFIX = win_64
 }
 core_win_arm64 {
 	CORE_BUILDS_PLATFORM_PREFIX = win_arm64
 }
 core_linux_32 {
-    CORE_BUILDS_PLATFORM_PREFIX = linux_32
+	CORE_BUILDS_PLATFORM_PREFIX = linux_32
 }
 core_linux_64 {
-    CORE_BUILDS_PLATFORM_PREFIX = linux_64
+	CORE_BUILDS_PLATFORM_PREFIX = linux_64
 }
 core_mac_64 {
-    CORE_BUILDS_PLATFORM_PREFIX = mac_64
+	CORE_BUILDS_PLATFORM_PREFIX = mac_64
 
-    apple_silicon {
-        CORE_BUILDS_PLATFORM_PREFIX = mac_arm64
-        QMAKE_APPLE_DEVICE_ARCHS = arm64
-    }
+	apple_silicon {
+		CORE_BUILDS_PLATFORM_PREFIX = mac_arm64
+		QMAKE_APPLE_DEVICE_ARCHS = arm64
+	}
 }
 core_linux_arm {
-    CORE_BUILDS_PLATFORM_PREFIX = arm
+	CORE_BUILDS_PLATFORM_PREFIX = arm
 }
 linux_arm64 {
 	CORE_BUILDS_PLATFORM_PREFIX = linux_arm64
 	DEFINES += _ARM_ALIGN_
 }
 core_ios {
-    CORE_BUILDS_PLATFORM_PREFIX = ios
+	CORE_BUILDS_PLATFORM_PREFIX = ios
 
-    CONFIG(iphonesimulator, iphoneos|iphonesimulator): {
-        message("iphonesimulator")
-        CORE_BUILDS_PLATFORM_PREFIX = ios_simulator
-    } else {
+	!versionAtLeast(QMAKE_XCODE_VERSION, 16.0) {
+		QMAKE_CFLAGS += -fembed-bitcode
+		QMAKE_CXXFLAGS += -fembed-bitcode
+		QMAKE_LFLAGS += -fembed-bitcode
+	} else {
+		CONFIG -= bitcode
+	}
 
-        QMAKE_IOS_DEPLOYMENT_TARGET = 11.0
 
-        QMAKE_CFLAGS += -fembed-bitcode
-        QMAKE_CXXFLAGS += -fembed-bitcode
-        QMAKE_LFLAGS += -fembed-bitcode
-        QMAKE_CXXFLAGS += -fobjc-arc
+	CONFIG(iphonesimulator, iphoneos|iphonesimulator): {
+		message("iphonesimulator")
+		CORE_BUILDS_PLATFORM_PREFIX = ios_simulator
 
-        bundle_xcframeworks {
-            xcframework_platform_ios_simulator {
-                QMAKE_APPLE_DEVICE_ARCHS=
-                QMAKE_APPLE_SIMULATOR_ARCHS=x86_64 arm64
-            } else {
-                QMAKE_APPLE_DEVICE_ARCHS = arm64
-                QMAKE_APPLE_SIMULATOR_ARCHS=
-            }
-        } else {
-            CONFIG += core_ios_main_arch
-        }
+		QMAKE_CFLAGS += -fobjc-arc
+		QMAKE_CXXFLAGS += -fobjc-arc
+	} else {
 
-        core_ios_main_arch {
-            QMAKE_APPLE_DEVICE_ARCHS = arm64
-            core_ios_no_simulator_arch : QMAKE_APPLE_SIMULATOR_ARCHS=
+		QMAKE_IOS_DEPLOYMENT_TARGET = 11.0
 
-            core_ios_32 {
-                QMAKE_APPLE_DEVICE_ARCHS = $$QMAKE_APPLE_DEVICE_ARCHS armv7
-            }
-        }
+		QMAKE_CFLAGS += -fobjc-arc
+		QMAKE_CXXFLAGS += -fobjc-arc
 
-        core_ios_nomain_arch {
-            QMAKE_APPLE_DEVICE_ARCHS = $$QMAKE_APPLE_DEVICE_ARCHS arm64e
-            core_ios_32 {
-                QMAKE_APPLE_DEVICE_ARCHS = $$QMAKE_APPLE_DEVICE_ARCHS armv7s
-            }
-        }
+		bundle_xcframeworks {
+			xcframework_platform_ios_simulator {
+				QMAKE_APPLE_DEVICE_ARCHS=
+				QMAKE_APPLE_SIMULATOR_ARCHS=x86_64 arm64
+			} else {
+				QMAKE_APPLE_DEVICE_ARCHS = arm64
+				QMAKE_APPLE_SIMULATOR_ARCHS=
+			}
+		} else {
+			CONFIG += core_ios_main_arch
+		}
 
-        !no_verify_bitcode {
-            # for application: (using xcodebuild)
-            #Q_ENABLE_BITCODE.name = ENABLE_BITCODE
-            #Q_ENABLE_BITCODE.value = NO
-            #
-            #Q_BITCODE_GENERATION_MODE.name = BITCODE_GENERATION_MODE
-            #Q_BITCODE_GENERATION_MODE.value = marker
-            #
-            #QMAKE_MAC_XCODE_SETTINGS += Q_ENABLE_BITCODE
-            #QMAKE_MAC_XCODE_SETTINGS += Q_BITCODE_GENERATION_MODE
+		core_ios_main_arch {
+			QMAKE_APPLE_DEVICE_ARCHS = arm64
+			core_ios_no_simulator_arch : QMAKE_APPLE_SIMULATOR_ARCHS=
 
-            # for libraries
-            !core_debug {
-                QMAKE_LFLAGS += -Xlinker -bitcode_verify
-                QMAKE_LFLAGS += -Xlinker -bitcode_hide_symbols
-                #QMAKE_LFLAGS += -Xlinker -bitcode_symbol_map -Xlinker $$CORE_BUILDS_LIBRARIES_PATH
-            }
-        }
-    }
+			core_ios_32 {
+				QMAKE_APPLE_DEVICE_ARCHS = $$QMAKE_APPLE_DEVICE_ARCHS armv7
+			}
+		}
 
-    !core_ios_no_unistd {
-        DEFINES += HAVE_UNISTD_H HAVE_FCNTL_H
-    }
+		core_ios_nomain_arch {
+			QMAKE_APPLE_DEVICE_ARCHS = $$QMAKE_APPLE_DEVICE_ARCHS arm64e
+			core_ios_32 {
+				QMAKE_APPLE_DEVICE_ARCHS = $$QMAKE_APPLE_DEVICE_ARCHS armv7s
+			}
+		}
+
+		!no_verify_bitcode {
+			# for application: (using xcodebuild)
+			#Q_ENABLE_BITCODE.name = ENABLE_BITCODE
+			#Q_ENABLE_BITCODE.value = NO
+			#
+			#Q_BITCODE_GENERATION_MODE.name = BITCODE_GENERATION_MODE
+			#Q_BITCODE_GENERATION_MODE.value = marker
+			#
+			#QMAKE_MAC_XCODE_SETTINGS += Q_ENABLE_BITCODE
+			#QMAKE_MAC_XCODE_SETTINGS += Q_BITCODE_GENERATION_MODE
+
+			# for libraries
+			!core_debug {
+				QMAKE_LFLAGS += -Xlinker -bitcode_verify
+				QMAKE_LFLAGS += -Xlinker -bitcode_hide_symbols
+				#QMAKE_LFLAGS += -Xlinker -bitcode_symbol_map -Xlinker $$CORE_BUILDS_LIBRARIES_PATH
+			}
+		}
+	}
+
+	!core_ios_no_unistd {
+		DEFINES += HAVE_UNISTD_H HAVE_FCNTL_H
+	}
 }
 
 core_android {
-    CORE_BUILDS_PLATFORM_PREFIX = $$join(ANDROID_TARGET_ARCH, ANDROID_TARGET_ARCH, "android_", "")
-    CORE_BUILDS_PLATFORM_PREFIX = $$replace(CORE_BUILDS_PLATFORM_PREFIX, "-", "_")
-    CORE_BUILDS_PLATFORM_PREFIX = $$replace(CORE_BUILDS_PLATFORM_PREFIX, "armeabi_v7", "armv7")
-    CORE_BUILDS_PLATFORM_PREFIX = $$replace(CORE_BUILDS_PLATFORM_PREFIX, "armv7a", "armv7")
+	CORE_BUILDS_PLATFORM_PREFIX = $$join(ANDROID_TARGET_ARCH, ANDROID_TARGET_ARCH, "android_", "")
+	CORE_BUILDS_PLATFORM_PREFIX = $$replace(CORE_BUILDS_PLATFORM_PREFIX, "-", "_")
+	CORE_BUILDS_PLATFORM_PREFIX = $$replace(CORE_BUILDS_PLATFORM_PREFIX, "armeabi_v7", "armv7")
+	CORE_BUILDS_PLATFORM_PREFIX = $$replace(CORE_BUILDS_PLATFORM_PREFIX, "armv7a", "armv7")
+	CORE_BUILDS_PLATFORM_PREFIX_DST = $$replace(CORE_BUILDS_PLATFORM_PREFIX, "android_", "")
 
-    !isEmpty(OO_DESTDIR_BUILD_OVERRIDE) {
-        isEqual(CORE_BUILDS_PLATFORM_PREFIX, android_arm64_v8a):OO_DESTDIR_BUILD_OVERRIDE=$$OO_DESTDIR_BUILD_OVERRIDE/arm64-v8a
-        isEqual(CORE_BUILDS_PLATFORM_PREFIX, android_armv7):OO_DESTDIR_BUILD_OVERRIDE=$$OO_DESTDIR_BUILD_OVERRIDE/armeabi-v7a
-        isEqual(CORE_BUILDS_PLATFORM_PREFIX, android_x86):OO_DESTDIR_BUILD_OVERRIDE=$$OO_DESTDIR_BUILD_OVERRIDE/x86
-        isEqual(CORE_BUILDS_PLATFORM_PREFIX, android_x86_64):OO_DESTDIR_BUILD_OVERRIDE=$$OO_DESTDIR_BUILD_OVERRIDE/x86_64
-    }
+	!isEmpty(OO_DESTDIR_BUILD_OVERRIDE) {
+		isEqual(CORE_BUILDS_PLATFORM_PREFIX, android_arm64_v8a):OO_DESTDIR_BUILD_OVERRIDE=$$OO_DESTDIR_BUILD_OVERRIDE/arm64-v8a
+		isEqual(CORE_BUILDS_PLATFORM_PREFIX, android_armv7):OO_DESTDIR_BUILD_OVERRIDE=$$OO_DESTDIR_BUILD_OVERRIDE/armeabi-v7a
+		isEqual(CORE_BUILDS_PLATFORM_PREFIX, android_x86):OO_DESTDIR_BUILD_OVERRIDE=$$OO_DESTDIR_BUILD_OVERRIDE/x86
+		isEqual(CORE_BUILDS_PLATFORM_PREFIX, android_x86_64):OO_DESTDIR_BUILD_OVERRIDE=$$OO_DESTDIR_BUILD_OVERRIDE/x86_64
+	}
 
-    core_debug {
-        QMAKE_LFLAGS += -Wl,--build-id=sha1
-    }
+	core_debug {
+		QMAKE_LFLAGS += -Wl,--build-id=sha1
+	}
 
 	!core_android_no_unistd {
 		DEFINES += HAVE_UNISTD_H HAVE_FCNTL_H
@@ -467,11 +533,11 @@ core_android {
 }
 
 core_debug {
-    DEFINES += _DEBUG
-    CORE_BUILDS_CONFIGURATION_PREFIX    = debug
+	DEFINES += _DEBUG
+	CORE_BUILDS_CONFIGURATION_PREFIX    = debug
 }
 core_release {
-    CORE_BUILDS_CONFIGURATION_PREFIX    = release
+	CORE_BUILDS_CONFIGURATION_PREFIX    = release
 }
 
 CONFIG += object_parallel_to_source
@@ -495,37 +561,45 @@ enable_cpp_17 {
 }
 
 core_linux {
-core_static_link_libstd {
-	!core_linux_clang {
-		QMAKE_LFLAGS += -static-libstdc++ -static-libgcc
-	} else {
-		# TODO: add libc++abi?
+	core_release {
+		core_static_link_libstd {
+			!core_linux_clang {
+				QMAKE_LFLAGS += -static-libstdc++ -static-libgcc
+			} else {
+				# TODO: add libc++abi?
+			}
+			message(core_static_link_libstd)
+		}
 	}
-	message(core_static_link_libstd)
-}
-plugin {
-    QMAKE_CXXFLAGS += -fvisibility=hidden
-    QMAKE_CFLAGS += -fvisibility=hidden
-
-    TARGET_EXT = .so
-}
-}
-
-core_mac {
-plugin {
-    QMAKE_CXXFLAGS += -fvisibility=hidden
-    QMAKE_CFLAGS += -fvisibility=hidden
-}
+	plugin {
+		TARGET_EXT = .so
+	}
 }
 
 core_windows {
 plugin {
-    TARGET_EXT = .dll
+	TARGET_EXT = .dll
 }
 }
 
-core_disable_all_warnings {
-    CONFIG += warn_off
+!core_windows {
+	plugin:CONFIG += config_hidden_symbols
+	staticlib:CONFIG += config_hidden_symbols
+}
+
+config_hidden_symbols {
+	QMAKE_CXXFLAGS += -fvisibility=hidden -fvisibility-inlines-hidden
+	QMAKE_CFLAGS += -fvisibility=hidden -fvisibility-inlines-hidden
+
+	core_mac:CONFIG += clang_no_exclude_libs
+	core_ios:CONFIG += clang_no_exclude_libs
+
+	!clang_no_exclude_libs {
+		plugin:QMAKE_LFLAGS += -Wl,--exclude-libs,ALL
+		equals(TEMPLATE, app) {
+			QMAKE_LFLAGS += -Wl,--exclude-libs,ALL
+		}
+	}
 }
 
 # BUILD_PATHS
@@ -538,61 +612,69 @@ RCC_DIR     = $$PWD_ROOT_DIR/core_build/$$CORE_BUILDS_PLATFORM_PREFIX/$$CORE_BUI
 UI_DIR      = $$PWD_ROOT_DIR/core_build/$$CORE_BUILDS_PLATFORM_PREFIX/$$CORE_BUILDS_CONFIGURATION_PREFIX/ui
 
 bundle_xcframeworks {
-    xcframework_platform_ios_simulator {
-        OBJECTS_DIR = $$OBJECTS_DIR/simulator
-        MOC_DIR     = $$MOC_DIR/simulator
-        RCC_DIR     = $$RCC_DIR/simulator
-        UI_DIR      = $$UI_DIR/simulator
-    }
+	xcframework_platform_ios_simulator {
+		OBJECTS_DIR = $$OBJECTS_DIR/simulator
+		MOC_DIR     = $$MOC_DIR/simulator
+		RCC_DIR     = $$RCC_DIR/simulator
+		UI_DIR      = $$UI_DIR/simulator
+	}
 }
 
 build_xp {
-    OBJECTS_DIR = $$OBJECTS_DIR/xp
-    MOC_DIR     = $$MOC_DIR/xp
-    RCC_DIR     = $$RCC_DIR/xp
-    UI_DIR      = $$UI_DIR/xp
+	OBJECTS_DIR = $$OBJECTS_DIR/xp
+	MOC_DIR     = $$MOC_DIR/xp
+	RCC_DIR     = $$RCC_DIR/xp
+	UI_DIR      = $$UI_DIR/xp
 }
+}
+
+core_windows {
+	build_xp {
+		DEFINES += WIN_XP_OR_VISTA
+	}
 }
 
 CORE_BUILDS_LIBRARIES_PATH = $$CORE_ROOT_DIR/build/lib/$$CORE_BUILDS_PLATFORM_PREFIX
 CORE_BUILDS_BINARY_PATH = $$CORE_ROOT_DIR/build/bin/$$CORE_BUILDS_PLATFORM_PREFIX
 
 !isEmpty(OO_BUILD_BRANDING) {
-    CORE_BUILDS_LIBRARIES_PATH = $$CORE_ROOT_DIR/build/$$OO_BUILD_BRANDING/lib/$$CORE_BUILDS_PLATFORM_PREFIX
-    CORE_BUILDS_BINARY_PATH = $$CORE_ROOT_DIR/build/$$OO_BUILD_BRANDING/bin/$$CORE_BUILDS_PLATFORM_PREFIX
+	CORE_BUILDS_LIBRARIES_PATH = $$CORE_ROOT_DIR/build/$$OO_BUILD_BRANDING/lib/$$CORE_BUILDS_PLATFORM_PREFIX
+	CORE_BUILDS_BINARY_PATH = $$CORE_ROOT_DIR/build/$$OO_BUILD_BRANDING/bin/$$CORE_BUILDS_PLATFORM_PREFIX
 
-    DEFINES += "BUILD_BRANDING_NAME=\"\\\"$$OO_BUILD_BRANDING\\\"\""
+	!equals(OO_BUILD_BRANDING, onlyoffice-opensource) {
+		DEFINES += "BUILD_BRANDING_NAME=\"\\\"$$OO_BUILD_BRANDING\\\"\""
+	}
 }
 
 core_debug {
-    CORE_BUILDS_LIBRARIES_PATH = $$CORE_BUILDS_LIBRARIES_PATH/debug
-    CORE_BUILDS_BINARY_PATH = $$CORE_BUILDS_BINARY_PATH/debug
+	CORE_BUILDS_LIBRARIES_PATH = $$CORE_BUILDS_LIBRARIES_PATH/debug
+	CORE_BUILDS_BINARY_PATH = $$CORE_BUILDS_BINARY_PATH/debug
 }
 
 !isEmpty(OO_DESTDIR_BUILD_OVERRIDE) {
-    CORE_BUILDS_LIBRARIES_PATH = $$OO_DESTDIR_BUILD_OVERRIDE
-    CORE_BUILDS_BINARY_PATH = $$OO_DESTDIR_BUILD_OVERRIDE
+	CORE_BUILDS_LIBRARIES_PATH = $$OO_DESTDIR_BUILD_OVERRIDE
+	CORE_BUILDS_BINARY_PATH = $$OO_DESTDIR_BUILD_OVERRIDE
 }
 
 core_ios {
-    xcframework_platform_ios_simulator {
-        CORE_BUILDS_LIBRARIES_PATH = $$CORE_BUILDS_LIBRARIES_PATH/simulator
-        CORE_BUILDS_BINARY_PATH = $$CORE_BUILDS_BINARY_PATH/simulator
-    }
+	xcframework_platform_ios_simulator {
+		CORE_BUILDS_LIBRARIES_PATH = $$CORE_BUILDS_LIBRARIES_PATH/simulator
+		CORE_BUILDS_BINARY_PATH = $$CORE_BUILDS_BINARY_PATH/simulator
+	}
 }
 
 plugin {
-    DESTDIR = $$CORE_BUILDS_LIBRARIES_PATH
+	DESTDIR = $$CORE_BUILDS_LIBRARIES_PATH
 }
 staticlib {
-    DESTDIR = $$CORE_BUILDS_LIBRARIES_PATH
+	DESTDIR = $$CORE_BUILDS_LIBRARIES_PATH
 }
 
 core_x2t {
 core_windows {
-    QMAKE_CXXFLAGS += /bigobj
+	QMAKE_CXXFLAGS += /bigobj
 } else {
-    QMAKE_CXXFLAGS += -Wall -Wno-ignored-qualifiers
+	QMAKE_CXXFLAGS += -Wall -Wno-ignored-qualifiers
 }
 
 DEFINES += CRYPTOPP_DISABLE_ASM
@@ -641,26 +723,27 @@ bundle_dylibs {
 }
 
 defineTest(ADD_DEPENDENCY) {
-    libs = $$ARGS
-    for(lib, libs) {
-        CORE_BUILDS_LIBRARIES_PATH_DST=$$CORE_BUILDS_LIBRARIES_PATH
+	libs = $$ARGS
+	for(lib, libs) {
+		CORE_BUILDS_LIBRARIES_PATH_DST=$$CORE_BUILDS_LIBRARIES_PATH
 
-        isEqual(lib, videoplayer) {
-            BASE_VIDEO_PLAYER_VLC_DIR = $$(VIDEO_PLAYER_VLC_DIR)
-            !isEmpty(BASE_VIDEO_PLAYER_VLC_DIR):CORE_BUILDS_LIBRARIES_PATH_DST=$$CORE_BUILDS_LIBRARIES_PATH/mediaplayer
-        }
+		isEqual(lib, videoplayer) {
+			libvlc {
+				CORE_BUILDS_LIBRARIES_PATH_DST=$$CORE_BUILDS_LIBRARIES_PATH/mediaplayer
+			}
+		}
 
-        build_xp {
-		    isEqual(lib, doctrenderer):CORE_BUILDS_LIBRARIES_PATH_DST=$$CORE_BUILDS_LIBRARIES_PATH_DST/xp
+		build_xp {
+			isEqual(lib, doctrenderer):CORE_BUILDS_LIBRARIES_PATH_DST=$$CORE_BUILDS_LIBRARIES_PATH_DST/xp
 			isEqual(lib, ascdocumentscore):CORE_BUILDS_LIBRARIES_PATH_DST=$$CORE_BUILDS_LIBRARIES_PATH_DST/xp
 			isEqual(lib, qtascdocumentscore):CORE_BUILDS_LIBRARIES_PATH_DST=$$CORE_BUILDS_LIBRARIES_PATH_DST/xp
 			isEqual(lib, videoplayer):CORE_BUILDS_LIBRARIES_PATH_DST=$$CORE_BUILDS_LIBRARIES_PATH_DST/xp
 			isEqual(lib, ooxmlsignature):CORE_BUILDS_LIBRARIES_PATH_DST=$$CORE_BUILDS_LIBRARIES_PATH_DST/xp
-        }
-        !bundle_dylibs:LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH_DST -l$$lib
-        bundle_dylibs:LIBS += -F$$CORE_BUILDS_LIBRARIES_PATH_DST -framework $$lib
-    }
-    export(LIBS)
+		}
+		!bundle_dylibs:LIBS += -L$$CORE_BUILDS_LIBRARIES_PATH_DST -l$$lib
+		bundle_dylibs:LIBS += -F$$CORE_BUILDS_LIBRARIES_PATH_DST -framework $$lib
+	}
+	export(LIBS)
 }
 
 ADD_INC_PATH = $$(ADDITIONAL_INCLUDE_PATH)
@@ -778,3 +861,4 @@ defineTest(UseSwift) {
 	export(OTHER_FILES)
 	return(true)
 }
+

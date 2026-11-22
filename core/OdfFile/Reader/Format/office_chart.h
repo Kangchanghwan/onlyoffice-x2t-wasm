@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #pragma once
 
@@ -117,10 +127,11 @@ class chart_title_attlist
 public:
     void add_attributes( const xml::attributes_wc_ptr & Attributes );
 
-    _CP_OPT(std::wstring)					table_cell_range_;
-    odf_types::common_draw_position_attlist common_draw_position_attlist_;
-    common_chart_attlist					common_attlist_;
+    _CP_OPT(std::wstring) table_cell_range_;
+    common_chart_attlist common_attlist_;
 
+    odf_types::common_draw_position_attlist		common_draw_position_attlist_;
+    odf_types::common_draw_size_attlist         common_draw_size_attlist_;
 };
 
 //  chart:title
@@ -161,7 +172,6 @@ private:
 public:
     chart_title_attlist	attlist_;
     office_element_ptr	text_p_;
-
 };
 
 CP_REGISTER_OFFICE_ELEMENT2(chart_subtitle);
@@ -199,6 +209,7 @@ public:
     _CP_OPT(double)				style_legend_expansion_aspect_ratio_;
 	
 	odf_types::common_draw_position_attlist		common_draw_position_attlist_;
+    odf_types::common_draw_size_attlist         common_draw_size_attlist_;
 	common_chart_attlist						common_attlist_;
 
 };
@@ -262,6 +273,27 @@ public:
 
 CP_REGISTER_OFFICE_ELEMENT2(chart_plot_area);
 
+//  chart:coordinate-region
+class chart_coordinate_region : public office_element_impl<chart_coordinate_region>
+{
+public:
+    static const wchar_t * ns;
+    static const wchar_t * name;
+    static const xml::NodeType xml_type = xml::typeElement;
+    static const ElementType type = typeChartCoordinateRegion;
+    CPDOCCORE_DEFINE_VISITABLE();
+
+private:
+    virtual void add_attributes( const xml::attributes_wc_ptr & Attributes );
+    virtual void add_child_element( xml::sax * Reader, const std::wstring & Ns, const std::wstring & Name) {}
+
+public:
+    odf_types::common_draw_position_attlist	common_draw_position_attlist_;
+    odf_types::common_draw_size_attlist		common_draw_size_attlist_;
+};
+
+CP_REGISTER_OFFICE_ELEMENT2(chart_coordinate_region);
+
 class chart_wall_attlist
 {
 public:
@@ -322,6 +354,8 @@ public:
     _CP_OPT(odf_types::chart_axis_type) axis_type_;
 
     common_chart_attlist common_attlist_;
+    odf_types::common_draw_position_attlist	 common_draw_position_attlist_;
+    odf_types::common_draw_size_attlist common_draw_size_attlist_;
 };
 
 //  chart:axis
@@ -350,8 +384,8 @@ public:
     void add_attributes( const xml::attributes_wc_ptr & Attributes );
 
 public:
-    _CP_OPT(std::wstring)		grid_class_;
-    common_chart_attlist		common_attlist_;
+    _CP_OPT(std::wstring) grid_class_;
+    common_chart_attlist common_attlist_;
     
 };
 
@@ -404,12 +438,12 @@ public:
     void add_attributes( const xml::attributes_wc_ptr & Attributes );
 
 public:
-    _CP_OPT(std::wstring)			chart_values_cell_range_address_;
-    _CP_OPT(std::wstring)			chart_label_cell_address_;
+    _CP_OPT(std::wstring) chart_values_cell_range_address_;
+    _CP_OPT(std::wstring) chart_label_cell_address_;
     _CP_OPT(odf_types::chart_class)	chart_class_;
-    _CP_OPT(std::wstring)			chart_attached_axis_;
-    common_chart_attlist			common_attlist_;
-
+    _CP_OPT(std::wstring) chart_attached_axis_;
+    
+    common_chart_attlist common_attlist_;
 };
 
 //  chart:series
@@ -461,9 +495,8 @@ class chart_data_point_attlist
 public:
     void add_attributes( const xml::attributes_wc_ptr & Attributes );
 
-public:
-    _CP_OPT(unsigned int)		chart_repeated_;
-    common_chart_attlist		common_attlist_;
+    _CP_OPT(unsigned int) chart_repeated_;
+    common_chart_attlist common_attlist_;
 };
 
 //  chart:data-point
@@ -541,17 +574,12 @@ public:
     static const xml::NodeType xml_type = xml::typeElement;
     static const ElementType type = typeChartEquation;
     CPDOCCORE_DEFINE_VISITABLE();
-
-
 private:
     virtual void add_attributes( const xml::attributes_wc_ptr & Attributes );
-    virtual void add_child_element( xml::sax * Reader, const std::wstring & Ns, const std::wstring & Name)
-	{}
-
+    virtual void add_child_element( xml::sax * Reader, const std::wstring & Ns, const std::wstring & Name) {}
 public:
-    common_chart_attlist	common_attlist_;
-	_CP_OPT(bool)			display_r_square_;
-
+    common_chart_attlist common_attlist_;
+	_CP_OPT(bool) display_r_square_;
 };
 
 CP_REGISTER_OFFICE_ELEMENT2(chart_equation);
@@ -565,15 +593,13 @@ public:
     static const xml::NodeType xml_type = xml::typeElement;
     static const ElementType type = typeChartRegressionCurve;
     CPDOCCORE_DEFINE_VISITABLE();
-
-
 private:
     virtual void add_attributes( const xml::attributes_wc_ptr & Attributes );
     virtual void add_child_element( xml::sax * Reader, const std::wstring & Ns, const std::wstring & Name);
 
 public:
-    common_chart_attlist	common_attlist_;
-	office_element_ptr		chart_equation_;
+    common_chart_attlist common_attlist_;
+	office_element_ptr chart_equation_;
 };
 
 CP_REGISTER_OFFICE_ELEMENT2(chart_regression_curve);
@@ -588,16 +614,12 @@ public:
     static const xml::NodeType xml_type = xml::typeElement;
     static const ElementType type = typeChartStockGainMarker;
     CPDOCCORE_DEFINE_VISITABLE();
-
-
 private:
     virtual void add_attributes( const xml::attributes_wc_ptr & Attributes );
-    virtual void add_child_element( xml::sax * Reader, const std::wstring & Ns, const std::wstring & Name)
-	{}
+    virtual void add_child_element( xml::sax * Reader, const std::wstring & Ns, const std::wstring & Name) {}
 
 public:
     common_chart_attlist common_attlist_;
-
 };
 
 CP_REGISTER_OFFICE_ELEMENT2(chart_stock_gain_marker);
@@ -611,15 +633,12 @@ public:
     static const xml::NodeType xml_type = xml::typeElement;
     static const ElementType type = typeChartStockLossMarker;
     CPDOCCORE_DEFINE_VISITABLE();
-
-
 private:
     virtual void add_attributes( const xml::attributes_wc_ptr & Attributes );
-    virtual void add_child_element( xml::sax * Reader, const std::wstring & Ns, const std::wstring & Name)
-	{}
+    virtual void add_child_element( xml::sax * Reader, const std::wstring & Ns, const std::wstring & Name){}
 
 public:
-    common_chart_attlist		common_attlist_;
+    common_chart_attlist common_attlist_;
 
 };
 CP_REGISTER_OFFICE_ELEMENT2(chart_stock_loss_marker);
@@ -633,12 +652,9 @@ public:
     static const xml::NodeType xml_type = xml::typeElement;
     static const ElementType type = typeChartStockRangeLine;
     CPDOCCORE_DEFINE_VISITABLE();
-
 private:
     virtual void add_attributes( const xml::attributes_wc_ptr & Attributes );
-    virtual void add_child_element( xml::sax * Reader, const std::wstring & Ns, const std::wstring & Name)
-	{}
-
+    virtual void add_child_element( xml::sax * Reader, const std::wstring & Ns, const std::wstring & Name){}
 public:
     common_chart_attlist common_attlist_;
 

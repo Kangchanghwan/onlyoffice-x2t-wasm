@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #ifndef _BUILD_GLYPH_STRING_H
 #define _BUILD_GLYPH_STRING_H
@@ -39,12 +49,12 @@
 class TGlyphBitmap 
 {
 public:
-	int     nX;        // X offset of the starting point for drawing the symbol
-	int     nY;        // Y offset of the starting point for drawing the symbol
+	int     nX;        // X offset of starting point for drawing character
+	int     nY;        // Y offset of starting point for drawing character
 	int     nWidth;    // Character width
 	int     nHeight;   // Character height
-	INT    bAA;       // Anti-aliased: True means that the Bitmap is 8-bit (i.e. with alpha); False - Bitmap 1-bit
-	BYTE*	pData;     // Bitmap data(image with symbol)
+	INT    bAA;       // Anti-aliased: True means Bitmap is 8-bit (i.e. with alpha); False - Bitmap is 1-bit
+	BYTE*	pData;     // Bitmap data (image with character)
 	INT    bFreeData; // True if memory in pData needs to be freed
 
 	TGlyphBitmap();
@@ -53,9 +63,9 @@ public:
 
 enum EGlyphState
 {
-	glyphstateNormal = 0,  // the symbol is rendered in the required font
-	glyphstateDefault,     // the symbol is rendered in the default font
-	glyphstateMiss         // the symbol wasn't rendered
+	glyphstateNormal = 0,  // character rendered in required font
+	glyphstateDefault,     // character rendered in default font
+	glyphstateMiss         // character was not rendered
 };
 
 struct TMetrics
@@ -100,7 +110,7 @@ public:
 namespace FontConstants
 {
 	//---------------------------------------------------------------------------------------------------
-	// Constants associated with CharMap: Platform, Encoding ID
+	// Constants related to CharMap: Platform, Encoding ID
 	//---------------------------------------------------------------------------------------------------
 
 	const long c_lUniPlatform = 0;
@@ -173,19 +183,19 @@ public:
 	float   m_fTransX;
 	float   m_fTransY;
 
-	float   m_fX; // Coordinates of the starting point for drawing
+	float   m_fX; // Starting point coordinates for drawing
 	float   m_fY; //
 
 	float   m_fEndX; // End point coordinates
 	float   m_fEndY; //
 
 	double  m_arrCTM[6];     // Global transformation matrix
-	double  m_dIDet;         // (Determinant of transformation matrix)^(-1)
-	
+	double  m_dIDet;         // (Transformation matrix determinant)^(-1)
+
 private:
-	TGlyph* m_pGlyphsBuffer; // Characters in this line
-	int     m_nGlyphsCount;  // Number of characters per line
-	int     m_nGlyphIndex;   // Current character number
+	TGlyph* m_pGlyphsBuffer; // Characters in this string
+	int     m_nGlyphsCount;  // Number of characters in string
+	int     m_nGlyphIndex;   // Current character index
 };
 
 #endif /* _BUILD_GLYPH_STRING_H */

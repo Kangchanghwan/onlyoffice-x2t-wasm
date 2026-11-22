@@ -1,3 +1,38 @@
+/*
+ * Copyright (C) Ascensio System SIA, 2009-2026
+ *
+ * This program is a free software product. You can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License (AGPL)
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
+ * Section 5 of the GNU AGPL version 3.
+ *
+ * No trademark rights are granted under this License.
+ *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 #include "ContText.h"
 
 #include "../../resources/ColorTable.h"
@@ -52,6 +87,7 @@ namespace NSDocxRenderer
 		m_bIsOutlinePresent = rCont.m_bIsOutlinePresent;
 		m_bIsEmbossPresent = rCont.m_bIsEmbossPresent;
 		m_bIsEngravePresent = rCont.m_bIsEngravePresent;
+		m_bIsRtl = rCont.m_bIsRtl;
 
 		m_oText = rCont.m_oText;
 
@@ -72,9 +108,11 @@ namespace NSDocxRenderer
 		m_oSelectedFont = rCont.m_oSelectedFont;
 		m_bPossibleHorSplit = rCont.m_bPossibleHorSplit;
 		m_bWriteStyleRaw = rCont.m_bWriteStyleRaw;
+		m_bCollectMetaInfo = rCont.m_bCollectMetaInfo;
+		m_bIsAddBrEnd = rCont.m_bIsAddBrEnd;
 
 		m_nOriginFontFaceIndex = rCont.m_nOriginFontFaceIndex;
-		m_wsOriginFontName = rCont.m_nOriginFontFaceIndex;
+		m_wsOriginFontName = rCont.m_wsOriginFontName;
 
 		m_arSymWidths.clear();
 		m_arSymWidths.resize(rCont.m_arSymWidths.size());
@@ -306,7 +344,7 @@ namespace NSDocxRenderer
 
 		if (m_bIsHighlightPresent)
 		{
-			//note In <w:style it doesn't work
+			//note This doesn't work in <w:style
 			ColorTable& colorTable = SingletonInstance<ColorTable>();
 			if (colorTable.IsStandardColor(m_lHighlightColor))
 			{
@@ -736,13 +774,13 @@ namespace NSDocxRenderer
 			if (i == 0 && is_space_twice)
 			{
 				m_arSymWidths.back() = m_arSymWidths.back() + arSymWidths[i];
-				m_dWidth += arSymWidths[i];
+				m_dRight += arSymWidths[i];
 				continue;
 			}
 			m_arSymWidths.push_back(w);
 			m_oText += oText.at(i);
 			m_arOriginLefts.push_back(arOriginLefts[i]);
-			m_dRight = arOriginLefts[i] + w;
+			m_dRight = std::max(m_dRight + w, arOriginLefts[i] + w);
 
 			if (!arGids.empty() && m_bCollectMetaInfo)
 				m_arGids.push_back(arGids[i]);
@@ -905,11 +943,11 @@ namespace NSDocxRenderer
 		bool bIf3 = eHType == eHorizontalCrossingType::hctCurrentLeftOfNext;
 		bool bIf4 = eHType == eHorizontalCrossingType::hctCurrentRightOfNext;
 
-		//Font sizes and text should be the same
+		//Font sizes and text must be the same
 		bool bIf5 = pFirstCont->m_pFontStyle->dFontSize == pSecondCont->m_pFontStyle->dFontSize;
 		bool bIf6 = pFirstCont->m_oText == pSecondCont->m_oText;
 
-		//The shadow color should be gray
+		//Shadow color must be grey
 		bool bIf7 = pFirstCont->m_pFontStyle->oBrush.Color1 == c_iGreyColor;
 		bool bIf8 = pSecondCont->m_pFontStyle->oBrush.Color1 == c_iGreyColor;
 
@@ -919,7 +957,7 @@ namespace NSDocxRenderer
 		bool bIf11 = pFirstCont->m_pFontStyle->oBrush.Color1 == c_iGreyColor2;
 		bool bIf12 = pSecondCont->m_pFontStyle->oBrush.Color1 == c_iGreyColor2;
 
-		// Each symbol with Emboss or Engrave is split into 3 symbols with different colors
+		// Each character with Emboss or Engrave is split into 3 characters with different colors
 		if (bIf5 && bIf6)
 		{
 			if (bIf12 && pFirstCont->m_bIsEmbossPresent)
@@ -994,7 +1032,7 @@ namespace NSDocxRenderer
 		             eHType == eHorizontalCrossingType::hctCurrentRightOfNext) &&
 		        fabs(pFirstCont->m_dLeft - pSecondCont->m_dRight) < c_dTHE_STRING_X_PRECISION_MM;
 
-		//Font sizes should be different
+		//Font sizes must be different
         bool bIf5 = pFirstCont->m_pFontStyle->dFontSize * 0.8 > pSecondCont->m_pFontStyle->dFontSize;
         bool bIf6 = pFirstCont->m_pFontStyle->dFontSize <  pSecondCont->m_pFontStyle->dFontSize * 0.8;
 
@@ -1237,8 +1275,8 @@ namespace NSDocxRenderer
 		pCont->m_dHeight = dHeight;
 		pCont->m_dLeft   = dLeft;
 
-		// getting the style for the current character first
-		// may change with further analysis
+		// Initial style retrieval for the current character
+		// May change during further analysis
 		pCont->m_pFontStyle = m_pFontStyleManager->GetOrAddFontStyle(
 		            oBrush,
 		            m_pFontSelector->GetSelectedName(),

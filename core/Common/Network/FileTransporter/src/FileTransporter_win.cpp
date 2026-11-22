@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "FileTransporter_private.h"
@@ -38,16 +48,16 @@
 
 //------------------------------------------------------------------------------------------------------
 
-// Constant for the maximum number of characters per line
+// Constant for maximum number of characters in a string
 #define	MAX_SIZE						256
-// Constant for the maximum number of bytes downloaded
+// Constant for maximum number of downloadable bytes
 #define DOWNLOAD_FILE_SIZE				32768
 #define MAX_SINGLE_DOWNLOAD_FILE_SIZE 524288
 
 
-// Constant to get the file size
+// Constant for getting file size
 #define CONTENT_RANGE		L"bytes 0-0/"
-// Constant for the number of characters in CONTENT_RANGE
+// Constant for CONTENT_RANGE character count
 #define CONTENT_RANGE_SIZE	( 11/*sizeof ( CONTENT_RANGE )*/ - 1 )
 
 namespace NSNetwork
@@ -130,7 +140,7 @@ namespace NSNetwork
 			FILE * m_pFile = nullptr;           // Handle to temporary file
 			unsigned int _DownloadFile(std::wstring sFileUrl)
 			{
-				// Checking the connection status
+				// Check connection state
 				if ( FALSE == InternetGetConnectedState ( 0, 0 ) )
 					return S_FALSE;
 
@@ -147,67 +157,67 @@ namespace NSNetwork
 
 				m_sDownloadFilePath = std::wstring( sTempFile );
 
-				// Opening the session
+				// Open session
 				HINTERNET hInternetSession = InternetOpenW ( L"Mozilla/4.0 (compatible; MSIE 5.0; Windows 98)", INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0 );
 				if ( NULL == hInternetSession )
 					return S_FALSE;
 
-				// Request header (currently contains 0 bytes (necessary for verification))
+				// Request header (currently contains 0 bytes, needed for verification)
 				std::wstring sHTTPHdr = L"Range: bytes=0-0";
-				// Open the link to check for its existence, as well as support for chunked reads
+				// Open URL to check its existence and ability to read in chunks
 				HINTERNET hInternetOpenURL = InternetOpenUrlW ( hInternetSession, sFileUrl.c_str(), sHTTPHdr.c_str(), -1, INTERNET_FLAG_RESYNCHRONIZE, 0 );
 				if ( NULL != hInternetOpenURL )
 				{
-					// Opened successfully; check the response
+					// Opened successfully, check response
 					if ( TRUE == QueryStatusCode ( hInternetOpenURL, TRUE ) )
 					{
-						// The request was successful, check support for chunked reads and get the data size
+						// Request succeeded, check ability to read in chunks and get data size
 						LONGLONG nFileSize = IsAccept_Ranges ( hInternetOpenURL );
-						// Closing the handle
+						// Close handle
 						InternetCloseHandle ( hInternetOpenURL );
 						if ( -1 == nFileSize )
 						{
-							// Chunked reading isn't available
-							// Closing the connection handle
+							// Reading in chunks is not available
+							// Close connection handle
 							InternetCloseHandle ( hInternetSession );
-							// Close the file (done on DownloadAll)
-								// Fall back to writing it as a whole
+							// Close file (will be done in DownloadAll)
+							// Try to write it entirely
 							return S_FALSE;
 						}
 						else
 						{
-							// Chunked reading is available
+							// Reading in chunks is available
 							LONGLONG nStartByte = 0;
 							while ( true )
 							{
-								// If the entire file has been downloaded, then exit
+								// If entire file is downloaded - exit
 								if ( nStartByte == nFileSize - 1 )
 								{
-									// Closing the connection handle
+									// Close connection handle
 									InternetCloseHandle ( hInternetSession );
 									return S_OK;
 								}
 								LONGLONG nEndByte = nStartByte + DOWNLOAD_FILE_SIZE;
-								// If the file ends, then we load fewer bytes (1 less than the size, because it starts from 0)
+								// If file is ending, download fewer bytes (1 less than size, since it starts from 0)
 								if ( nEndByte >= nFileSize )
 									nEndByte = nFileSize - 1;
 
-								// Buffer for downloading
+								// Download buffer
 								BYTE arrBuffer [ DOWNLOAD_FILE_SIZE ] = { 0 };
 								DWORD dwBytesDownload = DownloadFilePath ( hInternetSession, arrBuffer, nStartByte, nEndByte, sFileUrl );
 
 								nStartByte = nEndByte;
 								if ( -1 == dwBytesDownload )
 								{
-									// No data was read.
-									// Closing the connection handle
+									// Nothing was read - this is bad!!!!
+									// Close connection handle
 									InternetCloseHandle ( hInternetSession );
-									// Close the file (done on DownloadAll)
-										// Fall back to writing it as a whole
+									// Close file (will be done in DownloadAll)
+									// Try to write it entirely
 									return S_FALSE;
 								}
 
-								// Write to a file
+								// Write to file
 								::fwrite( (BYTE*)arrBuffer, 1, dwBytesDownload, m_pFile );
 								::fflush( m_pFile );
 
@@ -217,30 +227,30 @@ namespace NSNetwork
 					}
 					else
 					{
-						// Closing the connection handle
+						// Close connection handle
 						InternetCloseHandle ( hInternetSession );
-						// Close the file (done on DownloadAll)
-							// Fall back to writing it as a whole
+						// Close file (will be done in DownloadAll)
+						// Try to write it entirely
 						return S_FALSE;
 					}
 				}
 				else
 				{
-					// Closing the connection handle
+					// Close connection handle
 					InternetCloseHandle ( hInternetSession );
-					// Close the file (done on DownloadAll)
-						// Fall back to writing it as a whole
+					// Close file (will be done in DownloadAll)
+					// Try to write it entirely
 					return S_FALSE;
 				}
 
-				// Closing the connection handle
+				// Close connection handle
 				InternetCloseHandle ( hInternetSession );
 
 				return S_OK;
 			}
 			DWORD DownloadFilePath ( HINTERNET hInternet, LPBYTE pBuffer, LONGLONG nStartByte, LONGLONG nEndByte, std::wstring sFileURL )
 			{
-				// Unopened session
+				// Session not opened
 				if ( NULL == hInternet )
 					return -1;
 
@@ -250,29 +260,29 @@ namespace NSNetwork
 
 				// Request header (contains nEndByte - nStartByte bytes)
 				std::wstring sHTTPHdr = L"Range: bytes=" + std::to_wstring(nStartByte) + L"-" + std::to_wstring(nEndByte);
-				// Open the download link
+				// Open URL for download
 				HINTERNET hInternetOpenURL = InternetOpenUrlW ( hInternet, sFileURL.c_str(), sHTTPHdr.c_str(), -1, INTERNET_FLAG_RESYNCHRONIZE, 0 );
 				if ( NULL == hInternetOpenURL )
 					return -1;
-				// Opened successfully; check the response
+				// Opened successfully, check response
 				if ( FALSE == QueryStatusCode ( hInternetOpenURL, TRUE ) )
 				{
-					// Closing the connection handle
+					// Close connection handle
 					InternetCloseHandle ( hInternetOpenURL );
 					return -1;
 				}
 
-				// Number of bytes read?
+				// Number of bytes read
 				DWORD dwBytesRead = 0;
-				// Reading the file
+				// Read file
 				if ( FALSE == InternetReadFile ( hInternetOpenURL, pBuffer, DOWNLOAD_FILE_SIZE, &dwBytesRead ) )
 				{
-					// Closing the connection handle
+					// Close connection handle
 					InternetCloseHandle ( hInternetOpenURL );
 					return -1;
 				}
 
-				// Closing the connection handle
+				// Close connection handle
 				InternetCloseHandle ( hInternetOpenURL );
 
 				return dwBytesRead;
@@ -280,7 +290,7 @@ namespace NSNetwork
 
 			BOOL QueryStatusCode ( HINTERNET hInternet, BOOL bIsRanges )
 			{
-				// Why check something for an unopened session?
+				// Why check anything for an unopened session
 				if ( NULL == hInternet )
 					return FALSE;
 
@@ -289,11 +299,11 @@ namespace NSNetwork
 				// Response data size (should be = 4)
 				DWORD dwLengthDataSize = 4;
 
-				// Send the request; return FALSE on failure
+				// Make request, if it fails - return FALSE
 				if ( FALSE == HttpQueryInfo ( hInternet, HTTP_QUERY_STATUS_CODE | HTTP_QUERY_FLAG_NUMBER, &nResult, &dwLengthDataSize, NULL ) )
 					return FALSE;
 
-				// The request succeeded; check the response code
+				// Request succeeded, now check response code
 				if ( HTTP_STATUS_NOT_FOUND == nResult )
 				{
 					// Object not found, bad link or something else
@@ -301,33 +311,33 @@ namespace NSNetwork
 				}
 				else if ( ( HTTP_STATUS_OK != nResult && FALSE == bIsRanges ) || ( HTTP_STATUS_PARTIAL_CONTENT != nResult && TRUE == bIsRanges ) )
 				{
-					// The request failed for some reason
+					// Request failed for some reason
 					return FALSE;
 				}
 
-				// Everything is fine, the request went through
+				// Everything is fine, request succeeded
 				return TRUE;
 			}
-			// Checks whether a resource is available for chunked reading and returns -1 when unavailable, otherwise the data size
+			// Checks if resource supports reading in chunks and returns -1 if not available, or data size if available
 			LONGLONG IsAccept_Ranges ( HINTERNET hInternet )
 			{
-				// Why check something for an unopened session?
+				// Why check anything for an unopened session
 				if ( NULL == hInternet )
 					return -1;
 
 				// Response result
 				wchar_t arrResult [ MAX_SIZE ] = { 0 };
-				// Response Data Size
+				// Response data size
 				DWORD dwLengthDataSize = sizeof ( arrResult );
 
-				// Send the request; return FALSE on failure
+				// Make request, if it fails - return FALSE
 				if ( FALSE == HttpQueryInfoW ( hInternet, HTTP_QUERY_CONTENT_RANGE, &arrResult, &dwLengthDataSize, NULL ) )
 				{
-					// Get the last error
+					// Get last error
 					DWORD dwLastError = GetLastError ();
 					if ( dwLastError == ERROR_HTTP_HEADER_NOT_FOUND )
 					{
-						// The header didn't arrive, which means the resource doesn't support reading in parts
+						// Header not received, resource doesn't support reading in chunks
 						return -1;
 					}
 
@@ -335,28 +345,28 @@ namespace NSNetwork
 					return -1;
 				}
 
-				// If size is 0, then there is no header
+				// If size is 0, there is no header
 				if ( 0 >= dwLengthDataSize )
 					return -1;
 
 				// Convert to std::wstring
 				std::wstring strResult ( arrResult );
 
-				// Contains the data size
+				// Contains data size
 				LONGLONG nFileSize = 0;
 
 				try
 				{
-					// Find the index of the data size in the string
+					// Find data size index in string
 					INT nStartIndex = (INT)strResult.find ( CONTENT_RANGE );
 					if ( -1 == nStartIndex )
 						return -1;
 
-					// Keep only the data size in the line
+					// Leave only data size in string
 					strResult = strResult.substr( nStartIndex + CONTENT_RANGE_SIZE );
-					// Now get the data size by converting the string to LONGLONG
+					// Now get the data size by converting string to LONGLONG
 					nFileSize = _wtoi64 ( strResult.c_str() );
-					// Because actually numbering starts from 0 (so add 1 more byte)
+					// Since numbering starts from 0 (so we add 1 more byte)
 					if ( 0 < nFileSize )
 						nFileSize += 1;
 				}
@@ -366,7 +376,7 @@ namespace NSNetwork
 					return -1;
 				}
 
-				// The resource supports chunked reads; return its size
+				// All good, resource supports partial reading, return size
 				return nFileSize;
 			}
 
@@ -381,7 +391,7 @@ namespace NSNetwork
 				DownloadProgress progress;
 				progress.func_checkAborted = m_check_aborted;
 				progress.func_onProgress = m_func_onProgress;
-				// Download the file and report progress as a percentage
+				// Download file with progress percentage callback
 				return URLDownloadToFileW (NULL, sFileURL.c_str(), strFileOutput.c_str(), NULL, static_cast<IBindStatusCallback*>(&progress));
 			}
 

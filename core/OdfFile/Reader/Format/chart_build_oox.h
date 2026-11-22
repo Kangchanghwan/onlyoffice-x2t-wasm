@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #pragma once
 
@@ -58,6 +68,7 @@ public:
 		size_t col;
 		size_t row;
 		std::wstring val;
+		std::wstring id;
 	};
 
 	object_odf_context(std::wstring ref) 
@@ -106,7 +117,12 @@ public:
     void add_point(unsigned int rep);
 	
     void calc_cache_series(std::wstring adress, std::vector<std::wstring> & cash);
-	
+
+	bool find_cache_anchor(std::wstring const & adress, size_t & col, size_t & row);
+
+	static void split_cache_levels(size_t levels, std::vector<std::wstring> const & cash,
+									std::vector<std::vector<std::wstring> > & out);
+
 	void xlsx_convert	(oox::xlsx_conversion_context & Context);
 	void docx_convert	(oox::docx_conversion_context & Context);
 	void pptx_convert	(oox::pptx_conversion_context & Context);
@@ -149,6 +165,8 @@ public:
 	chart::legend				legend_;
 	chart::plot_area			plot_area_;
 
+	chart::rect					coordinate_region_;
+
 	chart::simple				data_table_;
 	chart::simple				wall_;
 	chart::simple				floor_;
@@ -161,6 +179,7 @@ public:
 
 	chart_format_properties_ptr properties_;
 	graphic_format_properties_ptr graphic_properties_;
+	text_format_properties_ptr	text_properties_; //from chart:chart (default font)
 	oox::_oox_fill				chart_fill_;
 
 	std::vector<_cell>			cash_values;
@@ -207,7 +226,8 @@ class process_build_object
 		public visitor<chart_legend>,
 
 		public visitor<chart_plot_area>,
-	    
+		public visitor<chart_coordinate_region>,
+
 		public visitor<chart_axis>,
 		public visitor<chart_categories>,
 		public visitor<chart_date_scale>,
@@ -255,6 +275,8 @@ private:
 	void ApplyTextProperties(std::wstring style, text_format_properties_ptr & propertiesOut);
 	void ApplyChartProperties(std::wstring style, chart_format_properties_ptr & propertiesOut);
 
+	void ParseTitleParts(const office_element_ptr & elm, chart::title & t, const std::wstring & span_style);
+
 	bool visit_table(std::wstring const & name);
     void visit_column(unsigned int repeated);
     bool visit_rows(unsigned int repeated);
@@ -278,6 +300,7 @@ public:
     virtual void visit(chart_footer			& val);
     virtual void visit(chart_legend			& val);
     virtual void visit(chart_plot_area		& val);
+	virtual void visit(chart_coordinate_region & val);
     virtual void visit(chart_axis			& val);
 	virtual void visit(chart_series			& val);
     virtual void visit(chart_domain			& val);

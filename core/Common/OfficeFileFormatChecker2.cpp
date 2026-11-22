@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "OfficeFileFormatChecker.h"
 
@@ -106,7 +116,7 @@ bool COfficeFileFormatChecker::isMultiPartsHtmlFormatFile(unsigned char *pBuffer
 		return false;
 
 	const char *contentTypeFormatLine1 = "Content-Type: multipart/related";
-	const char *contentTypeFormatLine2 = "Content-Type: text/html"; // may be outside the specified buffer (TODO)
+	const char *contentTypeFormatLine2 = "Content-Type: text/html"; // may be outside the given buffer (todooo)
 
 	std::string xml_string((char *)pBuffer, dwBytes);
 
@@ -921,13 +931,6 @@ bool COfficeFileFormatChecker::isOfficeFile(const std::wstring &_fileName)
 	if (nFileType != AVS_OFFICESTUDIO_FILE_UNKNOWN)
 		return true;
 	//------------------------------------------------------------------------------------------------
-	if (iXmlFile(fileName))
-	{
-		// nFileType inside
-		return true;
-	}
-	//// by Extension
-
 	std::wstring::size_type nExtPos = fileName.rfind(L'.');
 	std::wstring sExt = L"unknown";
 
@@ -935,6 +938,13 @@ bool COfficeFileFormatChecker::isOfficeFile(const std::wstring &_fileName)
 		sExt = fileName.substr(nExtPos);
 
 	std::transform(sExt.begin(), sExt.end(), sExt.begin(), tolower);
+
+	if (0 != sExt.compare(L".md") && iXmlFile(fileName))
+	{
+		// nFileType inside
+		return true;
+	}
+	//// by Extension
 
 	if (nFileType != AVS_OFFICESTUDIO_FILE_UNKNOWN)
 		return true;
@@ -1184,7 +1194,7 @@ bool COfficeFileFormatChecker::isOnlyOfficeFormatFile(const std::wstring &fileNa
 {
 	COfficeUtils OfficeUtils(NULL);
 
-	ULONG nBufferSize = 128; // limit reading from the binary
+	ULONG nBufferSize = 128; // limit reading from binary
 	BYTE *pBuffer = NULL;
 
 	HRESULT hresult = OfficeUtils.LoadFileFromArchive(fileName, L"Editor.bin", &pBuffer, nBufferSize);
@@ -1534,7 +1544,7 @@ bool COfficeFileFormatChecker::isOpenOfficeFormatFile(const std::wstring &fileNa
 	}
 	else
 	{
-		// if the type isn't recorded, look at the manifest
+		// if type is not written, check manifest
 		nBufferSize = 0;
 		HRESULT hresult = OfficeUtils.LoadFileFromArchive(fileName, L"META-INF/manifest.xml", &pBuffer, nBufferSize);
 		if (hresult == S_OK && pBuffer != NULL)
@@ -2016,7 +2026,7 @@ int COfficeFileFormatChecker::GetFormatByExtension(const std::wstring &sExt)
 		return AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_DJVU;
 	if (L".xps" == ext || L".oxps" == ext)
 		return AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_XPS;
-	if (L"ofd" == ext)
+	if (L".ofd" == ext)
 		return AVS_OFFICESTUDIO_FILE_CROSSPLATFORM_OFD;
 
 	if (L".jpg" == ext || L".jpeg" == ext || L".jpe" == ext || L".jfif" == ext)

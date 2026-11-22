@@ -1,3 +1,38 @@
+/*
+ * Copyright (C) Ascensio System SIA, 2009-2026
+ *
+ * This program is a free software product. You can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License (AGPL)
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
+ * Section 5 of the GNU AGPL version 3.
+ *
+ * No trademark rights are granted under this License.
+ *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 #ifndef NODENAMES_H
 #define NODENAMES_H
 
@@ -416,12 +451,14 @@ static constexpr const char* NODE_NAMES[MAX_TYPES][MAX_NODES] =
 	}
 };
 
+#define GET_ENUM_INDEX(enum_variable) static_cast<int>(enum_variable)
+
 inline const char* GetNodeName(ENode eNode, EHanType eType)
 {
 	switch (eType)
 	{
-		case EHanType::HWPX:  return NODE_NAMES[0][static_cast<int>(eNode)];
-		case EHanType::HWPML: return NODE_NAMES[1][static_cast<int>(eNode)];
+		case EHanType::HWPX:  return NODE_NAMES[0][GET_ENUM_INDEX(eNode)];
+		case EHanType::HWPML: return NODE_NAMES[1][GET_ENUM_INDEX(eNode)];
 		default: return "";
 	}
 }
@@ -430,8 +467,8 @@ inline bool Equals(ENode eNode, EHanType eType, const std::string& sNodeName)
 {
 	switch (eType)
 	{
-		case EHanType::HWPX:  return NODE_NAMES[0][static_cast<int>(eNode)] == sNodeName;
-		case EHanType::HWPML: return NODE_NAMES[1][static_cast<int>(eNode)] == sNodeName;
+		case EHanType::HWPX:  return NODE_NAMES[0][GET_ENUM_INDEX(eNode)] == sNodeName;
+		case EHanType::HWPML: return NODE_NAMES[1][GET_ENUM_INDEX(eNode)] == sNodeName;
 		default: return false;
 	}
 }
@@ -645,7 +682,7 @@ enum class EAttribute
 
 #define MAX_ATTRIBUTES 202
 
-//TODO:: add all arguments
+//TODO:: Add all arguments
 static constexpr const char* ATTRUBUTE_NAMES[MAX_TYPES][MAX_ATTRIBUTES] = 
 {
 // HWPX
@@ -1066,8 +1103,8 @@ inline const char* GetAttributeName(EAttribute eNode, EHanType eType)
 {
 	switch (eType)
 	{
-		case EHanType::HWPX:  return ATTRUBUTE_NAMES[0][static_cast<int>(eNode)];
-		case EHanType::HWPML: return ATTRUBUTE_NAMES[1][static_cast<int>(eNode)];
+		case EHanType::HWPX:  return ATTRUBUTE_NAMES[0][GET_ENUM_INDEX(eNode)];
+		case EHanType::HWPML: return ATTRUBUTE_NAMES[1][GET_ENUM_INDEX(eNode)];
 		default: return "";
 	}
 }
@@ -1076,13 +1113,13 @@ inline bool Equals(EAttribute eAttribute, EHanType eType, const std::string& sAt
 {
 	switch (eType)
 	{
-		case EHanType::HWPX:  return ATTRUBUTE_NAMES[0][static_cast<int>(eAttribute)] == sAttributeName;
-		case EHanType::HWPML: return ATTRUBUTE_NAMES[1][static_cast<int>(eAttribute)] == sAttributeName;
+		case EHanType::HWPX:  return ATTRUBUTE_NAMES[0][GET_ENUM_INDEX(eAttribute)] == sAttributeName;
+		case EHanType::HWPML: return ATTRUBUTE_NAMES[1][GET_ENUM_INDEX(eAttribute)] == sAttributeName;
 		default: return false;
 	}
 }
 
-// TODO:: for now everything is in one place. Perhaps it would be better to divide it into appropriate classes
+// TODO:: Currently everything is in one place. Consider splitting into corresponding classes
 enum class EValue
 {
 	None,
@@ -1454,8 +1491,8 @@ inline const char* GetValueName(EValue eValue, EHanType eType)
 {
 	switch (eType)
 	{
-		case EHanType::HWPX:  return VALUE_NAMES[0][static_cast<int>(eValue)];
-		case EHanType::HWPML: return VALUE_NAMES[1][static_cast<int>(eValue)];
+		case EHanType::HWPX:  return VALUE_NAMES[0][GET_ENUM_INDEX(eValue)];
+		case EHanType::HWPML: return VALUE_NAMES[1][GET_ENUM_INDEX(eValue)];
 		default: return "";
 	}
 }

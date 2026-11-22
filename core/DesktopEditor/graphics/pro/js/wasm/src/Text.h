@@ -1,27 +1,38 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
+
 #ifndef _ASC_HTMLRENDERER_TEXT_H_
 #define _ASC_HTMLRENDERER_TEXT_H_
 
@@ -35,9 +46,9 @@ namespace NSHtmlRenderer
 {
 	struct CHFontInfo
 	{
-		int m_lAscent;
-		int m_lDescent;
-		int m_lUnitsPerEm;
+		double m_lAscent;
+		double m_lDescent;
+		double m_lUnitsPerEm;
 
 		CHFontInfo() : m_lAscent(0), m_lDescent(0), m_lUnitsPerEm(0) {}
 		CHFontInfo(const CHFontInfo& oSrc) : m_lAscent(oSrc.m_lAscent), m_lDescent(oSrc.m_lDescent), m_lUnitsPerEm(oSrc.m_lUnitsPerEm) {}
@@ -58,11 +69,27 @@ namespace NSHtmlRenderer
 		NSStructures::CFont* m_pFont;
 		CHFontInfo m_oCurrentInfo;
 
+		bool m_bIsType3;
+		double m_dType3GlyphWidth;
+
 	public:
-		CFontManagerWrapper() : m_pManager(NULL) {}
+		CFontManagerWrapper() : m_pManager(NULL), m_bIsType3(false), m_dType3GlyphWidth(0) {}
 		virtual ~CFontManagerWrapper()
 		{
 			RELEASEOBJECT(m_pManager);
+		}
+
+		void SetType3Metrics(double dAscent, double dDescent, double dUnitsPerEm, double dGlyphWidth)
+		{
+			m_bIsType3 = true;
+			m_dType3GlyphWidth = dGlyphWidth;
+			m_oCurrentInfo.m_lAscent     = dAscent;
+			m_oCurrentInfo.m_lDescent    = dDescent;
+			m_oCurrentInfo.m_lUnitsPerEm = dUnitsPerEm > 0 ? dUnitsPerEm : 1000;
+		}
+		void ClearType3()
+		{
+			m_bIsType3 = false;
 		}
 
 		void Init(NSFonts::IApplicationFonts* pApplicationFonts, int nCacheSize = 0)
@@ -88,15 +115,25 @@ namespace NSHtmlRenderer
 			else
 				LoadFontByFile(m_pFont->Path, m_pFont->Size);
 		}
-		double MeasureString(const unsigned int* symbols, const int& count, double x, double y)
+		TBBox MeasureString(const unsigned int* symbols, const int& count, double x, double y)
 		{
+			if (m_bIsType3)
+			{
+				TBBox oBox;
+				double dUnitsPerEm = m_oCurrentInfo.m_lUnitsPerEm > 0 ? m_oCurrentInfo.m_lUnitsPerEm : 1000;
+				double dFontSizePt = m_pFont ? m_pFont->Size : 10.0;
+				oBox.fMinX = (float)x;
+				oBox.fMinY = (float)(-(m_oCurrentInfo.m_lAscent  / dUnitsPerEm) * dFontSizePt);
+				oBox.fMaxX = (float)(x + m_dType3GlyphWidth);
+				oBox.fMaxY = (float)( (m_oCurrentInfo.m_lDescent / dUnitsPerEm) * dFontSizePt);
+				return oBox;
+			}
+
 			if (!m_pManager)
-				return 0;
+				return TBBox();
 
 			m_pManager->LoadString1(symbols, count, (float)x, (float)y);
-			TBBox _box = m_pManager->MeasureString2();
-
-			return abs((_box.fMaxX - _box.fMinX) * 25.4 / 72.0);
+			return m_pManager->MeasureString2();
 		}
 
 	private:
@@ -155,7 +192,7 @@ namespace NSHtmlRenderer
 		}
 		void CommandText(const int* pUnicodes, const int* pGids, const int& nCount, const double& x, const double& y, bool bIsDumpFont)
 		{
-			// 1) first determine the starting point and the direction of the baseline
+			// 1) first determine reference point and baseline direction
 			double _x1 = x;
 			double _y1 = y;
 			double _x2 = x + 1;
@@ -189,11 +226,11 @@ namespace NSHtmlRenderer
 				else if (!_isConstX && !m_oLine.m_bIsConstX && fabs(_k - m_oLine.m_dK) < 0.001 && fabs(_b - m_oLine.m_dB) < 0.001)
 					bIsNewLine = false;
 
-				if (bIsNewLine) // baseline didn't match. so write the line directly to the stream
+				if (bIsNewLine) // baseline didn't match. so just dump line to stream
 					DumpLine();
 			}
 
-			// now determine the shift by baseline relative to the destination point
+			// now need to determine offset along baseline relative to destination point
 			double dOffsetX = 0;
 			LONG nCountChars = m_oLine.GetCountChars();
 			if (0 == nCountChars)
@@ -219,27 +256,105 @@ namespace NSHtmlRenderer
 
 				if (sx * m_oLine.m_ex >= 0 && sy * m_oLine.m_ey >= 0)
 				{
-					// continue the line
+					// continue line
 					dOffsetX = len;
 
-					// Now check whether a space needs to be inserted??
+					// now let's see if we need to insert a space
 					NSWasm::CHChar* pLastChar = m_oLine.GetTail();
 					if (dOffsetX > (pLastChar->width + 0.5))
 					{
-						// insert a space. The space we have won't be quite a space. A specific
-						NSWasm::CHChar* pSpaceChar = m_oLine.AddTail();
-						pLastChar = &m_oLine.m_pChars[m_oLine.m_lCharsTail - 2];
-						pSpaceChar->x = pLastChar->width;
-						pSpaceChar->width = dOffsetX - pLastChar->width;
-						pSpaceChar->unicode = 0xFFFF;
-						dOffsetX -= pLastChar->width;
+						if (pLastChar->unicode == 32 || pLastChar->unicode == 9)
+						{
+							pLastChar->width = dOffsetX;
+						}
+						else
+						{
+							// insert space. Our space will not be a regular space. But a specific one
+							NSWasm::CHChar* pSpaceChar = m_oLine.AddTail();
+							pLastChar = &m_oLine.m_pChars[m_oLine.m_lCharsTail - 2];
+							pSpaceChar->x = pLastChar->width;
+							pSpaceChar->width = dOffsetX - pLastChar->width;
+							pSpaceChar->unicode = 0xFFFF;
+							dOffsetX -= pLastChar->width;
+						}
 					}
 				}
 				else
 				{
-					// the letter is shifted to the left relative to the previous letter
-					// Handle this case by starting a new line,
-					// having first reset the old one
+					// letter is shifted left relative to previous letter
+					// check if new glyph lands inside a synthetic space (0xFFFF) in current line
+					double sx = _x1 - m_oLine.m_dX;
+					double sy = _y1 - m_oLine.m_dY;
+					double newGlyphOffset = sx * m_oLine.m_ex + sy * m_oLine.m_ey;
+
+					// walk through chars accumulating offset to find which char we hit
+					double charOffset = 0;
+					LONG nCount = m_oLine.GetCountChars();
+					LONG nSplitIndex = -1;
+					for (LONG i = 0; i < nCount; ++i)
+					{
+						NSWasm::CHChar* pCh = &m_oLine.m_pChars[i];
+						if (i > 0)
+							charOffset += pCh->x; // x here is offset from previous char
+						if (pCh->unicode == 0xFFFF &&
+							newGlyphOffset >= charOffset &&
+							newGlyphOffset < charOffset + pCh->width)
+						{
+							nSplitIndex = i;
+							break;
+						}
+					}
+
+					if (nSplitIndex >= 0)
+					{
+						NSWasm::CHLine oSaved;
+						oSaved = m_oLine;
+
+						// --- Dump head: chars [0 .. nSplitIndex - 1] ---
+						m_oLine.m_lCharsTail = nSplitIndex; // truncate before the 0xFFFF
+						DumpLine(); // clears m_oLine
+
+						// --- Dump tail: chars [nSplitIndex + 1 .. nCount - 1] ---
+						LONG nTailStart = nSplitIndex + 1;
+						LONG nTailCount = nCount - nTailStart;
+						if (nTailCount > 0)
+						{
+							// Reconstruct baseline origin for the tail.
+							// Walk offsets up to nTailStart to find its position along baseline.
+							double tailOffset = 0;
+							for (LONG i = 1; i <= nTailStart; ++i)
+								tailOffset += oSaved.m_pChars[i].x;
+
+							m_oLine.m_bIsConstX      = oSaved.m_bIsConstX;
+							m_oLine.m_dK             = oSaved.m_dK;
+							m_oLine.m_dB             = oSaved.m_dB;
+							m_oLine.m_ex             = oSaved.m_ex;
+							m_oLine.m_ey             = oSaved.m_ey;
+							m_oLine.m_dAscent        = oSaved.m_dAscent;
+							m_oLine.m_dDescent       = oSaved.m_dDescent;
+							m_oLine.m_bIsSetUpTransform = oSaved.m_bIsSetUpTransform;
+							m_oLine.m_sx             = oSaved.m_sx;
+							m_oLine.m_sy             = oSaved.m_sy;
+							m_oLine.m_shx            = oSaved.m_shx;
+							m_oLine.m_shy            = oSaved.m_shy;
+
+							// Origin of tail shifted along baseline
+							m_oLine.m_dX = oSaved.m_dX + tailOffset * oSaved.m_ex;
+							m_oLine.m_dY = oSaved.m_dY + tailOffset * oSaved.m_ey;
+							m_oLine.m_dEndX = m_oLine.m_dX;
+							m_oLine.m_dEndY = m_oLine.m_dY;
+
+							// Copy tail chars; first tail char has x=0 (it's now the line origin)
+							for (LONG i = 0; i < nTailCount; ++i)
+							{
+								NSWasm::CHChar* pDst = m_oLine.AddTail();
+								*pDst = oSaved.m_pChars[nTailStart + i];
+								if (i == 0)
+									pDst->x = 0; // first char offset is always 0
+							}
+						}
+					}
+
 					DumpLine();
 
 					m_oLine.m_bIsConstX = _isConstX;
@@ -259,7 +374,7 @@ namespace NSHtmlRenderer
 			}
 
 			if (!Aggplus::CMatrix::IsEqual(m_pLastTransform, m_pTransform, 0.001, true))
-			{ // see if the main part of the matrix matches
+			{ // check if main part of matrix matches
 				bIsDumpFont = true;
 				*m_pLastTransform = *m_pTransform;
 				m_oLine.m_bIsSetUpTransform = true;
@@ -269,8 +384,8 @@ namespace NSHtmlRenderer
 				m_oLine.m_sy  = m_pTransform->sy();
 			}
 
-			// That's it, the baseline is set. now we just continue the line
-			if (bIsDumpFont)
+			// done, baseline is set. now just continue the line
+			if (bIsDumpFont && !m_oFontManager.m_bIsType3)
 				m_oFontManager.LoadCurrentFont();
 
 			double dKoef = m_oFontManager.m_pFont->Size * 25.4 / (72 * m_oFontManager.m_oCurrentInfo.m_lUnitsPerEm);
@@ -298,7 +413,14 @@ namespace NSHtmlRenderer
 			double dPrevW = dOffsetX;
 			for (int i = 0; i < nCount; ++i)
 			{
-				double dW = m_oFontManager.MeasureString((const unsigned int*)(input + i), 1, 0, 0);
+				TBBox bBox = m_oFontManager.MeasureString((const unsigned int*)(input + i), 1, 0, 0);
+				double dW = std::abs((bBox.fMaxX - bBox.fMinX) * 25.4 / 72.0);
+				double dMeasureAscent  = std::abs(bBox.fMinY * 25.4 / 72.0);
+				double dMeasureDescent = std::abs(bBox.fMaxY * 25.4 / 72.0);
+				if (m_oLine.m_dAscent < dMeasureAscent)
+					m_oLine.m_dAscent = dMeasureAscent;
+				if (m_oLine.m_dDescent < dMeasureDescent)
+					m_oLine.m_dDescent = dMeasureDescent;
 
 				NSWasm::CHChar* pChar = m_oLine.AddTail();
 				pChar->unicode = pUnicodes[i];
@@ -327,12 +449,12 @@ namespace NSHtmlRenderer
 
 			if (m_oLine.m_bIsSetUpTransform)
 			{
-				// transform will be applied!!!
+				// transform will be set!!!
 				// need to compare with it!!!
 				m_pLastTransform->SetElements(m_oLine.m_sx, m_oLine.m_shy, m_oLine.m_shx, m_oLine.m_sy);
 			}
 
-			// write the line to the pMeta stream
+			// dump line to pMeta stream
 			m_pPageMeta->WriteDouble(m_oLine.m_dX);
 			m_pPageMeta->WriteDouble(m_oLine.m_dY);
 
@@ -385,7 +507,7 @@ namespace NSHtmlRenderer
 					bIsLastSymbol = true;
 				}
 
-				m_pPageMeta->AddInt(pChar->unicode); // Unicode value
+				m_pPageMeta->AddInt(pChar->unicode); // unicode value
 				m_pPageMeta->WriteDouble(pChar->width); // letter width
 			}
 			if (bIsLastSymbol)

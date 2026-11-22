@@ -140,7 +140,7 @@ public:
 		{
 			oRels.CheckOriginSigs(file);
 
-			// remove everything unnecessary
+			// remove all unnecessary
 			std::vector<COOXMLRelationship>::iterator i = oRels.rels.begin();
 			while (i != oRels.rels.end())
 			{
@@ -215,7 +215,7 @@ public:
 
 		m_pFolder->writeXml(sFile, oBuilder.GetData());
 
-		// Now go through all the file names
+		// now update all file names
 
 		std::vector<std::wstring> arSigs;
 

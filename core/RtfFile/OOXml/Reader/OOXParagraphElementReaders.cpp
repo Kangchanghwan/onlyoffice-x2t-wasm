@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "OOXTableReader.h"
@@ -97,12 +107,12 @@ bool OOXParagraphReader::Parse( ReaderParameter oParam , RtfParagraph& oOutputPa
 	}	
 	if (m_ooxParagraph == NULL) return false;
 
-	//need to apply the default style before OOXParagraphReader
+	//need to apply default style before OOXParagraphReader
 	////apply default
 	//oOutputParagraph.m_oProperty = oParam.oRtf->m_oDefaultParagraphProp; 
 
 	RtfTableStylePtr oResultTableStyle;
-	//first apply the default style (if necessary)
+	//first apply default style (if needed)
 
 	oOutputParagraph.m_oProperty.m_oCharProperty = m_oCharProperty;
 
@@ -122,7 +132,7 @@ bool OOXParagraphReader::Parse( ReaderParameter oParam , RtfParagraph& oOutputPa
 			oOutputParagraph.m_oProperty.m_oCharProperty.Merge( oResultTableStyle->m_oCharProp );
 		}
 	}
-	//creating an external style for nested elements
+	//create external style for nested elements
 	RtfCharStylePtr poExternalStyle;
 	if( NULL != oResultTableStyle || PROP_DEF != oOutputParagraph.m_oProperty.m_nStyle )
 	{
@@ -194,7 +204,7 @@ bool OOXParagraphReader::Parse3( ReaderParameter oParam , RtfParagraph& oOutputP
 			
 			if (pIns->m_oDate.IsInit())
             {
-                std::wstring sVal = pIns->m_oDate->GetValue();
+                std::wstring sVal = pIns->m_oDate->ToString();
                 oSubParReader.m_oCharProperty.m_nRevdttm = RtfUtility::convertDateTime( sVal );
             }
 
@@ -213,7 +223,7 @@ bool OOXParagraphReader::Parse3( ReaderParameter oParam , RtfParagraph& oOutputP
 			
 			if (pDel->m_oDate.IsInit())
             {
-                std::wstring sVal = pDel->m_oDate->GetValue();
+                std::wstring sVal = pDel->m_oDate->ToString();
                 oSubParReader.m_oCharProperty.m_nRevdttmDel = RtfUtility::convertDateTime( sVal );
             }
 			
@@ -254,7 +264,7 @@ bool OOXParagraphReader::Parse3( ReaderParameter oParam , RtfParagraph& oOutputP
 			oNewInsertParagraph->AddItem( pNewChar );
 			oCurField->m_pInsert->m_pTextItems->AddItem( oNewInsertParagraph );
 			
-			//adding properties
+			//add properties
 			if( TRUE == pFldSimple->m_oFldLock.ToBool() )
 				oCurField->m_eMode = RtfField::fm_fldlock;
 
@@ -262,10 +272,10 @@ bool OOXParagraphReader::Parse3( ReaderParameter oParam , RtfParagraph& oOutputP
 				oCurField->m_eMode = RtfField::fm_flddirty;
 
 			RtfParagraphPtr oNewResultParagraph( new RtfParagraph() );
-			//apply default property to the new paragraph
+			//apply default property to new paragraph
 			oNewResultParagraph->m_oProperty = oParam.oRtf->m_oDefaultParagraphProp;
 			oNewResultParagraph->m_oProperty.m_oCharProperty = oParam.oRtf->m_oDefaultCharProp;
-			//apply the properties of this paragraph to the new paragraph
+			//apply this paragraph's properties to new paragraph
 			oNewResultParagraph->m_oProperty = oOutputParagraph.m_oProperty;
 
 			if (pFldSimple->m_arrItems.size() >0)
@@ -331,9 +341,9 @@ bool OOXParagraphReader::Parse3( ReaderParameter oParam , RtfParagraph& oOutputP
 					RtfParagraphPtr oNewInsertParagraph( new RtfParagraph() );
 					oNewInsertParagraph->AddItem( pNewChar );
 					oCurField->m_pInsert->m_pTextItems->AddItem( oNewInsertParagraph );
-					//adding properties
+					//add properties
 
-					//pHyperlink->m_arrItems TODO
+					//pHyperlink->m_arrItems todoooo 
 					//BOOL bLock = Strings::ToBoolean(oXmlReader.ReadNodeAttribute(i, L"w:fldLock", L"false)));
 					//if( TRUE == bLock )
 					//	oCurField->m_eMode = RtfField::fm_fldlock;
@@ -342,10 +352,10 @@ bool OOXParagraphReader::Parse3( ReaderParameter oParam , RtfParagraph& oOutputP
 					//	oCurField->m_eMode = RtfField::fm_flddirty;
 
 					RtfParagraphPtr oNewResultParagraph( new RtfParagraph() );
-					//apply default property to the new paragraph
+					//apply default property to new paragraph
 					oNewResultParagraph->m_oProperty = oParam.oRtf->m_oDefaultParagraphProp;
 					oNewResultParagraph->m_oProperty.m_oCharProperty = oParam.oRtf->m_oDefaultCharProp;
-					//apply the properties of this paragraph to the new paragraph
+					//apply this paragraph's properties to new paragraph
 					oNewResultParagraph->m_oProperty = oOutputParagraph.m_oProperty;
 					
 					if (pHyperlink->m_arrItems.size() >0)
@@ -383,10 +393,10 @@ bool OOXParagraphReader::Parse3( ReaderParameter oParam , RtfParagraph& oOutputP
 				//	oCurField->m_eMode = RtfField::fm_flddirty;
 
 				RtfParagraphPtr oNewResultParagraph ( new RtfParagraph() );
-				//apply default property to the new paragraph
+				//apply default property to new paragraph
 				oNewResultParagraph->m_oProperty = oParam.oRtf->m_oDefaultParagraphProp;
 				oNewResultParagraph->m_oProperty.m_oCharProperty = oParam.oRtf->m_oDefaultCharProp;
-				//apply the properties of this paragraph to the new paragraph
+				//apply this paragraph's properties to new paragraph
 				oNewResultParagraph->m_oProperty = oOutputParagraph.m_oProperty;
 				
 				if (pHyperlink->m_arrItems.size() > 0)
@@ -566,7 +576,7 @@ bool OOXParagraphReader::Parse3( ReaderParameter oParam , RtfParagraph& oOutputP
 							{
 								oNewAnnotContent->m_oDate = RtfAnnotElemPtr ( new RtfAnnotElem(6) );
 
-								int nDate = RtfUtility::convertDateTime(oox_comment->m_oDate->GetValue());
+								int nDate = RtfUtility::convertDateTime(oox_comment->m_oDate->ToString());
 								oNewAnnotContent->m_oDate->m_sValue =  std::to_wstring(nDate);
 							}
 
@@ -715,7 +725,7 @@ bool OOXRunReader::Parse( ReaderParameter oParam , RtfParagraph& oOutputParagrap
 			pNewChar->m_oProperty	= oNewProperty;
 			
 			if (ooxInstrText)
-				pNewChar->setText( ooxInstrText->m_sText );//add preserve .. TODO
+				pNewChar->setText( ooxInstrText->m_sText );//add preserve .. todooo
 			
 			oNewField->m_oText		= pNewChar;
 			oOutputParagraph.AddItem( oNewField );
@@ -763,7 +773,7 @@ bool OOXRunReader::Parse( ReaderParameter oParam , RtfParagraph& oOutputParagrap
 
 			RtfShapePtr pNewShape ( new RtfShape() );
 			if (ooxObject)
-			{//the processing sequence is important
+			{//processing order is important
 				OOXShapeReader oShapeReaderType(ooxObject->m_oShapeType.GetPointer());
 				oShapeReaderType.Parse( oParam, pNewShape );
 				
@@ -985,7 +995,7 @@ bool OOXRunReader::Parse( ReaderParameter oParam , RtfParagraph& oOutputParagrap
 				//std::wstring sChar = ooxSym->m_oChar->GetValue();
 
 				//sChar.MakeLower();
-				////leaving only 2 bytes (4 characters)
+				////keep only 2 bytes (4 characters)
 				//if( sChar.length() > 4 )
 				//	sChar = sChar.Right( 4 );
 				////remove mask F000
@@ -1060,10 +1070,10 @@ bool OOXRunReader::Parse( ReaderParameter oParam , RtfParagraph& oOutputParagrap
 	{
 		RtfCharProperty oNewProperty;
 		oNewProperty.SetDefaultOOX();
-		//use default
+		//apply default
 		oNewProperty = oParam.oRtf->m_oDefaultCharProp; 
 		
-		//apply an external style (some properties aren't inherited!!)
+		//apply external style (some properties are not inherited!!)
 		oNewProperty.Merge( oOutputParagraph.m_oProperty.m_oCharProperty, false );
 		oNewProperty.Merge( m_oCharProperty );
 
@@ -1105,7 +1115,7 @@ bool OOXpPrReader::Parse( ReaderParameter oParam, RtfParagraphProperty& oOutputP
 	if (m_drawingParaProps) return ParseDrawing( oParam, oOutputProperty);
 
 	if (m_ooxParaProps == NULL) return false;
-	//apply external style
+	//apply external style 
 	if( NULL != oParam.poTableStyle )
 	{
 		if( m_ooxParaProps->m_oCnfStyle.IsInit() )
@@ -1123,14 +1133,14 @@ bool OOXpPrReader::Parse( ReaderParameter oParam, RtfParagraphProperty& oOutputP
 		oOutputProperty.Merge( oResultStyle->m_oParProp );
 		oOutputProperty.m_oCharProperty.Merge( oResultStyle->m_oCharProp );
 	}
-	//apply the default style if its own isn't defined
+	//apply default style if own style is not defined
 	if(( m_ooxParaProps->m_oPStyle.IsInit() == false ) && (true == m_bDefStyle && NULL != oParam.oReader->m_oDefParStyle ))
 	{
 		oOutputProperty.Merge( oParam.oReader->m_oDefParStyle->m_oParProp );
 		oOutputProperty.m_nStyle = oParam.oReader->m_oDefParStyle->m_nID;
 	}
 
-	//apply all other properties of direct formatting
+	//apply all other direct formatting properties
 	if( m_ooxParaProps->m_oPStyle.IsInit() && m_ooxParaProps->m_oPStyle->m_sVal.IsInit())
 	{
 		std::wstring sStyleName = *m_ooxParaProps->m_oPStyle->m_sVal;
@@ -1253,7 +1263,7 @@ bool OOXpPrReader::Parse( ReaderParameter oParam, RtfParagraphProperty& oOutputP
 			{
 				if (m_ooxParaProps->m_oSpacing->m_oLineRule->GetValue() == SimpleTypes::linespacingruleExact)
 				{
-					oOutputProperty.m_nSpaceBetween		= - m_ooxParaProps->m_oSpacing->m_oLine->ToTwips();//twips ??? TODO
+					oOutputProperty.m_nSpaceBetween		= - m_ooxParaProps->m_oSpacing->m_oLine->ToTwips();//twips ??? todooo
 					oOutputProperty.m_nSpaceMultiLine	= 0;
 				}
 				else if (m_ooxParaProps->m_oSpacing->m_oLineRule->GetValue() == SimpleTypes::linespacingruleAtLeast)
@@ -1316,16 +1326,16 @@ bool OOXpPrReader::Parse( ReaderParameter oParam, RtfParagraphProperty& oOutputP
 		}
 		if( PROP_DEF != oOutputProperty.m_nListLevel && PROP_DEF != oOutputProperty.m_nListId )
 		{
-			//apply direct properties of a list to a paragraph
+			//apply list direct properties to paragraph
 			RtfListOverrideProperty oListOverrideProperty;
-			//search by override table
+			//search in override table
 			if( true == oParam.oRtf->m_oListOverrideTable.GetList( oOutputProperty.m_nListId, oListOverrideProperty ) )
 			{
 				RtfListProperty oListProperty;
-				//Search by List Table
+				//Search in List Table
 				if( true == oParam.oRtf->m_oListTable.GetList( oListOverrideProperty.m_nListID, oListProperty) )
 				{
-					//add the properties of the paragraph firstIndent Indent
+					//add paragraph properties firstIndent Indent
 					RtfListLevelProperty poLevelProp ;
 					if( true == oListProperty.GetItem( poLevelProp , oOutputProperty.m_nListLevel ) )
 					{
@@ -1418,7 +1428,7 @@ bool OOXpPrReader::Parse( ReaderParameter oParam, RtfParagraphProperty& oOutputP
 	}
 
 	if( m_ooxParaProps->m_oRPr.IsInit() )
-	{// ??? TODO save text properties and use them where run doesn't have these properties
+	{// ??? todooo store text properties and use where run lacks these properties
 		OOXrPrReader orPrReader(m_ooxParaProps->m_oRPr.GetPointer());
 		orPrReader.Parse( oParam, oOutputProperty.m_oCharProperty );
 	}
@@ -1430,7 +1440,7 @@ bool OOXpPrReader::Parse( ReaderParameter oParam, RtfParagraphProperty& oOutputP
 		
 		if (m_ooxParaProps->m_oPPrChange->m_oDate.IsInit())
         {
-            std::wstring sVal = m_ooxParaProps->m_oPPrChange->m_oDate->GetValue();
+            std::wstring sVal = m_ooxParaProps->m_oPPrChange->m_oDate->ToString();
             oOutputProperty.m_nPrDate = RtfUtility::convertDateTime( sVal );
         }
 		
@@ -1561,7 +1571,7 @@ bool OOXrPrReader::Parse( ReaderParameter oParam, RtfCharProperty& oOutputProper
 	if (m_ooxRunProps == NULL) return false;
 
 	//first apply styles
-	//apply the default style if its own isn't defined
+	//apply default style if own style is not defined
 	if(( m_ooxRunProps->m_oRStyle.IsInit() == false) && (true == m_bDefStyle && NULL != oParam.oReader->m_oDefCharStyle ))
 	{
 		oOutputProperty.Merge( oParam.oReader->m_oDefCharStyle->m_oCharProp );
@@ -1758,7 +1768,7 @@ bool OOXrPrReader::Parse( ReaderParameter oParam, RtfCharProperty& oOutputProper
 		{
 			RtfColor oColor(m_ooxRunProps->m_oU->m_oColor->Get_R(), m_ooxRunProps->m_oU->m_oColor->Get_G(), m_ooxRunProps->m_oU->m_oColor->Get_B());	
 			oOutputProperty.m_nUnderlineColor =  oParam.oRtf->m_oColorTable.AddItem( oColor );
-		}//TODO theme color, tint, shadow
+		}//todooo theme color, tint, shadow
 	}
 	if( m_ooxRunProps->m_oBdr.IsInit())
 	{
@@ -1792,7 +1802,7 @@ bool OOXrPrReader::Parse( ReaderParameter oParam, RtfCharProperty& oOutputProper
 		
 		if (m_ooxRunProps->m_oIns->m_oDate.IsInit())
         {
-            std::wstring sVal = m_ooxRunProps->m_oIns->m_oDate->GetValue();
+            std::wstring sVal = m_ooxRunProps->m_oIns->m_oDate->ToString();
             oOutputProperty.m_nRevdttm = RtfUtility::convertDateTime( sVal );
         }
 	}
@@ -1805,7 +1815,7 @@ bool OOXrPrReader::Parse( ReaderParameter oParam, RtfCharProperty& oOutputProper
 
 		if (m_ooxRunProps->m_oDel->m_oDate.IsInit())
         {
-            std::wstring sVal = m_ooxRunProps->m_oDel->m_oDate->GetValue();
+            std::wstring sVal = m_ooxRunProps->m_oDel->m_oDate->ToString();
             oOutputProperty.m_nRevdttmDel = RtfUtility::convertDateTime( sVal );
         }
 	}
@@ -1817,7 +1827,7 @@ bool OOXrPrReader::Parse( ReaderParameter oParam, RtfCharProperty& oOutputProper
 		
 		if (m_ooxRunProps->m_oRPrChange->m_oDate.IsInit())
         {
-            std::wstring sVal = m_ooxRunProps->m_oRPrChange->m_oDate->GetValue();
+            std::wstring sVal = m_ooxRunProps->m_oRPrChange->m_oDate->ToString();
             oOutputProperty.m_nCrDate = RtfUtility::convertDateTime( sVal );
         }
 		
@@ -1933,7 +1943,7 @@ bool OOXrPrReader::ParseDrawing(ReaderParameter oParam, RtfCharProperty& oOutput
 		//{
 		//	RtfColor oColor(m_drawingRunProps->m_oU->m_oColor->Get_R(), m_drawingRunProps->m_oU->m_oColor->Get_G(), m_drawingRunProps->m_oU->m_oColor->Get_B());
 		//	oOutputProperty.m_nUnderlineColor =  oParam.oRtf->m_oColorTable.AddItem( oColor );
-		//}//TODO theme color, tint, shadow
+		//}//todooo theme color, tint, shadow
 	}
 
 	return true;
@@ -1947,7 +1957,7 @@ bool OOXpPrFrameReader::Parse( ReaderParameter oParam ,RtfFrame& oOutputProperty
 {
 	if (m_ooxFramePr == NULL) return false;
 
-	oOutputProperty.m_nWidth	= m_ooxFramePr->m_oW.IsInit() ? m_ooxFramePr->m_oW->ToTwips() : PROP_DEF;//TODO twips??? pt ???
+	oOutputProperty.m_nWidth	= m_ooxFramePr->m_oW.IsInit() ? m_ooxFramePr->m_oW->ToTwips() : PROP_DEF;//todooo twips??? pt ???
 	oOutputProperty.m_nHeight	= m_ooxFramePr->m_oH.IsInit() ? m_ooxFramePr->m_oH->ToTwips() : PROP_DEF;
 
 	if (m_ooxFramePr->m_oHAnchor.IsInit())
@@ -2023,11 +2033,11 @@ bool OOXpPrFrameReader::Parse( ReaderParameter oParam ,RtfFrame& oOutputProperty
             default: break;
         }
 	}
-	oOutputProperty.m_DropcapLines = m_ooxFramePr->m_oLines.IsInit() ? m_ooxFramePr->m_oLines->GetValue() : 0; //TODO??? or 1???
+	oOutputProperty.m_DropcapLines = m_ooxFramePr->m_oLines.IsInit() ? m_ooxFramePr->m_oLines->GetValue() : 0; //todoo ??? or 1 ???
 
 	if( m_ooxFramePr->m_oHSpace.IsInit() )
 	{
-		oOutputProperty.m_nHorSpace = m_ooxFramePr->m_oHSpace->ToTwips();//TODO twips???
+		oOutputProperty.m_nHorSpace = m_ooxFramePr->m_oHSpace->ToTwips();//todooo twips???
 		if( PROP_DEF == oOutputProperty.m_nAllSpace || oOutputProperty.m_nAllSpace < oOutputProperty.m_nHorSpace )
 		{
 			oOutputProperty.m_nAllSpace = oOutputProperty.m_nHorSpace;
@@ -2035,7 +2045,7 @@ bool OOXpPrFrameReader::Parse( ReaderParameter oParam ,RtfFrame& oOutputProperty
 	}
 	if( m_ooxFramePr->m_oVSpace.IsInit() )
 	{
-		oOutputProperty.m_nVerSpace = m_ooxFramePr->m_oVSpace->ToTwips();//TODO twips???
+		oOutputProperty.m_nVerSpace = m_ooxFramePr->m_oVSpace->ToTwips();//todooo twips???
 		if( PROP_DEF == oOutputProperty.m_nAllSpace || oOutputProperty.m_nAllSpace < oOutputProperty.m_nVerSpace )
 		{
 			oOutputProperty.m_nAllSpace = oOutputProperty.m_nVerSpace;
@@ -2094,7 +2104,7 @@ bool OOXSectionPropertyReader::Parse( ReaderParameter oParam , RtfSectionPropert
 		}
 
 		if(m_ooxSectionProperty->m_oCols->m_oSpace.IsInit())
-			oOutput.m_nColumnSpace = m_ooxSectionProperty->m_oCols->m_oSpace->ToTwips(); //TODO twips????
+			oOutput.m_nColumnSpace = m_ooxSectionProperty->m_oCols->m_oSpace->ToTwips(); //todooo twips????	
 
 		if (m_ooxSectionProperty->m_oCols->m_oSep.IsInit())
 			oOutput.m_bColumnLineBetween = m_ooxSectionProperty->m_oCols->m_oSep->ToBool();
@@ -2106,7 +2116,7 @@ bool OOXSectionPropertyReader::Parse( ReaderParameter oParam , RtfSectionPropert
 			if (m_ooxSectionProperty->m_oCols->m_arrColumns[i].IsInit())
 			{
 				if(m_ooxSectionProperty->m_oCols->m_arrColumns[i]->m_oW.IsInit() )
-					oNewColumn.m_nColumnWidth = m_ooxSectionProperty->m_oCols->m_arrColumns[i]->m_oW->ToTwips(); //twips??? TODO
+					oNewColumn.m_nColumnWidth = m_ooxSectionProperty->m_oCols->m_arrColumns[i]->m_oW->ToTwips(); //twips??? todooo 
 
 				if(m_ooxSectionProperty->m_oCols->m_arrColumns[i]->m_oSpace.IsInit())
 					oNewColumn.m_nColumnSpaceToRightOfCol = m_ooxSectionProperty->m_oCols->m_arrColumns[i]->m_oSpace->ToTwips();
@@ -2122,7 +2132,7 @@ bool OOXSectionPropertyReader::Parse( ReaderParameter oParam , RtfSectionPropert
 			{
 				switch(m_ooxSectionProperty->m_oEndnotePr->m_oNumRestart->m_oVal->GetValue())
 				{
-					case SimpleTypes::restartnumberContinious : break;// ???? TODO check
+					case SimpleTypes::restartnumberContinious : break;// ???? todooo check
 					case SimpleTypes::restartnumberEachPage   : oOutput.m_eEndnotesRestart = RtfSectionProperty::er_saftnrestart; break;
 					case SimpleTypes::restartnumberEachSect   : oOutput.m_eEndnotesRestart = RtfSectionProperty::er_saftnrstcont; break;
                     default: break;
@@ -2151,9 +2161,9 @@ bool OOXSectionPropertyReader::Parse( ReaderParameter oParam , RtfSectionPropert
 			switch (m_ooxSectionProperty->m_oFootnotePr->m_oPos->m_oVal->GetValue())
 			{
 			case SimpleTypes::ftnposBeneathText : oOutput.m_eFootnotesJust = RtfSectionProperty::fj_sftntj; break;
-			case SimpleTypes::ftnposDocEnd      : break;// TODO !!!
+			case SimpleTypes::ftnposDocEnd      : break;// todooo !!!
 			case SimpleTypes::ftnposPageBottom  : oOutput.m_eFootnotesJust = RtfSectionProperty::fj_sftnbj; break;
-			case SimpleTypes::ftnposSectEnd     : break;// TODO !!!
+			case SimpleTypes::ftnposSectEnd     : break;// todooo !!!
             default: break;
             }
 		}
@@ -2186,7 +2196,7 @@ bool OOXSectionPropertyReader::Parse( ReaderParameter oParam , RtfSectionPropert
 			oOutput.m_nLineModulus = m_ooxSectionProperty->m_oLnNumType->m_oCountBy->GetValue();
 
 		if( m_ooxSectionProperty->m_oLnNumType->m_oDistance.IsInit() )
-			oOutput.m_nLineX = m_ooxSectionProperty->m_oLnNumType->m_oDistance->ToTwips(); //twips??? TODO
+			oOutput.m_nLineX = m_ooxSectionProperty->m_oLnNumType->m_oDistance->ToTwips(); //twips??? todooo
 	
 		if( m_ooxSectionProperty->m_oLnNumType->m_oStart.IsInit())
 			oOutput.m_nLineStart = m_ooxSectionProperty->m_oLnNumType->m_oStart->GetValue();
@@ -2271,7 +2281,7 @@ bool OOXSectionPropertyReader::Parse( ReaderParameter oParam , RtfSectionPropert
 			case SimpleTypes::textdirectionRlV : oOutput.m_nTextFollow = 3; break;
 			case SimpleTypes::textdirectionTb  : oOutput.m_nTextFollow = 0; break;
 			case SimpleTypes::textdirectionTbV : oOutput.m_nTextFollow = 5; break;
-				//oOutput.m_nTextFollow = 2; top to bottom ( .. TODO redo DocxFormat
+				//oOutput.m_nTextFollow = 2; bottom to top ( .. todooo refactor DocxFormat
             default: break;
         }
 	}
@@ -2413,7 +2423,7 @@ bool OOXSectionPropertyReader::Parse( ReaderParameter oParam , RtfSectionPropert
 		
 		if (m_ooxSectionProperty->m_oSectPrChange->m_oDate.IsInit())
         {
-            std::wstring sVal = m_ooxSectionProperty->m_oSectPrChange->m_oDate->GetValue();
+            std::wstring sVal = m_ooxSectionProperty->m_oSectPrChange->m_oDate->ToString();
             oOutput.m_nSrDate = RtfUtility::convertDateTime( sVal );
         }
 		

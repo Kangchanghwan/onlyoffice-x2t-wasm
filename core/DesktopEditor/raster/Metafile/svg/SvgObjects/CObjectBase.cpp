@@ -1,3 +1,38 @@
+/*
+ * Copyright (C) Ascensio System SIA, 2009-2026
+ *
+ * This program is a free software product. You can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License (AGPL)
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
+ * Section 5 of the GNU AGPL version 3.
+ *
+ * No trademark rights are granted under this License.
+ *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 #include "CObjectBase.h"
 #include "../CSvgFile.h"
 
@@ -14,6 +49,8 @@ namespace SVG
 
 		if (!oSvgStyles.m_oStroke.m_oColor.Empty())
 			m_oStroke.m_oColor.SetValue(L'#' + oSvgStyles.m_oStroke.m_oColor.ToWString(), 0, false);
+
+		m_oStroke.m_oColor.SetOpacity(std::to_wstring(oSvgStyles.m_oStroke.m_oColor.GetOpacity()), 0, false);
 
 		m_oStroke.m_oWidth.SetValue(oSvgStyles.m_oStroke.m_oWidth.ToWString(), 0, false);
 
@@ -49,22 +86,19 @@ namespace SVG
 
 	bool CObject::Marked() const
 	{
-		//Since, according to the logic of the code, an object can only be stored in one container and in a list of labeled elements,
-		//then this check is enough
+		//Since by code logic an object can only be stored in one container and in the marked elements list,
+		//this check is sufficient
 		return 1 != m_lRef;
 	}
 
 	void CObject::SetAttribute(const std::string& sName, CSvgReader& oReader)
 	{
 		if ("class" == sName)
-		{
 			m_oXmlNode.m_wsClass = oReader.GetText();
-			std::transform(m_oXmlNode.m_wsClass.begin(), m_oXmlNode.m_wsClass.end(), m_oXmlNode.m_wsClass.begin(), std::towlower);
-		}
 		else if ("id" == sName)
 			m_oXmlNode.m_wsId = oReader.GetText();
 		else if ("style" == sName)
-			m_oXmlNode.m_wsStyle = oReader.GetText();
+			m_oXmlNode.m_wsStyle += oReader.GetText();
 		else
 			m_oXmlNode.m_mAttributes.insert({oReader.GetNameW(), oReader.GetText()});
 	}
@@ -212,7 +246,7 @@ namespace SVG
 
 	CRenderedObject::CRenderedObject(const CRenderedObject& oRenderedObject)
 		: CObject(oRenderedObject), m_oStyles(oRenderedObject.m_oStyles),
-	      m_pParent(oRenderedObject.m_pParent)
+		  m_pParent(oRenderedObject.m_pParent)
 	{}
 
 	ObjectType CRenderedObject::GetType() const
@@ -239,7 +273,7 @@ namespace SVG
 		if (NULL == m_pParent)
 			return {m_oXmlNode};
 
-		std::vector<NSCSS::CNode> arObjects = m_pParent->GetFullPath();
+		std::vector<NSCSS::CNode> arObjects{m_pParent->GetFullPath()};
 		arObjects.push_back(m_oXmlNode);
 		return arObjects;
 	}
@@ -280,7 +314,7 @@ namespace SVG
 			m_oStyles.m_oFill.SetOpacity(mAttributes.at(L"fill-opacity"), ushLevel, bHardMode);
 	}
 
-	bool CRenderedObject::StartPath(IRenderer *pRenderer, const CSvgFile *pFile, Aggplus::CMatrix& oOldTransform, CommandeMode oMode) const
+	bool CRenderedObject::StartPath(IRenderer *pRenderer, const CSvgFile *pFile, Aggplus::CMatrix& oOldTransform, CommandeMode oMode, bool bDeferredOpacity) const
 	{
 		if (NULL == pRenderer || !m_oTransformation.m_bDraw || Equals(0., m_oTransformation.m_oOpacity.ToDouble()))
 			return false;
@@ -293,7 +327,7 @@ namespace SVG
 
 		if (CommandeModeClip == oMode)
 			pRenderer->BeginCommand(c_nClipType);
-		else if (1. != m_oTransformation.m_oOpacity.ToDouble())
+		else if (!bDeferredOpacity && 1. != m_oTransformation.m_oOpacity.ToDouble())
 		{
 			pRenderer->BeginCommand(c_nLayerType);
 			pRenderer->put_LayerOpacity(m_oTransformation.m_oOpacity.ToDouble());
@@ -305,7 +339,7 @@ namespace SVG
 		return true;
 	}
 
-	void CRenderedObject::EndPath(IRenderer *pRenderer, const CSvgFile *pFile, const Aggplus::CMatrix& oOldTransform, CommandeMode oMode, const TSvgStyles* pOtherStyles, const CRenderedObject* pContextObject) const
+	void CRenderedObject::EndPath(IRenderer *pRenderer, const CSvgFile *pFile, const Aggplus::CMatrix& oOldTransform, CommandeMode oMode, const TSvgStyles* pOtherStyles, const CRenderedObject* pContextObject, bool bDeferredOpacity) const
 	{
 		if (CommandeModeClip == oMode)
 		{
@@ -329,9 +363,51 @@ namespace SVG
 			ApplyStyle(pRenderer, &oNewStyles, pFile, nPathType, pContextObject);
 		}
 
+		const double dOpacity = m_oTransformation.m_oOpacity.ToDouble();
+
+		bool bLayer = !bDeferredOpacity && 1. != dOpacity;
+		bool bRestorePenAlpha = false, bRestoreBrushAlpha = false;
+		LONG lOldAlpha = 255;
+
+		if (bDeferredOpacity && 1. != dOpacity)
+		{
+			const bool bFill     = 0 != (nPathType & (c_nWindingFillMode | c_nEvenOddFillMode));
+			const bool bStroke   = 0 != (nPathType & c_nStroke);
+			const bool bFoldable = 0. < dOpacity && dOpacity < 1.;
+
+			LONG lBrushType = c_BrushTypeNoFill;
+
+			if (bFill)
+				pRenderer->get_BrushType(&lBrushType);
+
+			if (bFoldable && bStroke && !bFill)
+			{
+				pRenderer->get_PenAlpha(&lOldAlpha);
+				pRenderer->put_PenAlpha((LONG)(lOldAlpha * dOpacity + 0.5));
+				bRestorePenAlpha = true;
+			}
+			else if (bFoldable && bFill && !bStroke && c_BrushTypeSolid == lBrushType)
+			{
+				pRenderer->get_BrushAlpha1(&lOldAlpha);
+				pRenderer->put_BrushAlpha1((LONG)(lOldAlpha * dOpacity + 0.5));
+				bRestoreBrushAlpha = true;
+			}
+			else if (bFill || bStroke)
+			{
+				pRenderer->BeginCommand(c_nLayerType);
+				pRenderer->put_LayerOpacity(dOpacity);
+				bLayer = true;
+			}
+		}
+
 		pRenderer->DrawPath(nPathType);
 		pRenderer->EndCommand(c_nPathType);
 		pRenderer->PathCommandEnd();
+
+		if (bRestorePenAlpha)
+			pRenderer->put_PenAlpha(lOldAlpha);
+		else if (bRestoreBrushAlpha)
+			pRenderer->put_BrushAlpha1(lOldAlpha);
 
 		if (!m_oTransformation.m_oClip.m_oHref.Empty())
 		{
@@ -345,7 +421,7 @@ namespace SVG
 			pRenderer->EndCommand(c_nResetMaskType);
 		}
 
-		if (1. != m_oTransformation.m_oOpacity.ToDouble())
+		if (bLayer)
 			pRenderer->EndCommand(c_nLayerType);
 
 		pRenderer->SetTransform(oOldTransform.sx(),  oOldTransform.shy(),
@@ -414,6 +490,8 @@ namespace SVG
 		}
 		else if (NSCSS::NSProperties::EColorType::ColorUrl == pFill->GetType())
 		{
+			pRenderer->put_BrushAlpha1(255. * pFill->GetOpacity());
+
 			if (!ApplyDef(pRenderer, pFile, pFill->ToWString(), GetBounds()))
 			{
 				if (bUseDefault)
@@ -456,10 +534,13 @@ namespace SVG
 
 	void CRenderedObject::SetDefaultData()
 	{
-		m_oStyles.m_oStroke.m_oLineCap.SetMapping({std::make_pair(L"butt", Aggplus::LineCapFlat), std::make_pair(L"round", Aggplus::LineCapRound), std::make_pair(L"square", Aggplus::LineCapSquare)});
+		static const std::map<std::wstring, int> mLineCapMapping{{L"butt", Aggplus::LineCapFlat}, {L"round", Aggplus::LineCapRound}, {L"square", Aggplus::LineCapSquare}};
+		static const std::map<std::wstring, int> mLineJoinMapping{{L"arcs", Aggplus::LineJoinMiter}, {L"bevel", Aggplus::LineJoinBevel}, {L"miter", Aggplus::LineJoinMiter}, {L"miter-clip", Aggplus::LineJoinMiterClipped}, {L"round", Aggplus::LineJoinRound}};
+
+		m_oStyles.m_oStroke.m_oLineCap.SetMapping(mLineCapMapping);
 		m_oStyles.m_oStroke.m_oLineCap = Aggplus::LineCapFlat;
 
-		m_oStyles.m_oStroke.m_oLineJoin.SetMapping({std::make_pair(L"arcs", Aggplus::LineJoinMiter), std::make_pair(L"bevel", Aggplus::LineJoinBevel), std::make_pair(L"miter", Aggplus::LineJoinMiter), std::make_pair(L"miter-clip", Aggplus::LineJoinMiterClipped), std::make_pair(L"round", Aggplus::LineJoinRound)});
+		m_oStyles.m_oStroke.m_oLineJoin.SetMapping(mLineJoinMapping);
 		m_oStyles.m_oStroke.m_oLineCap = Aggplus::LineJoinMiter;
 
 		m_oStyles.m_oStroke.m_oMiterlimit = 4.;

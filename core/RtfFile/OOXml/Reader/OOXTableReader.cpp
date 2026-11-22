@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "OOXtblPrReader.h"
 #include "OOXTableRowReader.h"
@@ -39,7 +49,7 @@ bool OOXtrPrReader::Parse( ReaderParameter oParam , RtfRowProperty& oOutputPrope
 {
 	if (m_ooxTableRowProps == NULL) return false;
 
-	//look for cnfStyle and apply the external style
+	//find cnfStyle and apply external style
 	if( NULL != oParam.poTableStyle )
 	{
 		if( m_ooxTableRowProps->m_oCnfStyle.IsInit() )
@@ -58,7 +68,7 @@ bool OOXtrPrReader::Parse( ReaderParameter oParam , RtfRowProperty& oOutputPrope
 	if (m_ooxTableRowProps->m_oTblHeader.IsInit() )
 		oOutputProperty.m_bIsHeader = m_ooxTableRowProps->m_oTblHeader->m_oVal.ToBool() ? 1 : 0;
 	
-//TODO unclear
+//todooo unclear
 //		if (m_ooxTableRowProps->m_oCantSplit.IsInit() )
 //             oOutputProperty.m_bIsHeader= m_ooxTableRowProps->m_oCantSplit->m_oVal.ToBool() ? 1 : 0;
 	
@@ -98,7 +108,7 @@ bool OOXtrPrReader::Parse( ReaderParameter oParam , RtfRowProperty& oOutputPrope
 		
 		if (m_ooxTableRowProps->m_oTrPrChange->m_oDate.IsInit())
         {
-            std::wstring sVal = m_ooxTableRowProps->m_oTrPrChange->m_oDate->GetValue();
+            std::wstring sVal = m_ooxTableRowProps->m_oTrPrChange->m_oDate->ToString();
             oOutputProperty.m_nTrDate = RtfUtility::convertDateTime( sVal);
         }
 		
@@ -124,7 +134,7 @@ bool OOXTableReader::Parse( ReaderParameter oParam, RtfTable& oOutputTable )
 	if (m_ooxTable == NULL) return false;
 
 	bool bExistTablPr = false;
-	//first read the properties
+	//first read properties
 	if(m_ooxTable->m_oTableProperties )
 	{
 		OOXtblPrReader otblPrReader(m_ooxTable->m_oTableProperties);
@@ -132,7 +142,7 @@ bool OOXTableReader::Parse( ReaderParameter oParam, RtfTable& oOutputTable )
 		bExistTablPr = true;
 	}
 
-	//creating an external style for nested elements
+	//create external style for nested elements
 	RtfTableStylePtr poTableStyle;
 	if( PROP_DEF != oOutputTable.m_oProperty.m_nStyle )
 	{
@@ -145,9 +155,9 @@ bool OOXTableReader::Parse( ReaderParameter oParam, RtfTable& oOutputTable )
 				poTableStyle = boost::static_pointer_cast<RtfTableStyle, RtfStyle>( oResultStyle );
 				
 				poTableStyle->m_oTableProp = oOutputTable.m_oProperty; 
-				//Set TableProperty as we have already read so as not to lose the order in which the properties are applied
-				//for example, indent consistently overwrites each other in styles, numbering, just in properties
-				//overwrites properties on First, Last....TODO
+				//Set TableProperty as already read to maintain property application order
+				//for example indent sequentially overwrites each other in styles, numbering, just in properties
+				//overwrites properties on First, Last .... todoooo
 			}
 		}
 	}
@@ -180,7 +190,7 @@ bool OOXTableReader::Parse( ReaderParameter oParam, RtfTable& oOutputTable )
 
 		RtfTableRowPtr oNewRow ( new RtfTableRow() );
 		//apply table properties to each row
-		//because in RTF there are no table properties and all properties are written to the row properties
+		//since RTF has no table properties and all properties are written to row properties
 		(*((RtfTableProperty*)&oNewRow->m_oProperty)).Merge( oOutputTable.m_oProperty );
 		
 		OOX::Logic::CTr *ooxRow = dynamic_cast<OOX::Logic::CTr *>(m_ooxTable->m_arrItems[i]);
@@ -194,7 +204,7 @@ bool OOXTableReader::Parse( ReaderParameter oParam, RtfTable& oOutputTable )
 	ApplyParagraphProperty( oOutputTable );
 	return true;
 }
-//applies position-related paragraph properties
+//applies paragraph properties related to position
 void OOXTableReader::ApplyParagraphProperty( RtfTable& oOutputTable )
 {
 	for (int i = 0; i < oOutputTable.GetCount(); i++ )
@@ -244,7 +254,7 @@ bool OOXTableRowReader::Parse( ReaderParameter oParam, RtfTableRow& oOutputRow, 
     if( m_ooxRowTable->m_pTableRowProperties )
     {
         OOXtrPrReader otrPrReader(m_ooxRowTable->m_pTableRowProperties);
-        otrPrReader.Parse( oParam, oOutputRow.m_oProperty, oConditionStyle);// can change to any condition(first row)
+        otrPrReader.Parse( oParam, oOutputRow.m_oProperty, oConditionStyle);// may change to any condition (first row)
     }
 
     int nCellCount = m_ooxRowTable->m_nCountCell, nCurCell = 0;
@@ -252,7 +262,7 @@ bool OOXTableRowReader::Parse( ReaderParameter oParam, RtfTableRow& oOutputRow, 
     for (size_t i = 0; i < m_ooxRowTable->m_arrItems.size(); ++i)
     {
         if ( m_ooxRowTable->m_arrItems[i] == NULL )		continue;
-        if ( m_ooxRowTable->m_arrItems[i]->getType() != OOX::et_w_tc) continue;//TODO bookmarks
+        if ( m_ooxRowTable->m_arrItems[i]->getType() != OOX::et_w_tc) continue;//todooo bookmarks
 
         RtfTableCellPtr oNewCell( new RtfTableCell() );
 
@@ -267,7 +277,7 @@ bool OOXTableRowReader::Parse( ReaderParameter oParam, RtfTableRow& oOutputRow, 
         oCellReader.Parse( oParam, *oNewCell, oConditionStyle, nCurCell++, nCurRow, nCellCount, nRowCount );
         //add cell
         oOutputRow.AddItem(oNewCell);
-        //cell to row properties
+        //cell properties in row
         oOutputRow.m_oProperty.AddItem( oNewCell->m_oProperty );
     }
     return true;
@@ -285,7 +295,7 @@ bool OOXTableCellReader::Parse( ReaderParameter oParam ,RtfTableCell& oOutputCel
     if( m_ooxTableCell->m_pTableCellProperties )
     {
         OOXtcPrReader oCellPropReader(m_ooxTableCell->m_pTableCellProperties, m_ooxTableProps);
-        oCellPropReader.Parse( oParam, oOutputCell.m_oProperty, oConditionalTableStyle, nCurCell, nCellCount, nCurRow, nRowCount );//can change to any condition (firstRow)
+        oCellPropReader.Parse( oParam, oOutputCell.m_oProperty, oConditionalTableStyle, nCurCell, nCellCount, nCurRow, nRowCount );//may change to any condition (firstRow)
     }
     else
     {

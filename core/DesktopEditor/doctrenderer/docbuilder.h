@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #ifndef DOCBUILDER_H
 #define DOCBUILDER_H
@@ -349,6 +359,7 @@ namespace NSDoctRenderer
 		 * @param params The parameters needed for the correct file opening (most commonly, the encoding is used for the txt and csv file types or the delimiter for the csv files,
 		 * for other file types this is just an empty string). The parameters are added in the form of XML tags, where m_nCsvTxtEncoding is used for the text encoding
 		 * and m_nCsvDelimiter is used for the csv delimiter. The supported values for the csv delimiters include: 0 - no delimiter; 1 - tab; 2 - semicolon; 3 - colon; 4 - comma; 5 - space.
+		 * The paths are set by the builder only: m_sFileFrom, m_sFileTo and m_sTempDir are removed from params.
 		 * @return Process x2t return code
 		 */
 		int OpenFile(const wchar_t* path, const wchar_t* params);
@@ -382,6 +393,7 @@ namespace NSDoctRenderer
 		 * * width - the image width in pixels;
 		 * * height - the image height in pixels.
 		 * For example: oBuilder.SaveFile(OFFICESTUDIO_FILE_IMAGE, L"thumbnail.png", "<m_oThumbnail><format>4</format><aspect>1</aspect><first>false</first><width>1000</width><height>1000</height></m_oThumbnail>");
+		 * The paths are set by the builder only: m_sFileFrom, m_sFileTo and m_sTempDir are removed from params.
 		 * @return Process x2t return code
 		 */
 		int SaveFile(const int& type, const wchar_t* path, const wchar_t* params = 0);
@@ -599,6 +611,16 @@ namespace NSDoctRenderer
 	 * Close() : closes the file (removes the temporary folder contents).
 	 * GetImageMap() : returns a dictionary object with the imageId -> imagePath key-value pairs (for inserting into the document).
 	 *
+	 * 7) Editing an existing PDF.
+	 * When a pdf file is opened (OpenFile), it is edited with the same Api as a text document
+	 * (the pdf editor uses the word sdkjs scripts). The original pdf is opened directly and kept,
+	 * so that on SaveFile("pdf", ...) the changes are applied onto the original pdf content
+	 * (EditPdf + apply changes), preserving everything that was already in the file:
+	 * builder.OpenFile("input.pdf", "");
+	 * var oDocument = Api.GetDocument();
+	 * // ... edit via Api / run macros ...
+	 * builder.SaveFile("pdf", "output.pdf");
+	 * builder.CloseFile();
 	 */
 
 	// To make the code shorter, use the following type definitions:

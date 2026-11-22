@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "PtgList.h"
@@ -109,7 +119,7 @@ void PtgList::assemble(AssemblerStack& ptg_stack, PtgQueue& extra_data, bool ful
         if (!link.empty())
             link += L"!";
     }
-    //formula += link; no sheet reference yet
+    //formula += link; for now without sheet name
     formula += tableName;
     formula += L'[';
     if(!invalid && !nonresident)
@@ -157,21 +167,30 @@ Ptg* PtgList::toArea()
 	auto tableRefIndex = XLS::GlobalWorkbookInfo::mapTableRefsStatic.find(listIndex);
 	if(tableRefIndex != XLS::GlobalWorkbookInfo::mapTableRefsStatic.end())
 	{
-		tableRef.fromString(tableRefIndex->second);
+		tableRef.fromString(std::get<0>(tableRefIndex->second));
 		tableRef.columnFirst += colFirst;
-		tableRef.columnLast = tableRef.columnFirst + (colLast - colFirst);
+		tableRef.columnLast = tableRef.columnFirst;
+		if(colLast > colFirst)
+			tableRef.columnLast += (colLast - colFirst);
 		if(rowType == 0x2) //headers
 			tableRef.rowLast = tableRef.rowFirst;
 		else if(rowType == 0x0) //data
-			tableRef.rowFirst++;
+		{
+			tableRef.rowFirst+= std::get<1>(tableRefIndex->second);
+			tableRef.rowLast-= std::get<2>(tableRefIndex->second);
+		}
 		else if(rowType == 0x6) //dataheaders
-			tableRef.rowLast--;
+			tableRef.rowLast-= std::get<2>(tableRefIndex->second);
 		else if(rowType == 0x0C) // datatotals
-			tableRef.rowFirst--;
+			tableRef.rowFirst+= std::get<1>(tableRefIndex->second);
 		else if(rowType == 0x8) //totals
 			tableRef.rowFirst = tableRef.rowLast;
 	}
-	PtgArea3d* listArea = new PtgArea3d(0x3B, CellRef());
+	unsigned char ptgType = type_+1;
+	unsigned char areaType = 0x3B;
+	SETBITS(areaType,5,6, ptgType);
+
+	PtgArea3d* listArea = new PtgArea3d(areaType, CellRef());
 	listArea->ixti = ixti;
 	listArea->area = tableRef;
 	listArea->area.rowFirstRelative = false;

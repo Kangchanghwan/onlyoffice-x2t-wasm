@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include <stdlib.h>
 #include <string.h>
@@ -173,8 +183,8 @@ namespace NSFontConverter
 			(*pOutputFunc)( pOutputStream, sBuf, strlen( sBuf ));
 		}
 		(*pOutputFunc)( pOutputStream, "\n", 1);
-		// The dictionary needs space for 12 fields: the next 9 +
-		// Private and CharStrings (in the eexec section) and FID.
+		// Dictionary needs space for 12 fields: the following 9 +
+		// Private and CharStrings (in eexec section) and FID.
 		(*pOutputFunc)( pOutputStream, "12 dict begin\n", 14);
 		(*pOutputFunc)( pOutputStream, "/FontInfo 10 dict dup begin\n", 28);
 		if ( m_oTopDict.nVersionSID != 0 )
@@ -268,7 +278,7 @@ namespace NSFontConverter
 			delete seBuffer;
 		}
 
-		// Writing the encoding
+		// Write encoding
 		(*pOutputFunc)( pOutputStream, "/Encoding ", 10);
 		if ( !ppNewEncoding && m_arrEncoding == c_arrsFontFileType1ExpertEncoding )
 		{
@@ -606,7 +616,7 @@ namespace NSFontConverter
 		// Name Table
 		TCharBuffer oNameTable;
 
-		// For now, make the table with names empty
+		// For now make name table empty
 		oNameTable.Write( "\x00\x00", 2 ); // format
 		oNameTable.Write( "\x00\x00", 2 ); // number of name records
 		oNameTable.Write( "\x00\x06", 2 ); // offset to start of string storage
@@ -624,10 +634,10 @@ namespace NSFontConverter
 		oPostTable.Write( "\x00\x00\x00\x00", 4 ); // min Type 1 memory
 		oPostTable.Write( "\x00\x00\x00\x00", 4 ); // max Type 1 memory
 
-		// Create a catalog with a description of all tables:
-		// - sort the tables by tag
-		// - calculate table positions, taking into account 4-byte alignment
-		// - calculate checksums of tables
+		// Create table directory with all table descriptions:
+		// - sort tables by tag
+		// - calculate table positions with 4-byte alignment
+		// - calculate table checksums
 
 		int nRequiredTablesCount = 8;
 		TrueTypeTable *pTables = (TrueTypeTable *)MemUtilsMallocArray( nRequiredTablesCount, sizeof(TrueTypeTable) );
@@ -691,7 +701,7 @@ namespace NSFontConverter
 			}
 		}
 
-		// Write the table directory
+		// Write table directory
 		TCharBuffer oTableDir; // 12 + nReqTabCount * 16
 		oTableDir.Write( "\x4F\x54\x54\x4F", 4 ); // sfnt version
 		oTableDir.Write16( nRequiredTablesCount); // numTables
@@ -716,7 +726,7 @@ namespace NSFontConverter
 		}
 		(*pOutputFunc)( pOutputStream, oTableDir.sBuffer, oTableDir.nLen );
 
-		// Calculate the checksum of the file
+		// Calculate file checksum
 		int nFileChecksum = ComputeTTTableChecksum( (unsigned char *)oTableDir.sBuffer, oTableDir.nLen );
 		for ( int nIndex = 0; nIndex < nRequiredTablesCount; ++nIndex )
 		{
@@ -724,7 +734,7 @@ namespace NSFontConverter
 		}
 		nFileChecksum = 0xb1b0afba - nFileChecksum;
 
-		// Writing tables
+		// Write tables
 		for ( int nIndex = 0; nIndex < nRequiredTablesCount; ++nIndex )
 		{
 			switch( pTables[nIndex].unTag )
@@ -758,7 +768,7 @@ namespace NSFontConverter
 		bool bSuccess = true;
 		int nGID = 0, i, j, k;
 
-		// Calculate the number of CIDs and build a CID->GID mapping
+		// Calculate number of CIDs and build CID->GID mapping
 		int nCIDsCount = 0;
 		for ( i = 0; i < m_nGlyphsCount; ++i )
 		{
@@ -1126,7 +1136,7 @@ namespace NSFontConverter
 
 		int nCurFD = 0;
 
-		// Calculate the number of CIDs and build a CID->GID mapping
+		// Calculate number of CIDs and build CID->GID mapping
 		int nCIDsCount = 0;
 		for (int nIndex = 0; nIndex < m_nGlyphsCount; ++nIndex )
 		{
@@ -1145,7 +1155,7 @@ namespace NSFontConverter
 			arrCIDMap[m_pnCharset[ nIndex ]] = nIndex;
 		}
 
-		// Writing the Type 1 font
+		// Write Type 1 font
 		for (i = 0; i < nCIDsCount; i += 256)
 		{
 			// Ignore CID = 0, i.e. ".notdef"
@@ -1664,10 +1674,10 @@ namespace NSFontConverter
 					{
 						// TO DO: error "Too few args to Type 2 callsubr"
 					}
-					// don't clear the stack
+					// don't clear stack
 					break;
 				case 0x000b:		// return
-					// don't clear the stack
+					// don't clear stack
 					break;
 				case 0x000e:		// endchar / seac
 					if (m_bFirstOperator)
@@ -1701,7 +1711,7 @@ namespace NSFontConverter
 					m_nOperatorsCount = 0;
 					break;
 				case 0x000f:		// (obsolete)
-					// This operation is ignored, but we need the width of the character
+					// This operation is ignored, but we need the glyph width
 					if (m_bFirstOperator)
 					{
 						ConvertGlyphWidth(m_nOperatorsCount > 0, seCharBuffer, pDict);
@@ -1940,7 +1950,7 @@ namespace NSFontConverter
 					{
 						// TO DO: error "Too few args to Type 2 callgsubr"
 					}
-					// don't clear the stack
+					// don't clear stack
 					break;
 				case 0x001e:		// vhcurveto
 					if (m_nOperatorsCount < 4 || !(m_nOperatorsCount % 4 == 0 || (m_nOperatorsCount-1) % 4 == 0))
@@ -2337,7 +2347,7 @@ namespace NSFontConverter
 
 		m_bSuccessParsed = true;
 
-		// some programs include Type 1C fonts with leading spaces
+		// some programs include Type 1C fonts with leading whitespace
 		if ( m_nLen > 0 && m_sFile[0] != '\x01' )
 		{
 			++m_sFile;
@@ -2362,7 +2372,7 @@ namespace NSFontConverter
 
 		m_seName = new StringExt((char *)&m_sFile[ oIndexVal.nPos ], oIndexVal.nLen);
 
-		// Reading the topmost dictionary for the first font
+		// Read the top dictionary for the first font
 		ReadTopDict();
 
 		if ( m_oTopDict.nFirstOperator == 0x0c1e )
@@ -2535,8 +2545,8 @@ namespace NSFontConverter
 		}
 	}
 
-	// Reading the font dictionary (CID Font Dict (FD)). From here we pull out a pointer to the private dict,
-	// and read private dict. We also extract FontMatrix.
+	// Read font dictionary (CID Font Dict (FD)). Extract private dict pointer from here,
+	// and read private dict. Also extract FontMatrix.
 	void CFontFileType1C::ReadFD(int nOffset, int nLength, Type1CPrivateDict *pDict)
 	{
 		double arrdFontMatrix[6];
@@ -3084,7 +3094,7 @@ namespace NSFontConverter
 		return nPos;
 	}
 
-	// Converting a delta-encoded array of operators to an array of ints
+	// Convert delta-encoded operator array to int array
 	int CFontFileType1C::GetDeltaIntArray(int *pArray, int nMaxLen)
 	{
 		int nCount = 0;
@@ -3102,7 +3112,7 @@ namespace NSFontConverter
 		return nCount;
 	}
 
-	// Converting a delta-encoded array of operators into an array of doubles
+	// Convert delta-encoded operator array to double array
 	int CFontFileType1C::GetDeltaDoubleArray(double *pArray, int nMaxLen)
 	{
 		int nCount = 0;
@@ -3126,7 +3136,7 @@ namespace NSFontConverter
 		pIndex->nCount = GetU16BE( nPos, bSuccess);
 		if ( 0 == pIndex->nCount )
 		{
-			// Empty indexes are possible, they only contain the length field
+			// empty indexes are possible, they contain only the length field
 			pIndex->nOffsetSize = 0;
 			pIndex->nStartPos = pIndex->nEndPos = nPos + 2;
 		}

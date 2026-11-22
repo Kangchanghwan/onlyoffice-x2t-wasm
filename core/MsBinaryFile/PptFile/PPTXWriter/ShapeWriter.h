@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #pragma once
 
@@ -104,7 +114,7 @@ namespace PPT
 		switch (TypePPTX)
 		{
 			case 0: return L"body";
-			case 100: return L"body"; // for master pages
+			case 100: return L"body"; // for master pages  
 			case 1: return L"chart";
 			case 2: return L"clipArt";
 			case 3: return L"ctrTitle";
@@ -176,9 +186,9 @@ namespace PPT
     static	std::wstring	ConvertColor	(CColor		& color, long alpha = 255);
 
 	void	ParseXmlAlternative(const std::wstring & xml);
-// renderer type------------------------------------------------------------------------------
+// renderer type -----------------------------------------------------------------------------
     virtual HRESULT get_Type(LONG* lType)	;
-//-------- Functions for working with the page --------------------------------------------------
+//-------- Functions for working with page --------------------------------------------------
 	virtual HRESULT NewPage()				;
 	virtual HRESULT get_Height(double* dHeight);
 	virtual HRESULT put_Height(const double& dHeight);
@@ -257,7 +267,7 @@ namespace PPT
     virtual HRESULT CommandDrawTextExCHAR(const LONG& c, const LONG& gid, const double& x, const double& y, const double& w, const double& h) ;
     virtual HRESULT CommandDrawTextEx(const std::wstring& bsUnicodeText, const unsigned int* pGids, const unsigned int nGidsCount, const double& x, const double& y, const double& w, const double& h);
 
-//-------- Markers for commands ---------------------------------------------------------------
+//-------- Command markers ---------------------------------------------------------------
 	virtual HRESULT BeginCommand(const _UINT32& lType);
 	virtual HRESULT EndCommand(const _UINT32& lType)	;
 
@@ -280,7 +290,7 @@ namespace PPT
     virtual HRESULT PathCommandTextExCHAR(const LONG& c, const LONG& gid, const double& x, const double& y, const double& w, const double& h);
     virtual HRESULT PathCommandTextEx(const std::wstring& sText, const unsigned int* pGids, const unsigned int nGidsCount, const double& x, const double& y, const double& w, const double& h) ;
 
-//-------- Functions for displaying images ------------------------------------------------------------------
+//-------- Functions for image output ---------------------------------------------------
 	virtual HRESULT DrawImage(IGrObject* pImage, const double& x, const double& y, const double& w, const double& h)	;
 	virtual HRESULT DrawImageFromFile(const std::wstring&, const double& x, const double& y, const double& w, const double& h, const BYTE& lAlpha = 255);	
 
@@ -368,10 +378,10 @@ namespace PPT
 
 	public:
 
-		Aggplus::CGraphicsPathSimpleConverter*		m_pSimpleGraphicsConverter;		// Converter of complex graphical paths to simple ones
+		Aggplus::CGraphicsPathSimpleConverter*		m_pSimpleGraphicsConverter;		// converter from complex graphics paths to simple ones
         NSFonts::IFontManager*						m_pFontManager;					// font manager
 
-		Aggplus::CMatrix							m_oBaseTransform;	// matrix for recalculating coordinate axes (here: millimeters -> pixels)
+		Aggplus::CMatrix							m_oBaseTransform;	// coordinate axis conversion matrix (here: millimeters -> pixels)
 		Aggplus::CMatrix							m_oTransform;		// current renderer transformation matrix
 		Aggplus::CMatrix							m_oFullTransform;	// full transformation matrix (m_oBaseTransform * m_oTransform)
 
@@ -384,7 +394,7 @@ namespace PPT
 
         LONG							m_lClipMode;
 
-		CPen							m_oPen;				// settings for all graphics (copied from AVSGraphics)
+		CPen							m_oPen;				// graphics settings (copied header from AVSGraphics)
 		CBrush							m_oBrush;
 		CFont							m_oFont;
 		CShadow							m_oShadow;

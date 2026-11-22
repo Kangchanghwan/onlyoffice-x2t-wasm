@@ -1,8 +1,35 @@
-#-------------------------------------------------
+# Copyright (C) Ascensio System SIA, 2009-2026
 #
-# Project created by QtCreator
+# This program is a free software product. You can redistribute it and/or
+# modify it under the terms of the GNU Affero General Public License (AGPL)
+# version 3 as published by the Free Software Foundation, together with the
+# additional terms provided in the LICENSE file.
 #
-#-------------------------------------------------
+# This program is distributed WITHOUT ANY WARRANTY; without even the implied
+# warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+# details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+#
+# You can contact Ascensio System SIA by email at info@onlyoffice.com
+# or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+# LV-1050, Latvia, European Union.
+#
+# The interactive user interfaces in modified versions of the Program
+# are required to display Appropriate Legal Notices in accordance with
+# Section 5 of the GNU AGPL version 3.
+#
+# No trademark rights are granted under this License.
+#
+# All non-code elements of the Product, including illustrations,
+# icon sets, and technical writing content, are licensed under the
+# Creative Commons Attribution-ShareAlike 4.0 International License:
+# https://creativecommons.org/licenses/by-sa/4.0/legalcode
+#
+# This license applies only to such non-code elements and does not
+# modify or replace the licensing terms applicable to the Program's
+# source code, which remains licensed under the GNU Affero General
+# Public License v3.
+#
+# SPDX-License-Identifier: AGPL-3.0-only
 
 QT       -= core gui
 
@@ -32,18 +59,16 @@ precompile_header {
     HEADERS += precompiled.h
 }
 
-core_release {
+build_monolith_objects {
 SOURCES += \
 	odf_converter.cpp \
 	odf_datatypes.cpp \
 	odf_reader.cpp \
 	odf_writer.cpp
-}
-
-core_debug {
+} else {
 SOURCES += \
-        ../../DataTypes/referenceformat.cpp \
-        ../../DataTypes/mathvariant.cpp \
+	../../DataTypes/referenceformat.cpp \
+	../../DataTypes/mathvariant.cpp \
 	../../DataTypes/anchortype.cpp \
 	../../DataTypes/animation_attlists.cpp \
 	../../DataTypes/backgroundcolor.cpp \
@@ -52,8 +77,8 @@ SOURCES += \
 	../../DataTypes/borderstyle.cpp \
 	../../DataTypes/borderwidths.cpp \
 	../../DataTypes/calcext_type.cpp \
-        ../../DataTypes/chartaxistype.cpp \
-        ../../DataTypes/chartdatalabelnumber.cpp \
+	../../DataTypes/chartaxistype.cpp \
+	../../DataTypes/chartdatalabelnumber.cpp \
 	../../DataTypes/charterrorcategory.cpp \
 	../../DataTypes/chartinterpolation.cpp \
 	../../DataTypes/chartlabelarrangement.cpp \
@@ -152,8 +177,8 @@ SOURCES += \
 	../../DataTypes/grandtotal.cpp \
 	../../DataTypes/membertype.cpp \
 	../../DataTypes/tabletype.cpp \
-        ../../DataTypes/tabledatatype.cpp \
-        ../../DataTypes/tableoperator.cpp \
+	../../DataTypes/tabledatatype.cpp \
+	../../DataTypes/tableoperator.cpp \
 	../../DataTypes/tableorientation.cpp \
 	../../DataTypes/tablefunction.cpp \
 	../../DataTypes/tableorder.cpp \
@@ -166,9 +191,9 @@ SOURCES += \
 	../../DataTypes/timeperiod.cpp \
 	../../DataTypes/messagetype.cpp \
 	../../DataTypes/stylecellprotect.cpp \
-        ../../DataTypes/sparklines.cpp \
-        ../../DataTypes/color_mode.cpp \
-        \
+	../../DataTypes/sparklines.cpp \
+	../../DataTypes/color_mode.cpp \
+	\
 	../../Reader/Format/abstract_xml.cpp \
 	../../Reader/Format/anim_elements.cpp \
 	../../Reader/Format/calcs_styles.cpp \
@@ -207,8 +232,8 @@ SOURCES += \
 	../../Reader/Format/office_settings.cpp \
 	../../Reader/Format/office_spreadsheet.cpp \
 	../../Reader/Format/office_text.cpp \
-        ../../Reader/Format/office_drawing.cpp \
-        ../../Reader/Format/office_meta.cpp \
+	../../Reader/Format/office_drawing.cpp \
+	../../Reader/Format/office_meta.cpp \
 	../../Reader/Format/paragraph_elements.cpp \
 	../../Reader/Format/ruby.cpp \
 	../../Reader/Format/search_table_cell.cpp \
@@ -322,6 +347,7 @@ SOURCES += \
 	../../Reader/Converter/xlsx_data_validation.cpp \
 	../../Reader/Converter/xlsx_utils.cpp \
 	../../Reader/Converter/xlsx_xf.cpp \
+	../../Reader/Converter/StarMath2OOXML/shakey.cpp \
 	../../Reader/Converter/StarMath2OOXML/cooxml2odf.cpp \
 	\
 	../../Writer/Format/office_document.cpp \
@@ -362,7 +388,7 @@ SOURCES += \
 	../../Writer/Format/office_elements_create.cpp \
 	../../Writer/Format/office_spreadsheet.cpp \
 	../../Writer/Format/office_text.cpp \
-        ../../Writer/Format/office_meta.cpp \
+	../../Writer/Format/office_meta.cpp \
 	../../Writer/Format/oox_shape_defines.cpp \
 	../../Writer/Format/paragraph_elements.cpp \
 	../../Writer/Format/style_chart_properties.cpp \
@@ -452,8 +478,8 @@ HEADERS += \
 	../../Common/xml/xmlchar.h \
 	../../Common/xml/xmlelement.h \
 	\
-        ../../DataTypes/referenceformat.h \
-        ../../DataTypes/mathvariant.h \
+	../../DataTypes/referenceformat.h \
+	../../DataTypes/mathvariant.h \
 	../../DataTypes/anchortype.h \
 	../../DataTypes/animation_attlists.h \
 	../../DataTypes/backgroundcolor.h \
@@ -566,9 +592,9 @@ HEADERS += \
 	../../DataTypes/timeperiod.h \
 	../../DataTypes/messagetype.h \
 	../../DataTypes/stylecellprotect.h \
-        ../../DataTypes/tabledatatype.h \
-        ../../DataTypes/tableoperator.h \
-        \
+	../../DataTypes/tabledatatype.h \
+	../../DataTypes/tableoperator.h \
+	\
 	../../Formulas/formulasconvert.h \
 	../../Reader/Format/odf_document.h \
 	../../Reader/Format/abstract_xml.h \
@@ -722,6 +748,7 @@ HEADERS += \
 	../../Reader/Converter/xlsx_xf.h \
 	../../Reader/Converter/conversionelement.h \
 	../../Reader/Converter/ConvertOO2OOX.h \
+	../../Reader/Converter/StarMath2OOXML/shakey.h \
 	../../Reader/Converter/StarMath2OOXML/cooxml2odf.h \
 	\
 	../../Writer/Format/math_elementaries.h \
@@ -743,6 +770,7 @@ HEADERS += \
 	../../Writer/Format/number_style.h \
 	../../Writer/Format/object_package.h \
 	../../Writer/Format/odf_chart_context.h \
+	../../Common/odf_date_time_utils.h \
 	../../Writer/Format/odf_comment_context.h \
 	../../Writer/Format/odf_notes_context.h \
 	../../Writer/Format/odf_conversion_context.h \
@@ -771,7 +799,7 @@ HEADERS += \
 	../../Writer/Format/office_elements_type.h \
 	../../Writer/Format/office_spreadsheet.h \
 	../../Writer/Format/office_text.h \
-        ../../Writer/Format/office_meta.h \
+	../../Writer/Format/office_meta.h \
 	../../Writer/Format/oox_shape_defines.h \
 	../../Writer/Format/paragraph_elements.h \
 	../../Writer/Format/style_chart_properties.h \
@@ -828,137 +856,4 @@ HEADERS += \
 	../../Writer/Converter/Oox2OdfConverter.h \
 	../../Writer/Converter/VmlShapeTypes2Oox.h \
 	../../Writer/Converter/XlsxConverter.h \
-	../../Writer/Converter/PptxConverter.h \
-
-HEADERS += \
-        ../../../OOXML/Base/Base.h \
-        ../../../OOXML/Base/Nullable.h \
-        ../../../OOXML/Base/SmartPtr.h \
-        ../../../OOXML/Base/Unit.h \
-        ../../../OOXML/Base/Unit.h \
-        ../../../OOXML/Common/SimpleTypes_Drawing.h \
-        ../../../OOXML/Common/SimpleTypes_OMath.h \
-        ../../../OOXML/Common/SimpleTypes_Spreadsheet.h \
-        ../../../OOXML/Common/SimpleTypes_Vml.h \
-        ../../../OOXML/Common/SimpleTypes_Word.h \
-        ../../../OOXML/DocxFormat/App.h \
-        ../../../OOXML/DocxFormat/Comments.h \
-        ../../../OOXML/DocxFormat/Core.h \
-        ../../../OOXML/DocxFormat/Diagram/DiagramData.h \
-        ../../../OOXML/DocxFormat/Diagram/DiagramDrawing.h \
-        ../../../OOXML/DocxFormat/Document.h \
-        ../../../OOXML/DocxFormat/Docx.h \
-        ../../../OOXML/DocxFormat/DocxFlat.h \
-        ../../../OOXML/DocxFormat/Drawing/DrawingExt.h \
-        ../../../OOXML/DocxFormat/Endnote.h \
-        ../../../OOXML/DocxFormat/External/HyperLink.h \
-        ../../../OOXML/DocxFormat/FontTable.h \
-        ../../../OOXML/DocxFormat/Footnote.h \
-        ../../../OOXML/DocxFormat/HeaderFooter.h \
-        ../../../OOXML/DocxFormat/Logic/AlternateContent.h \
-        ../../../OOXML/DocxFormat/Logic/Bdo.h \
-        ../../../OOXML/DocxFormat/Logic/Dir.h \
-        ../../../OOXML/DocxFormat/Logic/FldSimple.h \
-        ../../../OOXML/DocxFormat/Logic/Hyperlink.h \
-        ../../../OOXML/DocxFormat/Logic/Paragraph.h \
-        ../../../OOXML/DocxFormat/Logic/ParagraphProperty.h \
-        ../../../OOXML/DocxFormat/Logic/Pict.h \
-        ../../../OOXML/DocxFormat/Logic/Run.h \
-        ../../../OOXML/DocxFormat/Logic/RunProperty.h \
-        ../../../OOXML/DocxFormat/Logic/Sdt.h \
-        ../../../OOXML/DocxFormat/Logic/SectionProperty.h \
-        ../../../OOXML/DocxFormat/Logic/SmartTag.h \
-        ../../../OOXML/DocxFormat/Logic/Table.h \
-        ../../../OOXML/DocxFormat/Logic/Vml.h \
-        ../../../OOXML/DocxFormat/Logic/VmlWord.h \
-        ../../../OOXML/DocxFormat/Math/OMath.h \
-        ../../../OOXML/DocxFormat/Math/oMathContent.h \
-        ../../../OOXML/DocxFormat/Math/oMathPara.h \
-        ../../../OOXML/DocxFormat/Media/ActiveX.h \
-        ../../../OOXML/DocxFormat/Numbering.h \
-        ../../../OOXML/DocxFormat/Settings/Settings.h \
-        ../../../OOXML/DocxFormat/Settings/WebSettings.h \
-        ../../../OOXML/DocxFormat/Styles.h \
-        ../../../OOXML/DocxFormat/VmlDrawing.h \
-        ../../../OOXML/PPTXFormat/DrawingConverter/ASCOfficeDrawingConverter.h \
-        ../../../OOXML/PPTXFormat/Folder.h \
-        ../../../OOXML/PPTXFormat/Logic/ClrMapOvr.h \
-        ../../../OOXML/PPTXFormat/Logic/Colors/PrstClr.h \
-        ../../../OOXML/PPTXFormat/Logic/Colors/SchemeClr.h \
-        ../../../OOXML/PPTXFormat/Logic/Colors/SrgbClr.h \
-        ../../../OOXML/PPTXFormat/Logic/CxnSp.h \
-        ../../../OOXML/PPTXFormat/Logic/Effects/AlphaModFix.h \
-        ../../../OOXML/PPTXFormat/Logic/Effects/Duotone.h \
-        ../../../OOXML/PPTXFormat/Logic/Effects/Grayscl.h \
-        ../../../OOXML/PPTXFormat/Logic/GraphicFrame.h \
-        ../../../OOXML/PPTXFormat/Logic/HeadingVariant.h \
-        ../../../OOXML/PPTXFormat/Logic/Pic.h \
-        ../../../OOXML/PPTXFormat/Logic/Shape.h \
-        ../../../OOXML/PPTXFormat/Logic/SmartArt.h \
-        ../../../OOXML/PPTXFormat/Logic/SpTree.h \
-        ../../../OOXML/PPTXFormat/Logic/SpTreeElem.h \
-        ../../../OOXML/PPTXFormat/Logic/Table/Table.h \
-        ../../../OOXML/PPTXFormat/Logic/TablePartStyle.h \
-        ../../../OOXML/PPTXFormat/Logic/TcBdr.h \
-        ../../../OOXML/PPTXFormat/Logic/TextFont.h \
-        ../../../OOXML/PPTXFormat/Logic/Timing/Anim.h \
-        ../../../OOXML/PPTXFormat/Logic/Timing/AnimClr.h \
-        ../../../OOXML/PPTXFormat/Logic/Timing/AnimEffect.h \
-        ../../../OOXML/PPTXFormat/Logic/Timing/AnimMotion.h \
-        ../../../OOXML/PPTXFormat/Logic/Timing/AnimRot.h \
-        ../../../OOXML/PPTXFormat/Logic/Timing/AnimScale.h \
-        ../../../OOXML/PPTXFormat/Logic/Timing/Audio.h \
-        ../../../OOXML/PPTXFormat/Logic/Timing/CBhvr.h \
-        ../../../OOXML/PPTXFormat/Logic/Timing/CTn.h \
-        ../../../OOXML/PPTXFormat/Logic/Timing/Par.h \
-        ../../../OOXML/PPTXFormat/Logic/Timing/Seq.h \
-        ../../../OOXML/PPTXFormat/Logic/Timing/Set.h \
-        ../../../OOXML/PPTXFormat/Logic/Timing/Timing.h \
-        ../../../OOXML/PPTXFormat/Logic/Transitions/CornerDirectionTransition.h \
-        ../../../OOXML/PPTXFormat/Logic/Transitions/EightDirectionTransition.h \
-        ../../../OOXML/PPTXFormat/Logic/Transitions/EmptyTransition.h \
-        ../../../OOXML/PPTXFormat/Logic/Transitions/OptionalBlackTransition.h \
-        ../../../OOXML/PPTXFormat/Logic/Transitions/OrientationTransition.h \
-        ../../../OOXML/PPTXFormat/Logic/Transitions/SideDirectionTransition.h \
-        ../../../OOXML/PPTXFormat/Logic/Transitions/SplitTransition.h \
-        ../../../OOXML/PPTXFormat/Logic/Transitions/Transition.h \
-        ../../../OOXML/PPTXFormat/Logic/Transitions/WheelTransition.h \
-        ../../../OOXML/PPTXFormat/Logic/Transitions/ZoomTransition.h \
-        ../../../OOXML/PPTXFormat/Logic/TxStyles.h \
-        ../../../OOXML/PPTXFormat/NotesMaster.h \
-        ../../../OOXML/PPTXFormat/NotesSlide.h \
-        ../../../OOXML/PPTXFormat/Presentation.h \
-        ../../../OOXML/PPTXFormat/Presentation/NotesSz.h \
-        ../../../OOXML/PPTXFormat/Presentation/SldSz.h \
-        ../../../OOXML/PPTXFormat/Slide.h \
-        ../../../OOXML/PPTXFormat/SlideLayout.h \
-        ../../../OOXML/PPTXFormat/SlideMaster.h \
-        ../../../OOXML/PPTXFormat/TableStyles.h \
-        ../../../OOXML/SystemUtility/File.h \
-        ../../../OOXML/SystemUtility/SystemUtility.h \
-        ../../../OOXML/XlsxFormat/CalcChain/CalcChain.h \
-        ../../../OOXML/XlsxFormat/Chart/Chart.h \
-        ../../../OOXML/XlsxFormat/Chart/ChartDrawing.h \
-        ../../../OOXML/XlsxFormat/Chart/ChartSerializeEx.h \
-        ../../../OOXML/XlsxFormat/Comments/Comments.h \
-        ../../../OOXML/XlsxFormat/Drawing/Pos.h \
-        ../../../OOXML/XlsxFormat/ExternalLinks/ExternalLinkPath.h \
-        ../../../OOXML/XlsxFormat/ExternalLinks/ExternalLinks.h \
-        ../../../OOXML/XlsxFormat/Pivot/PivotCacheDefinition.h \
-        ../../../OOXML/XlsxFormat/Pivot/PivotCacheRecords.h \
-        ../../../OOXML/XlsxFormat/Pivot/PivotTable.h \
-        ../../../OOXML/XlsxFormat/SharedStrings/SharedStrings.h \
-        ../../../OOXML/XlsxFormat/Styles/Borders.h \
-        ../../../OOXML/XlsxFormat/Styles/CellStyles.h \
-        ../../../OOXML/XlsxFormat/Styles/Colors.h \
-        ../../../OOXML/XlsxFormat/Styles/Fills.h \
-        ../../../OOXML/XlsxFormat/Styles/Fonts.h \
-        ../../../OOXML/XlsxFormat/Styles/NumFmts.h \
-        ../../../OOXML/XlsxFormat/Styles/Styles.h \
-        ../../../OOXML/XlsxFormat/Styles/Xfs.h \
-        ../../../OOXML/XlsxFormat/Styles/dxf.h \
-        ../../../OOXML/XlsxFormat/Workbook/Workbook.h \
-        ../../../OOXML/XlsxFormat/Worksheets/Sparkline.h \
-        ../../../OOXML/XlsxFormat/Worksheets/Worksheet.h \
-        ../../../OOXML/XlsxFormat/Xlsx.h \
-        ../../../OOXML/XlsxFormat/XlsxFlat.h
+	../../Writer/Converter/PptxConverter.h

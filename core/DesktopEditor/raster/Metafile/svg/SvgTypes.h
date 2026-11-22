@@ -1,8 +1,44 @@
+/*
+ * Copyright (C) Ascensio System SIA, 2009-2026
+ *
+ * This program is a free software product. You can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License (AGPL)
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
+ * Section 5 of the GNU AGPL version 3.
+ *
+ * No trademark rights are granted under this License.
+ *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 #ifndef SVGTYPES_H
 #define SVGTYPES_H
 
 #include <cstring>
 #include <cmath>
+#include <algorithm>
 
 #include "../../../Common/3dParty/html/css/src/StyleProperties.h"
 #include "SvgUtils.h"
@@ -104,6 +140,28 @@ namespace SVG
 		SvgDigit m_oHeight;
 	};
 
+	inline bool IsRelativeValue(const SvgDigit& oValue)
+	{
+		if (oValue.Empty())
+			return false;
+
+		const NSCSS::UnitMeasure enUnitMeasure{oValue.GetUnitMeasure()};
+
+		return NSCSS::UnitMeasure::Percent == enUnitMeasure ||
+		       NSCSS::UnitMeasure::Em      == enUnitMeasure ||
+		       NSCSS::UnitMeasure::Rem     == enUnitMeasure;
+	}
+
+	inline bool IsRelativeValue(const std::vector<SvgDigit>& arValues)
+	{
+		return std::any_of(arValues.begin(), arValues.end(), [](const SvgDigit& oValue){ return IsRelativeValue(oValue); });
+	}
+
+	inline bool IsRelativeValue(const TRect& oRect)
+	{
+		return IsRelativeValue(oRect.m_oX) || IsRelativeValue(oRect.m_oY) || IsRelativeValue(oRect.m_oWidth) || IsRelativeValue(oRect.m_oHeight);
+	}
+
 	struct TBounds
 	{
 		double m_dLeft;
@@ -111,6 +169,29 @@ namespace SVG
 		double m_dRight;
 		double m_dBottom;
 	};
+
+	inline void TransformBounds(TBounds& oBounds, const Aggplus::CMatrix& oMatrix)
+	{
+		if (oBounds.m_dLeft > oBounds.m_dRight || oBounds.m_dTop > oBounds.m_dBottom)
+			return;
+
+		double arX[4] = {oBounds.m_dLeft, oBounds.m_dRight, oBounds.m_dRight,  oBounds.m_dLeft  };
+		double arY[4] = {oBounds.m_dTop,  oBounds.m_dTop,   oBounds.m_dBottom, oBounds.m_dBottom};
+
+		for (unsigned int unIndex = 0; unIndex < 4; ++unIndex)
+			oMatrix.TransformPoint(arX[unIndex], arY[unIndex]);
+
+		oBounds.m_dLeft = oBounds.m_dRight  = arX[0];
+		oBounds.m_dTop  = oBounds.m_dBottom = arY[0];
+
+		for (unsigned int unIndex = 1; unIndex < 4; ++unIndex)
+		{
+			oBounds.m_dLeft   = std::min(oBounds.m_dLeft,   arX[unIndex]);
+			oBounds.m_dRight  = std::max(oBounds.m_dRight,  arX[unIndex]);
+			oBounds.m_dTop    = std::min(oBounds.m_dTop,    arY[unIndex]);
+			oBounds.m_dBottom = std::max(oBounds.m_dBottom, arY[unIndex]);
+		}
+	}
 }
 
 #endif // SVGTYPES_H

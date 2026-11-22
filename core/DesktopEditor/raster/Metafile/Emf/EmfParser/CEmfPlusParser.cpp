@@ -1,3 +1,38 @@
+/*
+ * Copyright (C) Ascensio System SIA, 2009-2026
+ *
+ * This program is a free software product. You can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License (AGPL)
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
+ * Section 5 of the GNU AGPL version 3.
+ *
+ * No trademark rights are granted under this License.
+ *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 #include "CEmfPlusParser.h"
 #include "../../../../graphics/pro/Graphics.h"
 #include <typeinfo>
@@ -556,7 +591,7 @@ namespace MetaFile
 		}
 		case BrushTypeTextureFill:
 		{
-			// TODO: since fill repetition can't be adjusted at the moment, it will draw the image during the fill itself
+			// TODO: since fill repetition cannot be controlled at the moment, the image will be drawn during the fill itself
 			pEmfPlusBrush->unStyle = BS_PATTERN;
 
 			unsigned int unBrushDataFlags, unSkip = 16;
@@ -590,7 +625,7 @@ namespace MetaFile
 		case BrushTypePathGradient:
 		{
 //			pEmfPlusBrush->Style = BS_PATHGRADIENT;
-			//TODO: for now this brush will be radial, but future work should implement all the capabilities of this brush
+			//TODO: for now this brush will be radial, but in the future all capabilities of this brush need to be implemented
 			pEmfPlusBrush->unStyle = BS_RADIALGRADIENT;
 
 			unsigned int unBrushDataFlags;
@@ -611,6 +646,8 @@ namespace MetaFile
 
 			m_oStream.Skip((unCountColors - 1) * 4);
 
+			CEmfPlusPath* pBoundary = NULL;
+
 			if (BrushDataPath & unBrushDataFlags)
 			{
 				int nSize;
@@ -618,21 +655,7 @@ namespace MetaFile
 				m_oStream >> nSize;
 
 				if (nSize > 0)
-				{
-					CEmfPlusPath* pPath = ReadPath();
-
-					if (NULL != pPath)
-					{
-						TRectD oRect = pPath->GetBounds();
-
-						pEmfPlusBrush->oRectF.dX      = oRect.Left;
-						pEmfPlusBrush->oRectF.dY      = oRect.Top;
-						pEmfPlusBrush->oRectF.dWidth  = oRect.Right - oRect.Left;
-						pEmfPlusBrush->oRectF.dHeight = oRect.Bottom - oRect.Top;
-
-						delete pPath;
-					}
-				}
+					pBoundary = ReadPath();
 			}
 			else
 			{
@@ -640,13 +663,45 @@ namespace MetaFile
 
 				m_oStream >> nCountPoint;
 
-				std::vector<TEmfPlusPointF> arPoints = ReadPoints<TEmfPlusPointF>(nCountPoint);
+				if (nCountPoint > 0)
+				{
+					const std::vector<TEmfPlusPointF> arPoints{ReadPoints<TEmfPlusPointF>(nCountPoint)};
 
-				//TODO::implement when encountered
+					pBoundary = new CEmfPlusPath();
+					pBoundary->MoveTo(arPoints[0].X, arPoints[0].Y);
+
+					for (unsigned int unIndex = 1; unIndex < arPoints.size(); ++unIndex)
+						pBoundary->LineTo(arPoints[unIndex].X, arPoints[unIndex].Y);
+
+					pBoundary->Close();
+				}
+			}
+
+			if (NULL != pBoundary)
+			{
+				const TRectD oRect{pBoundary->GetBounds()};
+
+				pEmfPlusBrush->oRectF.dX      = oRect.Left;
+				pEmfPlusBrush->oRectF.dY      = oRect.Top;
+				pEmfPlusBrush->oRectF.dWidth  = oRect.Right - oRect.Left;
+				pEmfPlusBrush->oRectF.dHeight = oRect.Bottom - oRect.Top;
+
+				for (const CPathCommandBase* pCommand : pBoundary->GetCommands())
+				{
+					if (PATH_COMMAND_CURVETO == pCommand->GetType())
+						pEmfPlusBrush->bEllipticalBoundary = true;
+					else if (PATH_COMMAND_LINETO == pCommand->GetType() || PATH_COMMAND_ARCTO == pCommand->GetType())
+					{
+						pEmfPlusBrush->bEllipticalBoundary = false;
+						break;
+					}
+				}
+
+				delete pBoundary;
 			}
 
 			if (BrushDataTransform & unBrushDataFlags)
-				m_oStream.Skip(24);
+				m_oStream >> pEmfPlusBrush->oTransform;
 
 			if (BrushDataPresetColors & unBrushDataFlags)
 			{
@@ -658,14 +713,18 @@ namespace MetaFile
 				{
 					pEmfPlusBrush->arGradientColors.resize(unPositionCount);
 
-					for (unsigned int unIndex = 0; unIndex < unPositionCount; ++unIndex)
-						m_oStream >> pEmfPlusBrush->arGradientColors[unIndex].second;
+					for (unsigned int unIndex = unPositionCount; unIndex > 0; --unIndex)
+					{
+						double dPosition;
+						m_oStream >> dPosition;
+						pEmfPlusBrush->arGradientColors[unIndex - 1].second = 1. - dPosition;
+					}
 
-					for (unsigned int unIndex = 0; unIndex < unPositionCount; ++unIndex)
-						m_oStream >> pEmfPlusBrush->arGradientColors[unIndex].first;
+					for (unsigned int unIndex = unPositionCount; unIndex > 0; --unIndex)
+						m_oStream >> pEmfPlusBrush->arGradientColors[unIndex - 1].first;
 
-					pEmfPlusBrush->oColor     = pEmfPlusBrush->arGradientColors.back() .first;
-					pEmfPlusBrush->oColorBack = pEmfPlusBrush->arGradientColors.front().first;
+					pEmfPlusBrush->oColor     = pEmfPlusBrush->arGradientColors.front().first;
+					pEmfPlusBrush->oColorBack = pEmfPlusBrush->arGradientColors.back() .first;
 				}
 			}
 
@@ -976,7 +1035,7 @@ namespace MetaFile
 
 		m_oStream >> unLength;
 
-		if (unLength > 15) // 30 bytes / 2 (ushort size) = 15 characters maximum length of a Unicode font name
+		if (unLength > 15) // 30 bytes / 2 (ushort size) = 15 characters maximum Unicode font name length
 			unLength = 15;
 
 		unsigned short* pString = new unsigned short[unLength + 1];
@@ -1019,11 +1078,11 @@ namespace MetaFile
 
 		if ((unPathPointFlags >>(20)) & 1 )
 		{
-			//R flag defined (C is ignored)
+			//Flag R is defined (C is ignored)
 		}
 		else if ((unPathPointFlags >>(14)) & 1 )
 		{
-			//The R flag isn't defined, but the C flag is defined
+			//Flag R is not defined, but flag C is defined
 			std::vector<TEmfPlusPoint> arPoints     = ReadPoints<TEmfPlusPoint>(unPathPointCount);
 			std::vector<char> arPointTypes          = ReadPointTypes(unPathPointCount);
 
@@ -1089,7 +1148,7 @@ namespace MetaFile
 
 			if (unSkip < 4)
 				m_oStream.Skip(unSkip);
-			//Both flags are undefined
+			// Both flags are undefined
 		}
 		//TODO: implement
 
@@ -1661,6 +1720,12 @@ namespace MetaFile
 		{
 			((MetafileType*)&oParser)->SetInterpretator(InterpretatorType::Svg);
 
+			CInterpretatorSvgBase* pParserSvgInterpretator = dynamic_cast<CInterpretatorSvgBase*>(oParser.GetInterpretator());
+			CInterpretatorSvgBase *pSvgInterpretator = dynamic_cast<CInterpretatorSvgBase*>(m_pInterpretator);
+
+			if (NULL != pParserSvgInterpretator && NULL != pSvgInterpretator)
+				pParserSvgInterpretator->SetNumberDefs(pSvgInterpretator->GetNumberDefs());
+
 			oParser.PlayFile();
 
 			TRectD oRect;
@@ -1682,11 +1747,11 @@ namespace MetaFile
 			oTransform.Dx -= m_oHeader.oFramePx.Left;
 			oTransform.Dy -= m_oHeader.oFramePx.Top;
 
-			CInterpretatorSvgBase* pParserSvgInterpretator = dynamic_cast<CInterpretatorSvgBase*>(oParser.GetInterpretator());
-			CInterpretatorSvgBase *pSvgInterpretator = dynamic_cast<CInterpretatorSvgBase*>(m_pInterpretator);
-
 			if (NULL != pParserSvgInterpretator && NULL != pSvgInterpretator)
+			{
+				pSvgInterpretator->SetNumberDefs(pParserSvgInterpretator->GetNumberDefs());
 				pSvgInterpretator->IncludeSvg(pParserSvgInterpretator->GetFile(), oRect, oTempSrcRect, &oTransform);
+			}
 		}
 	}
 
@@ -1700,6 +1765,9 @@ namespace MetaFile
 
 		if (unWidth != 0 && unHeight != 0)
 		{
+			if ((unsigned long long)unWidth * unHeight > unSize / 4)
+				return;
+
 			pBytes = pBuffer;
 			bExternalBuffer = true;
 		}
@@ -1754,7 +1822,7 @@ namespace MetaFile
 			m_pInterpretator->Begin();
 			m_pInterpretator->HANDLE_EMFPLUS_HEADER(unEmfPlusFlags, m_unLogicalDpiX, m_unLogicalDpiY);
 		}
-		//TODO: add setting a new Dpi (is it necessary?)
+		//TODO: add setting new Dpi (is it needed?)
 	}
 
 	void CEmfPlusParser::Read_EMFPLUS_CLEAR()
@@ -1816,18 +1884,18 @@ namespace MetaFile
 	{
 		if ((unShFlags >>(11)) & 1 )
 		{
-			//P flag defined (C is ignored)
-			//Read_EMFPLUS_DRAWBEZIERS_BASE<TEmfPlusPointR>(unShFlags); // relative location
+			//Flag P is defined (C is ignored)
+			//Read_EMFPLUS_DRAWBEZIERS_BASE<TEmfPlusPointR>(unShFlags); // relative positioning
 		}
 		else if ((unShFlags >>(14)) & 1 )
 		{
-			//The P flag isn't defined, but the C flag is defined
-			Read_EMFPLUS_DRAWBEZIERS_BASE<TEmfPlusPoint>(unShFlags);  // relative position
+			//Flag P is not defined, but flag C is defined
+			Read_EMFPLUS_DRAWBEZIERS_BASE<TEmfPlusPoint>(unShFlags);  // relative positioning
 		}
 		else
 		{
-			//Both flags are undefined
-			Read_EMFPLUS_DRAWBEZIERS_BASE<TEmfPlusPointF>(unShFlags); // absolute location
+			// Both flags are undefined
+			Read_EMFPLUS_DRAWBEZIERS_BASE<TEmfPlusPointF>(unShFlags); // absolute positioning
 		}
 	}
 
@@ -1875,18 +1943,18 @@ namespace MetaFile
 	{
 		if ((unShFlags >>(11)) & 1 )
 		{
-			//P flag defined (C is ignored)
-			//Read_EMFPLUS_DRAWCLOSEDCURVE_BASE<TEmfPlusPointR>(unShFlags); // relative location
+			//Flag P is defined (C is ignored)
+			//Read_EMFPLUS_DRAWCLOSEDCURVE_BASE<TEmfPlusPointR>(unShFlags); // relative positioning
 		}
 		else if ((unShFlags >>(14)) & 1 )
 		{
-			//The P flag isn't defined, but the C flag is defined
-			Read_EMFPLUS_DRAWCLOSEDCURVE_BASE<TEmfPlusPoint>(unShFlags);  // absolute location with 16-bit coordinates
+			//Flag P is not defined, but flag C is defined
+			Read_EMFPLUS_DRAWCLOSEDCURVE_BASE<TEmfPlusPoint>(unShFlags);  // absolute positioning with 16-bit coordinates
 		}
 		else
 		{
-			//Both flags are undefined
-			Read_EMFPLUS_DRAWCLOSEDCURVE_BASE<TEmfPlusPointF>(unShFlags); // absolute location with 32-bit coordinates.
+			// Both flags are undefined
+			Read_EMFPLUS_DRAWCLOSEDCURVE_BASE<TEmfPlusPointF>(unShFlags); // absolute positioning with 32-bit coordinates.
 		}
 	}
 
@@ -2163,18 +2231,18 @@ namespace MetaFile
 	{
 		if ((unShFlags >>(11)) & 1 )
 		{
-			//P flag defined (C is ignored)
-			//Read_EMFPLUS_DRAWIMAGEPOINTS_BASE<TEmfPlusPointR>(unShFlags); // relative location
+			//Flag P is defined (C is ignored)
+			//Read_EMFPLUS_DRAWIMAGEPOINTS_BASE<TEmfPlusPointR>(unShFlags); // relative positioning
 		}
 		else if ((unShFlags >>(14)) & 1 )
 		{
-			//The P flag isn't defined, but the C flag is defined
-			Read_EMFPLUS_DRAWIMAGEPOINTS_BASE<TEmfPlusPoint>(unShFlags);  // absolute location with 16-bit integer coordinates
+			//Flag P is not defined, but flag C is defined
+			Read_EMFPLUS_DRAWIMAGEPOINTS_BASE<TEmfPlusPoint>(unShFlags);  // absolute positioning with 16-bit integer coordinates
 		}
 		else
 		{
-			//Both flags are undefined
-			Read_EMFPLUS_DRAWIMAGEPOINTS_BASE<TEmfPlusPointF>(unShFlags); // absolute location with 32-bit floating point coordinates
+			// Both flags are undefined
+			Read_EMFPLUS_DRAWIMAGEPOINTS_BASE<TEmfPlusPointF>(unShFlags); // absolute position with 32-bit floating-point coordinates
 		}
 	}
 
@@ -2206,18 +2274,18 @@ namespace MetaFile
 	{
 		if ((unShFlags >>(11)) & 1 )
 		{
-			//P flag defined (C is ignored)
-			//Read_EMFPLUS_DRAWLINES_BASE<TEmfPlusPointR>(unShFlags); // relative location
+			//Flag P is defined (C is ignored)
+			//Read_EMFPLUS_DRAWLINES_BASE<TEmfPlusPointR>(unShFlags); // relative positioning
 		}
 		else if ((unShFlags >>(14)) & 1 )
 		{
-			//The P flag isn't defined, but the C flag is defined
-			Read_EMFPLUS_DRAWLINES_BASE<TEmfPlusPoint>(unShFlags);  // absolute location with 16-bit integer coordinates
+			//Flag P is not defined, but flag C is defined
+			Read_EMFPLUS_DRAWLINES_BASE<TEmfPlusPoint>(unShFlags);  // absolute positioning with 16-bit integer coordinates
 		}
 		else
 		{
-			//Both flags are undefined
-			Read_EMFPLUS_DRAWLINES_BASE<TEmfPlusPointF>(unShFlags); // absolute location with 32-bit floating point coordinates
+			// Both flags are undefined
+			Read_EMFPLUS_DRAWLINES_BASE<TEmfPlusPointF>(unShFlags); // absolute position with 32-bit floating-point coordinates
 		}
 	}
 
@@ -2500,18 +2568,18 @@ namespace MetaFile
 	{
 		if ((unShFlags >>(11)) & 1 )
 		{
-			//P flag defined (C is ignored)
-			//Read_EMFPLUS_FILLCLOSEDCURVE_BASE<TEmfPlusPointR>(unShFlags); // relative location
+			//Flag P is defined (C is ignored)
+			//Read_EMFPLUS_FILLCLOSEDCURVE_BASE<TEmfPlusPointR>(unShFlags); // relative positioning
 		}
 		else if ((unShFlags >>(14)) & 1 )
 		{
-			//The P flag isn't defined, but the C flag is defined
-			Read_EMFPLUS_FILLCLOSEDCURVE_BASE<TEmfPlusPoint>(unShFlags);  // absolute location with 16-bit integer coordinates
+			//Flag P is not defined, but flag C is defined
+			Read_EMFPLUS_FILLCLOSEDCURVE_BASE<TEmfPlusPoint>(unShFlags);  // absolute positioning with 16-bit integer coordinates
 		}
 		else
 		{
-			//Both flags are undefined
-			Read_EMFPLUS_FILLCLOSEDCURVE_BASE<TEmfPlusPointF>(unShFlags); // absolute location with 32-bit floating point coordinates
+			// Both flags are undefined
+			Read_EMFPLUS_FILLCLOSEDCURVE_BASE<TEmfPlusPointF>(unShFlags); // absolute position with 32-bit floating-point coordinates
 		}
 	}
 
@@ -2675,18 +2743,18 @@ namespace MetaFile
 	{
 		if ((unShFlags >>(11)) & 1 )
 		{
-			//P flag defined (C is ignored)
-			//Read_EMFPLUS_FILLPOLYGON_BASE<TEmfPlusPointR>(unShFlags); // relative location
+			// Flag P is defined (C is ignored)
+			//Read_EMFPLUS_FILLPOLYGON_BASE<TEmfPlusPointR>(unShFlags); // relative position
 		}
 		else if ((unShFlags >>(14)) & 1 )
 		{
-			//The P flag isn't defined, but the C flag is defined
-			Read_EMFPLUS_FILLPOLYGON_BASE<TEmfPlusPoint>(unShFlags);  // absolute location with 16-bit integer coordinates
+			// Flag P is not defined, but flag C is defined
+			Read_EMFPLUS_FILLPOLYGON_BASE<TEmfPlusPoint>(unShFlags);  // absolute position with 16-bit integer coordinates
 		}
 		else
 		{
-			//Both flags are undefined
-			Read_EMFPLUS_FILLPOLYGON_BASE<TEmfPlusPointF>(unShFlags); // absolute location with 32-bit floating point coordinates
+			// Both flags are undefined
+			Read_EMFPLUS_FILLPOLYGON_BASE<TEmfPlusPointF>(unShFlags); // absolute position with 32-bit floating-point coordinates
 		}
 	}
 
@@ -3273,6 +3341,9 @@ namespace MetaFile
 
 		BYTE uchCM = ExpressValue(unShFlags, 8, 11);
 
+		if (0 == uchCM)
+			uchCM = RGN_COPY;
+
 		m_pDC->GetClip()->Reset();
 		m_pDC->GetClip()->SetPath(*pPath, uchCM, GetTransform());
 		UpdateOutputDC();
@@ -3304,6 +3375,9 @@ namespace MetaFile
 	{
 		short shObjectIndex = ExpressValue(unShFlags, 0, 7);
 		short shCM = ExpressValue(unShFlags, 8, 11);
+
+		if (0 == shCM)
+			shCM = RGN_COPY;
 
 		CEmfPlusRegion *pRegion = GetRegion(shObjectIndex);
 

@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "Shapes.h"
 
@@ -170,7 +180,7 @@ namespace OOX
 				std::wstring image_name_new;
 				if (false == image_path.GetPath().empty())
 				{
-					//TODO check correct path inside container
+					//todooo check correct path inside container
 					image_name_new = image_path.GetFilename();
 					std::wstring image_ext_new = image_path.GetExtention();
 
@@ -214,7 +224,7 @@ namespace OOX
 									NSFile::CFileBinary::SaveToFile(out.GetPath() + FILE_SEPARATOR_STR + image_name_new + L".svg", sInternalSvg);
 								}
 								else
-								{// Couldn't convert to svg - try to png
+								{// couldn't convert to svg - trying png
 
 									std::wstring strSaveItem = out.GetPath() + FILE_SEPARATOR_STR + image_name_new + L".png";
 									pMetafile->ConvertToRaster(strSaveItem.c_str(), 4 /*CXIMAGE_FORMAT_PNG*/, 0, 0);
@@ -245,7 +255,7 @@ namespace OOX
 						pWriter->m_pCommon->m_pMediaManager->m_mapMediaFiles.insert(std::make_pair(image_path.GetFilename(), oInfo));
 					}
 					std::wstring ole_name_new = image_name_new + ole_path.GetExtention();
-					//TODO check correct path inside container
+					//todooo check correct path inside container
 					NSFile::CFileBinary::Copy(ole_path.GetPath(), out.GetPath() + FILE_SEPARATOR_STR + ole_name_new);
 
 					pWriter->StartRecord(2);
@@ -332,7 +342,7 @@ namespace OOX
 
 			if (ole_filename.empty() == false)
 			{
-				int idOle = pReader->m_nCountEmbedded++; //TODO -> countEmbeddedObjects
+				int idOle = pReader->m_nCountEmbedded++; //todoooo -> countEmbeddedObjects
 				int idImage = pReader->m_nCountImage++; 
 
 				std::wstring ole_filename_dst = L"oleObject" + std::to_wstring(idOle) + CPath(ole_filename).GetExtention();
@@ -833,7 +843,7 @@ namespace OOX
 
 			for (size_t i = 0; i < m_arrItems.size(); ++i)
 			{
-				int type = 0xff;					 //TODO predefine type for ???
+				int type = 0xff;					 //todooo predefine type for ???
 				switch (m_arrItems[i]->getType())
 				{
 				case et_dr_Cell: type = 0; break;
@@ -968,7 +978,7 @@ namespace OOX
 
 			for (size_t i = 0; i < m_arrItems.size(); ++i)
 			{
-				int type = 0xff;					 //TODO predefine type for ???
+				int type = 0xff;					 //todooo predefine type for ???
 				switch (m_arrItems[i]->getType())
 				{
 				case et_dr_Cell: type = 0; break;
@@ -1218,6 +1228,7 @@ namespace OOX
 				}break;
 				case 1:
 				{
+					pReader->Skip(4); // size
 					content = pReader->GetString2();
 				}break;
 				default:
@@ -1419,7 +1430,7 @@ namespace OOX
 
 			for (size_t i = 0; i < m_arrItems.size(); ++i)
 			{
-				int type = 0xff;					 //TODO predefine type for ???
+				int type = 0xff;					 //todooo predefine type for ???
 				switch (m_arrItems[i]->getType())
 				{
 					case et_dr_Cell: type = 0; break;

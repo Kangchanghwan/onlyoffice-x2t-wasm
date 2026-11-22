@@ -1,3 +1,38 @@
+/*
+ * Copyright (C) Ascensio System SIA, 2009-2026
+ *
+ * This program is a free software product. You can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License (AGPL)
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
+ * Section 5 of the GNU AGPL version 3.
+ *
+ * No trademark rights are granted under this License.
+ *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 #include "CSvgFile.h"
 
 #include "SvgObjects/CContainer.h"
@@ -45,7 +80,15 @@ bool CSvgFile::OpenFromFile(const std::wstring &wsFile)
 
 bool CSvgFile::GetBounds(double &dX, double &dY, double &dWidth, double &dHeight) const
 {
-	return CalculateFinalSize(true, dX, dY, dWidth, dHeight);
+	if (!CalculateFinalSize(true, dX, dY, dWidth, dHeight))
+		return false;
+
+	if (DBL_EPSILON > dWidth)
+		dWidth  = SVG_FILE_WIDTH;
+	if (DBL_EPSILON > dHeight)
+		dHeight = SVG_FILE_HEIGHT;
+
+	return true;
 }
 
 const SVG::CSvgCalculator *CSvgFile::GetSvgCalculator() const
@@ -135,6 +178,11 @@ bool CSvgFile::Draw(IRenderer *pRenderer, double dX, double dY, double dWidth, d
 	if (!CalculateFinalSize(false, dFileX, dFileY, dFileWidth, dFileHeight))
 		return false;
 
+	const SVG::TRect oViewBox{m_pContainer->GetViewBox()};
+
+	if (SVG::Equals(0, dFileWidth) || SVG::Equals(0, dFileHeight) || oViewBox.m_oWidth.Zero() || oViewBox.m_oHeight.Zero())
+		return false;
+
 	double oldTransform[6];
 
 	pRenderer->GetTransform(&oldTransform[0], &oldTransform[1], &oldTransform[2], &oldTransform[3], &oldTransform[4], &oldTransform[5]);
@@ -148,15 +196,13 @@ bool CSvgFile::Draw(IRenderer *pRenderer, double dX, double dY, double dWidth, d
 	double dTranslateX = dFileX * dM11,
 	       dTranslateY = dFileY * dM22;
 
-	const SVG::TRect oViewBox{m_pContainer->GetViewBox()};
-
 	if (!oViewBox.m_oWidth.Empty() && !oViewBox.m_oHeight.Empty())
 	{
 		dScaleX = dFileWidth  / oViewBox.m_oWidth .ToDouble(NSCSS::Pixel, SVG_FILE_WIDTH );
 		dScaleY = dFileHeight / oViewBox.m_oHeight.ToDouble(NSCSS::Pixel, SVG_FILE_HEIGHT);
 
-		dTranslateX -= oViewBox.m_oX.ToDouble(NSCSS::Pixel) * dScaleX * dM11;
-		dTranslateY -= oViewBox.m_oY.ToDouble(NSCSS::Pixel) * dScaleY * dM22;
+		dTranslateX = -oViewBox.m_oX.ToDouble(NSCSS::Pixel) * dScaleX * dM11;
+		dTranslateY = -oViewBox.m_oY.ToDouble(NSCSS::Pixel) * dScaleY * dM22;
 	}
 
 	pRenderer->SetTransform(dM11 * dScaleX, 0, 0, dM22 * dScaleY, dTranslateX, dTranslateY);
@@ -186,7 +232,13 @@ bool CSvgFile::CalculateFinalSize(bool bUseViewBox, double& dX, double& dY, doub
 		return false;
 
 	const SVG::TRect oWindow  = m_pContainer->GetWindow();
-	const SVG::TRect oViewBox = m_pContainer->GetViewBox();
+	SVG::TRect oViewBox = m_pContainer->GetViewBox();
+
+	if (oViewBox.m_oWidth.Zero() || oViewBox.m_oHeight.Zero())
+	{
+		oViewBox.m_oWidth.Clear();
+		oViewBox.m_oHeight.Clear();
+	}
 
 	const double dViewBoxWidth {oViewBox.m_oWidth .ToDouble()};
 	const double dViewBoxHeigth{oViewBox.m_oHeight.ToDouble()};

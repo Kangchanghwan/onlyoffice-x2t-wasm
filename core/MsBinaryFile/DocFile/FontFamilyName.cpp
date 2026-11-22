@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "FontFamilyName.h"
@@ -52,9 +62,12 @@ namespace DocFileFormat
 
 	ByteStructure* FontFamilyName::ConstructObject( VirtualStreamReader* reader, int length )
 	{
+		if (length < 1) return NULL;
+
 		FontFamilyName *newObject = new FontFamilyName();
 
-		long startPos = reader->GetPosition();
+		long startObjectPos = reader->GetPosition();
+		long endObjectPos = reader->GetPosition() + length;
 
 		//FFID
 		int ffid = (int)reader->ReadByte();
@@ -63,7 +76,7 @@ namespace DocFileFormat
 		newObject->fTrueType	=					FormatUtils::BitmaskToBool	( ffid, 0x04 );
 		newObject->ff			= (unsigned char)	FormatUtils::BitmaskToInt	( ffid, 0x70 );
 
-		//int sz_fonts = 150; //.. need to generate a unique TODO
+		//int sz_fonts = 150; //..  need to generate unique todooo
 		int szAlt = 0;
 		if (reader->nWordVersion == 2)
 		{
@@ -93,18 +106,20 @@ namespace DocFileFormat
 		}
 	//read the next \0 terminated string
 		long strStart	= reader->GetPosition();
-		long strEnd		= searchTerminationZero( reader );	
-
+		long strEnd		= searchTerminationZero( reader, endObjectPos - strStart);
 
 		unsigned char *bytes = reader->ReadBytes( (int)( strEnd - strStart ), true );
 
-		if (reader->nWordVersion > 0)
+		if (bytes)
 		{
-			FormatUtils::GetWStringFromBytes(newObject->xszFtn, bytes, (int)( strEnd - strStart ), ENCODING_WINDOWS_1250 );
-		}
-		else
-		{
-			newObject->xszFtn = NSFile::CUtf8Converter::GetWStringFromUTF16((unsigned short*)(bytes), (strEnd - strStart) / 2);
+			if (reader->nWordVersion > 0)
+			{
+				FormatUtils::GetWStringFromBytes(newObject->xszFtn, bytes, (int)( strEnd - strStart ), ENCODING_WINDOWS_1250 );
+			}
+			else
+			{
+				newObject->xszFtn = NSFile::CUtf8Converter::GetWStringFromUTF16((unsigned short*)(bytes), (strEnd - strStart) / 2);
+			}
 		}
 
 		if (newObject->xszFtn.length() > 0)
@@ -122,23 +137,26 @@ namespace DocFileFormat
 
 		RELEASEARRAYOBJECTS( bytes );
 
-		long readBytes = reader->GetPosition() - startPos;
+		long readBytes = reader->GetPosition() - startObjectPos;
 
 		if( readBytes < length && szAlt > 0)
 		{
 	//read the next \0 terminated string		
 			strStart	= reader->GetPosition();
-			strEnd		= searchTerminationZero( reader );
+			strEnd		= searchTerminationZero( reader, endObjectPos - strStart);
 
 			bytes = reader->ReadBytes( (int)( strEnd - strStart ), true );
 
-			if (reader->nWordVersion > 0)
+			if (bytes)
 			{
-				FormatUtils::GetWStringFromBytes( newObject->xszAlt, bytes, (int)( strEnd - strStart ), ENCODING_WINDOWS_1250);
-			}
-			else
-			{
-				newObject->xszAlt = NSFile::CUtf8Converter::GetWStringFromUTF16((unsigned short*)(bytes), (strEnd - strStart) / 2);
+				if (reader->nWordVersion > 0)
+				{
+					FormatUtils::GetWStringFromBytes( newObject->xszAlt, bytes, (int)( strEnd - strStart ), ENCODING_WINDOWS_1250);
+				}
+				else
+				{
+					newObject->xszAlt = NSFile::CUtf8Converter::GetWStringFromUTF16((unsigned short*)(bytes), (strEnd - strStart) / 2);
+				}
 			}
 			RELEASEARRAYOBJECTS( bytes );
 		 }
@@ -148,29 +166,24 @@ namespace DocFileFormat
 
 	/*========================================================================================================*/
 
-	long FontFamilyName::searchTerminationZero( VirtualStreamReader *reader )
+	long FontFamilyName::searchTerminationZero( VirtualStreamReader *reader, long length)
     {
-	  long strStart = reader->GetPosition();
-      
-	  if (reader->nWordVersion > 0)
-	  {//ansi string only
-		  while ( reader->ReadByte() != 0 )
-		  {
-			;
-		  }
+	  long strStart	= (long)reader->GetPosition();
+	  long pos = strStart;
+
+	  const long charSize = (reader->nWordVersion > 0) ? 1 : 2; //ansi string only for the old versions
+
+	  while (pos + charSize <= strStart + length)
+	  {
+		  bool bTerminated = (charSize == 1) ? (reader->ReadByte() == 0) : (reader->ReadInt16() == 0);
+
+		  pos = (long)reader->GetPosition();
+
+		  if (bTerminated) break;
 	  }
-	  else
-	  {//unicode string
-		  while ( reader->ReadInt16() != 0 )
-		  {
-			;
-		  }
-	  }
-      
-	  long pos = reader->GetPosition();
-	  
+
       reader->Seek( (int)strStart, 0 /*STREAM_SEEK_SET*/ );
-      
+
 	  return pos;
     }
 }

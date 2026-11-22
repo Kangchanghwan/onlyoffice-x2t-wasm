@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "table.h"
@@ -176,7 +186,7 @@ void table_table::pptx_convert(oox::pptx_conversion_context & Context)
 		{
 			if (table_table_template* template_ = dynamic_cast<table_table_template *>(style.get()))
 			{	
-				//first row, columns, last row, columns, odd row, columns TODO
+				//first row, columns, last row, columns, odd row, columns todoooo 
 				if (template_->table_body_)
 				{
 					table_body_template* body_ = dynamic_cast<table_body_template* >(template_->table_body_.get());
@@ -228,6 +238,20 @@ void table_table::pptx_convert(oox::pptx_conversion_context & Context)
     std::wostream & _Wostream = Context.get_table_context().tableData();  
 	_Wostream << L"<a:tbl>";
 
+	style_instance * inst = Context.root()->odf_context().styleContainer().style_by_name( tableStyleName, style_family::Table, true);
+
+	bool table_rtl = Context.get_rtl();
+	for (const style_instance * cur = inst; cur; cur = cur->parent())
+	{
+		style_table_properties * table_props = cur->content() ? cur->content()->get_style_table_properties() : NULL;
+
+		if ((table_props) && (table_props->content().common_writing_mode_attlist_.style_writing_mode_))
+		{
+			table_rtl = table_props->content().common_writing_mode_attlist_.style_writing_mode_->is_rtl(Context.get_rtl());
+			break;
+		}
+	}
+
  	_Wostream << L"<a:tblPr";
 		if (attlist_.table_use_banding_rows_styles_)
 			_Wostream << L"	bandRow=\"1\"";
@@ -237,10 +261,10 @@ void table_table::pptx_convert(oox::pptx_conversion_context & Context)
 			_Wostream << L"	bandCol=\"1\"";
 		if (attlist_.table_use_first_column_styles_)
 			_Wostream << L"	firstCol=\"1\"";		
+		if (table_rtl)
+			_Wostream << L"	rtl=\"1\"";
 	_Wostream << ">";
 	
-	style_instance * inst = Context.root()->odf_context().styleContainer().style_by_name( tableStyleName, style_family::Table, true);
-
     if ((inst) && (inst->content()))
 	{
 		if (inst->content()->get_graphic_properties())
@@ -400,7 +424,7 @@ void table_table_cell::pptx_convert(oox::pptx_conversion_context & Context)
 
 					props->attlist_.common_padding_attlist_.fo_padding_ = length(3600 / 12700., length::pt);
 
-					Context.root()->odf_context().styleContainer().add_style(L"", L"", &(def_style->content_), false, true, L"", L"", L"", L"", L"default");
+					Context.root()->odf_context().styleContainer().add_style(L"", L"", &(def_style->content_), false, true, L"", L"", L"", L"", L"", L"default");
 
 					style_inst = Context.root()->odf_context().styleContainer().style_default_by_type(odf_types::style_family::TableCell);
 				}

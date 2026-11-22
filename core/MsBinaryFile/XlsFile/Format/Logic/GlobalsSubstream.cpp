@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "GlobalsSubstream.h"
 #include "AnyObject.h"
@@ -95,6 +105,7 @@
 #include "Biff_records/ExternName.h"
 #include "Biff_records/ExternSheet.h"
 #include "Biff_records/Continue.h"
+#include "Biff_records/MsoDrawingGroup.h"
 //#include "Biff_records/XCT.h"
 //#include "Biff_records/CRN.h"
 
@@ -563,15 +574,15 @@ const bool GlobalsSubstream::loadContent(BinProcessor& proc)
 			case rt_GUIDTypeLib:		proc.optional<GUIDTypeLib>();			break;
 
 			//case rt_XFCRC:
-			//{//not according to specification!!! Calculadora.xls
+			//{//not according to specification !!! Calculadora.xls
 			//	if(proc.optional<XFCRC>())
 			//	{
-			//		elements_.pop_back(); // Crc isn't needed
+			//		elements_.pop_back(); // Crc not needed
 
 			//		count = proc.repeated<XFExt>(0, 0);//(16, 4050);
 			//		while (count > 0)
 			//		{
-			//			//transfer to FORMATTING/XFS ?? - then we need a recount there!!
+			//			//move to FORMATING/XFS ?? - then recalculation needed there !!
 			//			//if (elements_.empty()) break;
 			//			//XFExt* ext = dynamic_cast<XFExt*>(elements_.back().get());
 			//			//m_arXFext.push_back(elements_.front());
@@ -600,7 +611,7 @@ const bool GlobalsSubstream::loadContent(BinProcessor& proc)
 	}
 
 	if (global_info_->CodePage == 0)
-	{	//try from charsets ... TODO make local set on each record (aka Label)
+	{	//try from charsets ... todooo make local set on each record (aka Label)
 		//from ixfe -> ifnt from xf -> arFonts
 		for (std::map<int, int>::iterator it = global_info_->fonts_charsets.begin()
 			; global_info_->CodePage == 0 && it != global_info_->fonts_charsets.end()
@@ -663,9 +674,6 @@ const bool GlobalsSubstream::saveContent(BinProcessor& proc)
 		proc.mandatory(*m_CodeName);
 	if(m_FNGROUPS != nullptr)
 		proc.mandatory(*m_FNGROUPS);
-	for(auto i : m_arLBL)
-		if(i != nullptr)
-			proc.mandatory(*i);
 	if(m_PROTECTION != nullptr)
 		proc.mandatory(*m_PROTECTION);
 	else
@@ -723,6 +731,16 @@ const bool GlobalsSubstream::saveContent(BinProcessor& proc)
 	for(auto i: m_arSUPBOOK)
 		if(i != nullptr)
 			proc.mandatory(*i);
+	for(auto i : m_arLBL)
+		if(i != nullptr)
+			proc.mandatory(*i);
+	for(auto i : m_arMSODRAWINGGROUP)
+	{
+		auto drawingGroupUnion = static_cast<MSODRAWINGGROUP*>(i.get());
+		auto drawingGroup = static_cast<MsoDrawingGroup*>(drawingGroupUnion->m_MsoDrawingGroup.get());
+		drawingGroup->prepareChart(drawingGroup->drawingCount);
+		proc.mandatory(*drawingGroupUnion);
+	}
 	if(m_SHAREDSTRINGS != nullptr)
 		proc.mandatory(*m_SHAREDSTRINGS);
 	if(m_ExtSST != nullptr)
@@ -736,6 +754,8 @@ const bool GlobalsSubstream::saveContent(BinProcessor& proc)
 			proc.mandatory(*i);
 	if(m_THEME != nullptr)
 		proc.mandatory(*m_THEME);
+	else
+		proc.mandatory<THEME>();
 	proc.mandatory<EOF_T>();
 	return true;
 }
@@ -935,7 +955,7 @@ void GlobalsSubstream::UpdateDefineNames()
 				name = L"_xludf." + name;
 			}
 		}
-		global_info_->arDefineNames.push_back(name);// for function names - TODO... not all functions are correct!! BDI!!
+		global_info_->arDefineNames.push_back(name);// for function names - todooo ... not all functions are correct!! WATCH OUT!!
 	}
 }
 void GlobalsSubstream::UpdateExternalDefineNames()

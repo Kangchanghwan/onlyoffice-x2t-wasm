@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #ifndef _ASC_FONTCONVERTER_FONT_FILE_TRUETYPE_H
 #define _ASC_FONTCONVERTER_FONT_FILE_TRUETYPE_H
@@ -111,8 +121,8 @@ namespace NSFontConverter
 
     struct T42Table
     {
-        char *sTag;		 // 4-byte name
-        bool  bRequired; // Is TrueType required by the specification?
+        char *sTag;		 // 4-byte tag name
+        bool  bRequired; // Required by TrueType specification?
     };
 
     // TrueType tables to be embedded in Type 42 fonts.
@@ -146,16 +156,16 @@ namespace NSFontConverter
     {
     public:
 
-        // Create a TTF object from the buffer.
+        // Create TTF object from buffer.
         static CFontFileTrueType *LoadFromBuffer(char *sBuffer, int lenA);
 
-        // Create a TTF object from a file.
+        // Create TTF object from file.
         static CFontFileTrueType *LoadFromFile(const wchar_t *wsFileName);
 
         virtual ~CFontFileTrueType();
 
         // TRUE if this OpenType font contains CFF format data.
-        // FALSE if this is a TrueType font (or an OpenType font with data in TrueType format).
+        // FALSE if this is a TrueType font (or OpenType font with TrueType format data).
         bool IsOpenTypeCFF()
         {
             return m_bOpenTypeCFF;
@@ -169,25 +179,25 @@ namespace NSFontConverter
 
         int  FindCmap(int nPlatform, int nEncoding);
 
-        // Returns the GID corresponding to the <nChar> character in the <nIndex> CMap.
+        // Returns GID corresponding to character <nChar> in CMap <nIndex>.
         unsigned short MapCodeToGID(int nCMapIndex, int nChar);
 
-        // Returns the GID corresponding to <sName> in the post table. Returns 0,
-        // if a symbol with the same name wasn't found, or there is no post table.
+        // Returns GID corresponding to <sName> in post table. Returns 0
+        // if glyph with this name was not found, or post table doesn't exist.
         int MapNameToGID(char *sName);
 
-        // Returns a map of CIDs to GIDs, and returns the number of elements
-        // CIDs in *<pnCIDs>.  Only for CID fonts (OpenType CFF)
+        // Returns CIDs to GIDs map, and returns the number of CID elements
+        // in *<pnCIDs>. Only for CID fonts (OpenType CFF).
         unsigned short *GetCIDToGIDMap(int *pnCIDs);
 
-        // License restrictions on the inclusion of the font (in accordance with
+        // Font embedding licensing restrictions (according to
         // TrueType specification):
 
-        // * 4: OS/2 table not found or incorrect
-        // * 3: allowed to install
-        // * 2: Allowed to edit
-        // * 1: Allowed to view and print
-        // * 0: limited by license
+        // * 4: OS/2 table not found or invalid
+        // * 3: installable embedding allowed
+        // * 2: editable embedding allowed
+        // * 1: preview and print embedding allowed
+        // * 0: restricted by license
         int GetEmbeddingRestrictions();
 
         // Convert to a Type 42 font, suitable for embedding in a PostScript
@@ -232,10 +242,10 @@ namespace NSFontConverter
         // PostScript font name.  (Only useful for OpenType CFF fonts.)
         void ToType0(char *sPSName, FontFileOutputFunc pOutputFunc, void *pOutputStream);
 
-        // Write a TrueTypeFont File, filling in the missing tables and correcting
-        // various errors. If the <sName> parameter is specified, we rewrite the table in the font
-        // 'name'. If the <pCodeToGID> parameter is specified, then we rewrite in the font
-        // table 'cmap'.
+        // Write TrueTypeFont file, filling in missing tables and correcting
+        // various errors. If <sName> parameter is specified, rewrite the 'name'
+        // table in the font. If <pCodeToGID> parameter is specified, rewrite
+        // the 'cmap' table in the font.
         void WriteTTF(FontFileOutputFunc pOutputFunc, void *pOutputStream, const char *sName = NULL, unsigned short *pCodeToGID = NULL, unsigned char *pUseGlyfs = NULL, long lGlyfsCount = 0) ;
 
     private:

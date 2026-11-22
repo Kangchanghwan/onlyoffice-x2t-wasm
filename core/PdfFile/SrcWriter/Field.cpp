@@ -1,26 +1,36 @@
 /*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "Field.h"
 #include "Pages.h"
@@ -1137,7 +1147,7 @@ namespace PdfWriter
 				return;
 			}
 
-			// If placeholder text isn't added as an option, then AdobeAcrobat doesn't allow setting such a text value
+			// If placeholder text is not added as an option, AdobeAcrobat does not allow setting such text value
 			AddOption(wsText, false);
 
 			sFocus = "event.target.textColor = [\"RGB\", " +
@@ -1613,7 +1623,7 @@ namespace PdfWriter
 	//----------------------------------------------------------------------------------------
 	CSignatureField::CSignatureField(CXref* pXref, CDocument* pDocument) : CFieldBase(pXref, pDocument)
 	{
-		// Dictionary of signatures
+		// Signature dictionary
 		m_pSig = new CSignatureDict(pXref);
 		if (!m_pSig)
 			return;
@@ -2033,7 +2043,7 @@ namespace PdfWriter
 			m_pStream->WriteStr(" re\012f\012");
 		}
 
-		if ((m_pField && m_pField->HaveBorder()) || (pAnnot && pAnnot->HaveBorder()))
+		if ((m_pField && m_pField->HaveBorder()) || (pAnnot && pAnnot->HaveBorder() && pAnnot->HaveBC()))
 		{
 			double dBorderSize = m_pField ? m_pField->GetBorderSize() : pAnnot->GetBorderWidth();
 
@@ -2257,7 +2267,7 @@ namespace PdfWriter
 		double dBorderSize       = 0;
 		double dBorderSizeStyle  = 0;
 
-		if (pAnnot && pAnnot->HaveBorder())
+		if (pAnnot && pAnnot->HaveBorder() && pAnnot->HaveBC())
 		{
 			dBorderSize      = pAnnot->GetBorderWidth();
 			dBorderSizeStyle = dBorderSize;
@@ -2644,7 +2654,7 @@ namespace PdfWriter
 	void CAnnotAppearanceObject::DrawBorder(const double& dWidth, const double& dHeight)
 	{
 		CWidgetAnnotation* pAnnot  = dynamic_cast<CWidgetAnnotation*>(m_pAnnot);
-		if (!pAnnot || !pAnnot->HaveBorder())
+		if (!pAnnot || !pAnnot->HaveBorder() || !pAnnot->HaveBC())
 			return;
 
 		m_pStream->WriteStr("q\012");
@@ -2916,6 +2926,22 @@ namespace PdfWriter
 		pArray->Add(tx);
 		pArray->Add(ty);
 	}
+	void CAnnotAppearanceObject::GetMatrix(double* pCTM)
+	{
+		CObjectBase* pObj = Get("Matrix");
+		CArrayObject* pArray = dynamic_cast<CArrayObject*>(pObj);
+		if (!pArray)
+			return;
+
+		for (int i = 0; i < 6; ++i)
+		{
+			pObj = pArray->Get(i);
+			CRealObject* pNum = dynamic_cast<CRealObject*>(pObj);
+			if (!pNum)
+				return;
+			pCTM[i] = pNum->Get();
+		}
+	}
 	void CAnnotAppearanceObject::DrawTextCommentN(const std::string& sColor)
 	{
 		CExtGrState* pExtGrState = m_pAnnot->GetDocument()->GetExtGState(0.6, 0.6);
@@ -3177,7 +3203,7 @@ namespace PdfWriter
 
 		double dBorder = 1;
 		EBorderType nBorderType = EBorderType::Inset;
-		if (m_pAnnot->HaveBorder())
+		if (m_pAnnot->HaveBorder() && pAnnot->HaveBC())
 		{
 			dBorder = m_pAnnot->GetBorderWidth();
 			nBorderType = m_pAnnot->GetBorderType();
@@ -3272,7 +3298,7 @@ namespace PdfWriter
 			}
 		}
 
-		// Installed
+		// Set
 		if (!bSet)
 			return;
 		double dShift = dBorder / 2.0;
@@ -3296,7 +3322,7 @@ namespace PdfWriter
 
 		double dBorder = 1;
 		EBorderType nBorderType = EBorderType::Solid;
-		if (m_pAnnot->HaveBorder())
+		if (m_pAnnot->HaveBorder() && pAnnot->HaveBC())
 		{
 			dBorder = m_pAnnot->GetBorderWidth();
 			nBorderType = m_pAnnot->GetBorderType();
@@ -3383,7 +3409,7 @@ namespace PdfWriter
 			m_pStream->WriteStr("s\012Q\012");
 		}
 
-		// Installed
+		// Set
 		if (!bSet)
 			return;
 		double dDiff = std::abs(dW - dH) / 2.0;

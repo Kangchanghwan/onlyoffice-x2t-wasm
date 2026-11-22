@@ -1,26 +1,36 @@
 /*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "ZipBuffer.h"
 #include "ZipUtilsCP.h"
@@ -43,17 +53,18 @@ zipFile zipOpenHelp(BUFFER_IO* buffer)
 // begin from (ZipUtilsCP.cpp)
 bool current_file_is_find(unzFile uf, const char* filename)
 {
-	char filename_inzip[256];
+	char filename_inzip[4096];
+	filename_inzip[sizeof(filename_inzip) - 1] = 0; // a name that fills the buffer gets no NUL from minizip
 	int err = UNZ_OK;
 
 	unz_file_info file_info;
 
-	err = unzGetCurrentFileInfo(uf, &file_info, filename_inzip, sizeof(filename_inzip), NULL, 0, NULL, 0);
+	err = unzGetCurrentFileInfo(uf, &file_info, filename_inzip, sizeof(filename_inzip) - 1, NULL, 0, NULL, 0);
 	if (err != UNZ_OK)
 		return false;
 
 	std::string name(filename_inzip);
-	//TODO is there a need to reduce everything to the bottom???
+	//todooo is there a need to convert everything to lowercase ???
 	return strcmp(filename, name.c_str()) == 0;
 }
 bool get_file(unzFile unzip_file_handle, BYTE* arr, uInt array_size)
@@ -69,9 +80,10 @@ bool get_file(unzFile unzip_file_handle, BYTE* arr, uInt array_size)
 }
 static const std::string get_filename_from_unzfile(unzFile unzip_file_handle)
 {
-	char filename_inzip[256];
+	char filename_inzip[4096];
+	filename_inzip[sizeof(filename_inzip) - 1] = 0; // a name that fills the buffer gets no NUL from minizip
 
-	if (UNZ_OK == unzGetCurrentFileInfo(unzip_file_handle, NULL, filename_inzip, sizeof(filename_inzip), NULL, 0, NULL, 0))
+	if (UNZ_OK == unzGetCurrentFileInfo(unzip_file_handle, NULL, filename_inzip, sizeof(filename_inzip) - 1, NULL, 0, NULL, 0))
 		return std::string(filename_inzip);
 
 	return "";
@@ -110,14 +122,14 @@ void CZipBuffer::create()
 	m_zipFile = NULL;
 	m_sizeZip = 0;
 }
-// Opens an archive in memory, the transferred data must be freed
+// Opens an archive in memory, the passed data must be freed
 void CZipBuffer::open(BYTE* buffer, DWORD size)
 {
 	m_zipFile = new BYTE[size];
 	memcpy(m_zipFile, buffer, size);
 	m_sizeZip = size;
 
-	// Getting the paths in the archive
+	// Get paths in the archive
 	BUFFER_IO* buf = new BUFFER_IO;
 	buf->buffer = m_zipFile;
 	buf->nSize  = m_sizeZip;
@@ -133,14 +145,14 @@ void CZipBuffer::open(BYTE* buffer, DWORD size)
 	unzClose(uf);
 	RELEASEOBJECT(buf);
 }
-// Closes the archive and clears memory
+// Closes the archive and frees memory
 void CZipBuffer::close()
 {
 	for (CFile& oFile : m_arrFiles)
 		RELEASEARRAYOBJECTS(oFile.m_pData);
 	m_arrFiles.clear();
 }
-// Moves a file in the archive
+// Moves a file within the archive
 void CZipBuffer::move(const std::string& sSrc, const std::string& sDst)
 {
 	std::vector<CFile>::iterator it =
@@ -156,7 +168,7 @@ std::vector<std::string> CZipBuffer::getPaths()
 		oRes.push_back(oFile.m_sPath);
 	return oRes;
 }
-// Saves the archive to the transferred memory, the received data must be freed
+// Saves the archive to the passed memory, the returned data must be freed
 void CZipBuffer::save(BYTE*& data, DWORD& length)
 {
 	BUFFER_IO* buf = new BUFFER_IO;
@@ -186,7 +198,7 @@ void CZipBuffer::save(BYTE*& data, DWORD& length)
 	length = m_sizeZip = buf->nCurrentPos;
 	RELEASEOBJECT(buf);
 }
-// Returns a file relative to the path in the archive; the received data will be released after using the class
+// Returns a file by relative path in the archive, the returned data will be freed after class usage
 void CZipBuffer::getFile(const std::string& sPath, BYTE*& data, DWORD& length)
 {
 	std::vector<CFile>::iterator it =
@@ -218,7 +230,7 @@ void CZipBuffer::getFile(const std::string& sPath, BYTE*& data, DWORD& length)
 	it->m_pData   = data;
 	RELEASEOBJECT(buf);
 }
-// A file is added relative to the path in the archive; the transferred data must be freed
+// Adds a file by relative path in the archive, the passed data must be freed
 void CZipBuffer::addFile   (const std::string& sPath, BYTE* data, DWORD length)
 {
 	std::vector<CFile>::iterator it =
@@ -241,7 +253,7 @@ void CZipBuffer::addFile   (const std::string& sPath, BYTE* data, DWORD length)
 		it->m_nLength = length;
 	}
 }
-// Deletes a file relative to the path in the archive
+// Removes a file by relative path in the archive
 bool CZipBuffer::removeFile(const std::string& sPath)
 {
 	for (std::vector<CFile>::iterator i = m_arrFiles.begin(); i != m_arrFiles.end(); i++)

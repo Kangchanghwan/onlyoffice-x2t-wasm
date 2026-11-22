@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "formulasconvert.h"
 
@@ -448,8 +458,8 @@ void oox2odf_converter::Impl::replace_named_ref(std::wstring & expr)
 
 
 // TODO
-// replace commas with semicolons in all occurrences except those in quotes --* and in curly braces*--
-// TODO: check how quotes are saved in a string
+// replace commas with semicolons in all occurrences except those in quotes --*and in curly braces*--
+// TODO: check how quotes are preserved in the string
 void oox2odf_converter::Impl::replace_semicolons(std::wstring& expr)
 {
      const std::wstring res = boost::regex_replace(
@@ -482,7 +492,7 @@ void oox2odf_converter::Impl::replace_vertical(std::wstring& expr)
         boost::match_default | boost::format_all);
      expr = res;
 }
-// replace the comma in all occurrences with a space
+// replace comma with space in all occurrences
 void oox2odf_converter::Impl::replace_space(std::wstring& expr)
 {
      const std::wstring res = boost::regex_replace(
@@ -644,9 +654,9 @@ std::wstring oox2odf_converter::Impl::convert_conditional_formula(const std::wst
 
 }
 //Sheet2!C3:C19,Sheet2!L27:L34
-//in
+// to
 //Sheet2.C3:Sheet2.C19 Sheet2.L29:Sheet2.L36
-//TODO
+//todooo
 std::wstring oox2odf_converter::Impl::convert_ref_distances(std::wstring const& expr1, std::wstring const& separator_in, std::wstring const& separator_out)
 {
 	std::wstring expr = expr1;
@@ -656,7 +666,7 @@ std::wstring oox2odf_converter::Impl::convert_ref_distances(std::wstring const& 
 	res= expr.rfind(L")");
 	if (res ==expr.size()-2) expr = expr.substr(0, res);
 
-	//parse by range - space -> separator
+	// parse by ranges - space -> separator
 
 	std::vector<std::wstring> distance_inp;
 	std::vector<std::wstring> distance_out;

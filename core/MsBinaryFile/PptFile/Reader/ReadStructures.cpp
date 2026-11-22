@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #pragma once
 
@@ -556,7 +566,7 @@ void CTextCFRunRecord::LoadFromStream(POLE::Stream* pStream, bool bIsIndentation
     if (BaseLineOffset_)
         m_oRun.BaseLineOffset = (double)StreamUtils::ReadSHORT(pStream);
 
-    // or the last two are the other way around????
+    // or the last two vice versa????
 }
 
 
@@ -667,7 +677,7 @@ CMetaHeader::CMetaHeader()
 {
 }
 
-void CMetaHeader::FromStream(POLE::Stream* pStream, CRYPT::ECMADecryptor *pDecryptor)
+void CMetaHeader::FromStream(POLE::Stream* pStream, CRYPT::Decryptor *pDecryptor)
 {
     BYTE	pData[34];
     pStream->read(pData, 34);
@@ -707,7 +717,7 @@ void CMetaHeader::ToEMFHeader(Gdiplus::ENHMETAHEADER3* pHeader)
     pHeader->rclBounds.right = rcBounds.right;
     pHeader->rclBounds.bottom = rcBounds.bottom;
 
-    // need to be converted to mm
+    // need to convert to mm
     pHeader->rclFrame.left = rcBounds.left;
     pHeader->rclFrame.top = rcBounds.top;
     pHeader->rclFrame.right = rcBounds.right;
@@ -730,9 +740,28 @@ void CMetaHeader::ToEMFHeader(Gdiplus::ENHMETAHEADER3* pHeader)
     pHeader->szlDevice.cx = 200;
     pHeader->szlDevice.cy = 200;
 
-    // need to be converted to mm
+    // need to convert to mm
     pHeader->szlMillimeters.cx = 100;
     pHeader->szlMillimeters.cy = 100;
+}
+
+static short CalculateMetafileInch(const RECT& oBounds, const POINT& oSize)
+{
+	const int nWidth  = oBounds.right  - oBounds.left;
+	const int nHeight = oBounds.bottom - oBounds.top;
+
+	double dInch = 0.;
+
+	//914400 EMU = 1 Inch
+	if (nWidth > 0 && oSize.x > 0)
+		dInch = (double)nWidth * 914400. / (double)oSize.x;
+	else if (nHeight > 0 && oSize.y > 0)
+		dInch = (double)nHeight * 914400. / (double)oSize.y;
+
+	const int nInch = (int)(dInch + 0.5);
+
+	//32767 = INT16_MAX
+	return (nInch > 0 && nInch <= 32767) ? (short)nInch : 1440; //1440 - default inch
 }
 
 void CMetaHeader::ToWMFHeader(Gdiplus::WmfPlaceableFileHeader* pHeader)
@@ -748,7 +777,7 @@ void CMetaHeader::ToWMFHeader(Gdiplus::WmfPlaceableFileHeader* pHeader)
     pHeader->BoundingBox.Right = (short)rcBounds.right;
     pHeader->BoundingBox.Bottom = (short)rcBounds.bottom;
 
-    pHeader->Inch = 1440; // 1:1
+    pHeader->Inch = CalculateMetafileInch(rcBounds, ptSize);
     pHeader->Reserved = 0;
 
     pHeader->Checksum = 0;

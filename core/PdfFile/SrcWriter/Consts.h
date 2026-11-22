@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #ifndef _PDF_WRITER_SRC_CONSTS_H
 #define _PDF_WRITER_SRC_CONSTS_H
@@ -28,24 +38,24 @@
 #define  OK                    0
 #define  NOERROR               0
 
-// Standard buffer size in memory-stream-object
+// Default buffer size for memory-stream-object
 #define STREAM_BUF_SIZ         4096
 
 #define MAX_OPENED_FT_FACES    30
 
-// The required buffer size for converting to a character string.
+// Required buffer size for converting to character string.
 #define SHORT_BUFFER_SIZE      32
 #define REAL_LEN               31//11
 #define INT_LEN                11
 #define TEXT_DEFAULT_LEN       256
 #define DATE_TIME_STR_LEN      23
 
-// Entry lengths for the cross-reference table
+// Corresponding lengths in cross-reference-table
 #define BYTE_OFFSET_LEN        10
 #define OBJ_ID_LEN             7
 #define GEN_NO_LEN             5
 
-// Standard page size (A4)
+// Default page size (A4)
 #define DEF_PAGE_WIDTH         595.276
 #define DEF_PAGE_HEIGHT        841.89
 
@@ -69,7 +79,7 @@
 #define ENABLE_COPY         16
 #define ENABLE_EDIT         32
 
-// Document viewing options
+// Document view options
 
 #define HIDE_TOOLBAR    1
 #define HIDE_MENUBAR    2
@@ -78,7 +88,7 @@
 #define CENTER_WINDOW   16
 
 
-// Limitations according to specification
+// Limits according to specification
 #define LIMIT_MAX_INT             2147483647
 #define LIMIT_MIN_INT             -2147483647
 

@@ -1,3 +1,38 @@
+/*
+ * Copyright (C) Ascensio System SIA, 2009-2026
+ *
+ * This program is a free software product. You can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License (AGPL)
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
+ * Section 5 of the GNU AGPL version 3.
+ *
+ * No trademark rights are granted under this License.
+ *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 #include "htmlfile2.h"
 
 #include <string>
@@ -37,8 +72,8 @@
 #define MAXCOLUMNSINTABLE 63
 #define MAXROWSINTABLE    32767
 
-#define DEFAULT_PAGE_WIDTH  12240 // value in Twips
-#define DEFAULT_PAGE_HEIGHT 15840 // value in Twips
+#define DEFAULT_PAGE_WIDTH  12240 // Value in Twips
+#define DEFAULT_PAGE_HEIGHT 15840 // Value in Twips
 
 #define DEFAULT_LANGUAGE std::wstring(L"en-US")
 #define DEFAULT_FONT_FAMILY std::wstring(L"Times New Roman")
@@ -71,7 +106,7 @@ const std::map<std::wstring, HtmlTag> m_HTML_TAGS
 	ADD_TAG(L"acronym", ACRONYM),
 	ADD_TAG(L"address", ADDRESS),
 	ADD_TAG(L"applet", APPLET),
-	 ADD_TAG(L"area", AREA),
+	ADD_TAG(L"area", AREA),
 	ADD_TAG(L"article", ARTICLE),
 	ADD_TAG(L"aside", ASIDE),
 	ADD_TAG(L"audio", AUDIO),
@@ -94,8 +129,8 @@ const std::map<std::wstring, HtmlTag> m_HTML_TAGS
 	ADD_TAG(L"code", CODE),
 	ADD_TAG(L"col", COL),
 	ADD_TAG(L"colgroup", COLGROUP),
-	ADD_TAG(L"command", SKIP_TAG), // There is no such designation, but since we are skipping anyway, we make a script
-	ADD_TAG(L"comment", SKIP_TAG), // There is no such designation, but since we are skipping anyway, we make a script
+	ADD_TAG(L"command", SKIP_TAG), // This tag designation doesn't exist, but since we skip it anyway, we treat it as script
+	ADD_TAG(L"comment", SKIP_TAG), // This tag designation doesn't exist, but since we skip it anyway, we treat it as script
 	ADD_TAG(L"datalist", DATALIST),
 	ADD_TAG(L"dd", DD),
 	ADD_TAG(L"del", DEL),
@@ -252,7 +287,7 @@ struct CTc
 	std::wstring sGridSpan = L"1";
 	std::wstring sPr = L"";
 
-	CTc(int _i, int _j, const std::wstring& sColspan, const std::wstring& sTcPr = L"")
+	CTc(int _i, int _j, const std::wstring& sColspan, const std::wstring& sTcPr = L"") 
 		: i(_i), j(_j), sGridSpan(sColspan), sPr(sTcPr) {}
 
 	bool operator==(const CTc& c2)
@@ -264,13 +299,13 @@ struct CTc
 // Text settings
 struct CTextSettings
 {
-	bool bBdo; // Right-to-left text
-	bool bPre; // Preserve formatting (Keep spaces, tabs, line breaks)
+	bool bBdo; // Text reversal
+	bool bPre; // Preserve formatting (preserve spaces, tabs, line breaks)
 	bool bQ;   // Quote
 	bool bAddSpaces; // Add spaces before text?
-	bool bMergeText; // Merge consecutive text nodes into one?
+	bool bMergeText; // Merge consecutive text into one?
 	int  nLi;  // List level
-	bool bNumberingLi; // Is the list numbered?
+	bool bNumberingLi; // Is the list numbered
 
 	std::wstring sPStyle;
 
@@ -421,7 +456,7 @@ typedef enum
 	ParseModeFoother
 } ERowParseMode;
 
-//Required Table Styles
+//Required table styles
 struct TTableStyles
 {
 	NSCSS::NSProperties::CIndent m_oPadding;
@@ -593,7 +628,7 @@ class CTable;
 class CTableCell
 {
 public:
-	CTableCell()
+	CTableCell() 
 		: m_unColspan(1), m_unRowSpan(1), m_bIsMerged(false), m_bIsEmpty(false)
 	{}
 
@@ -602,7 +637,7 @@ public:
 	{}
 
 	CTableCell(CTableCell& oCell)
-		: m_unColspan(oCell.m_unColspan), m_unRowSpan(oCell.m_unRowSpan), m_bIsMerged(oCell.m_bIsMerged),
+		: m_unColspan(oCell.m_unColspan), m_unRowSpan(oCell.m_unRowSpan), m_bIsMerged(oCell.m_bIsMerged), 
 		  m_bIsEmpty(oCell.m_bIsEmpty), m_oStyles(oCell.m_oStyles)
 	{
 		WriteToStringBuilder(oCell.m_oData, m_oData);
@@ -782,12 +817,12 @@ public:
 				--m_oStyles.m_unMaxIndex;
 				delete *itFoundEmpty;
 				*itFoundEmpty = pCell;
-
+				
 				if (1 != pCell->GetColspan())
 				{
 					++itFoundEmpty;
 					UINT unColspan = pCell->GetColspan() - 1;
-
+	
 					while (m_arCells.end() != itFoundEmpty && (*itFoundEmpty)->Empty() && unColspan > 0)
 					{
 						--m_oStyles.m_unMaxIndex;
@@ -795,7 +830,7 @@ public:
 						delete (*itFoundEmpty);
 						itFoundEmpty = m_arCells.erase(itFoundEmpty);
 					}
-
+	
 					if (unColspan != 0)
 						pCell->SetColspan(pCell->GetColspan() - unColspan, MAXCOLUMNSINTABLE);
 				}
@@ -1170,7 +1205,7 @@ public:
 		UINT unIndex      = 0;
 		CTableCell* pCell = NULL;
 
-		UINT unMaxIndex = 0; //Maximum index excluding rows where there is only 1 cell
+		UINT unMaxIndex = 0; //Maximum index excluding rows with only 1 cell
 
 		for (const CTableRow* pRow : m_arRows)
 		{
@@ -1185,7 +1220,7 @@ public:
 				if (0 != unMaxIndex && 1 == pRow->GetCount() && pRow->GetIndex() > unMaxIndex)
 				{
 					pCell = (*pRow)[unIndex];
-
+	
 					if (NULL == pCell)
 						continue;
 
@@ -1376,7 +1411,7 @@ enum class EAbstructNumType
 	UpperRoman
 };
 
-void htmlfile2replace_all(std::wstring& s, const std::wstring& s1, const std::wstring& s2)
+void replace_all(std::wstring& s, const std::wstring& s1, const std::wstring& s2)
 {
 	size_t pos = s.find(s1);
 	size_t l = s2.length();
@@ -1414,37 +1449,37 @@ std::wstring StandardizeHeaderId(const std::wstring& header)
 	std::wstring result;
 	result.reserve(header.size());
 
-	// Flag indicating whether the previous character was a hyphen
+	// Flag indicating whether previous character was a hyphen
 	bool prevWasHyphen = false;
 	bool inWhitespaceSequence = false;
 	wchar_t lowerC;
 
 	for (wchar_t c : header)
 	{
-		// Casting to lowercase
+		// Convert to lowercase
 		lowerC = std::tolower(c);
 
-		// Checking if a character is a letter or a number
+		// Check if character is a letter or digit
 		if (std::iswalnum(lowerC))
 		{
 			result.push_back(lowerC);
 			prevWasHyphen = false;
 			inWhitespaceSequence = false;
 		}
-		// Checking whether a character is whitespace (space, tab, etc.)
+		// Check if character is whitespace (space, tab, etc.)
 		else if (std::iswspace(lowerC))
 		{
-			// Replace sequences of whitespace characters with a single hyphen
+			// Replace whitespace sequences with a single hyphen
 			if (!inWhitespaceSequence && !result.empty())
 			{
 				result.push_back(L'-');
 				inWhitespaceSequence = true;
 			}
 		}
-		// Checking whether a character is a hyphen or an underscore
+		// Check if character is a hyphen or underscore
 		else if (c == L'-' || c == L'_')
 		{
-			// Add a hyphen if the previous character wasn't a hyphen
+			// Add hyphen if previous character wasn't a hyphen
 			if (!prevWasHyphen && !result.empty())
 			{
 				result.push_back(L'-');
@@ -1452,7 +1487,7 @@ std::wstring StandardizeHeaderId(const std::wstring& header)
 			}
 			inWhitespaceSequence = false;
 		}
-		// All other characters (punctuation marks) are skipped
+		// Skip all other characters (punctuation marks)
 		// But if it's a Unicode letter, we can process it
 		else if (std::iswalpha(lowerC))
 		{
@@ -1461,10 +1496,10 @@ std::wstring StandardizeHeaderId(const std::wstring& header)
 			prevWasHyphen = false;
 			inWhitespaceSequence = false;
 		}
-		// Ignore the remaining characters
+		// Ignore remaining characters
 	}
 
-	// Removing hyphens at the beginning and end
+	// Remove hyphens at the beginning and end
 	size_t start = 0;
 	size_t end = result.length();
 
@@ -1474,7 +1509,7 @@ std::wstring StandardizeHeaderId(const std::wstring& header)
 	while (end > start && result[end - 1] == L'-')
 		--end;
 
-	// Removing consecutive hyphens
+	// Remove consecutive hyphens
 	std::wstring finalResult;
 	finalResult.reserve(end - start);
 
@@ -1499,7 +1534,7 @@ std::wstring StandardizeHeaderId(const std::wstring& header)
 	return finalResult;
 }
 
-bool ElementInHeader(const std::vector<NSCSS::CNode> arSelsectors)
+bool ElementInHeader(const std::vector<NSCSS::CNode>& arSelsectors)
 {
 	for (const NSCSS::CNode& oNode : arSelsectors)
 	{
@@ -1523,18 +1558,18 @@ bool ElementInHeader(const std::vector<NSCSS::CNode> arSelsectors)
 	return false;
 }
 
-std::wstring HtmlFile2EncodeXmlString(const std::wstring& s)
+std::wstring EncodeXmlString(const std::wstring& s)
 {
 	std::wstring sRes = s;
 
-	htmlfile2replace_all(sRes, L"&", L"&amp;");
-	htmlfile2replace_all(sRes, L"<", L"&lt;");
-	htmlfile2replace_all(sRes, L">", L"&gt;");
-	htmlfile2replace_all(sRes, L"\"", L"&quot;");
-	htmlfile2replace_all(sRes, L"\'", L"&#39;");
-	htmlfile2replace_all(sRes, L"\n", L"&#xA;");
-	htmlfile2replace_all(sRes, L"\r", L"&#xD;");
-	htmlfile2replace_all(sRes, L"\t", L"&#x9;");
+	replace_all(sRes, L"&", L"&amp;");
+	replace_all(sRes, L"<", L"&lt;");
+	replace_all(sRes, L">", L"&gt;");
+	replace_all(sRes, L"\"", L"&quot;");
+	replace_all(sRes, L"\'", L"&#39;");
+	replace_all(sRes, L"\n", L"&#xA;");
+	replace_all(sRes, L"\r", L"&#xD;");
+	replace_all(sRes, L"\t", L"&#x9;");
 
 	return sRes;
 }
@@ -1555,10 +1590,12 @@ bool CanUseThisPath(const std::wstring& wsPath, const std::wstring& wsSrcPath, c
 	if (!wsCorePath.empty())
 	{
 		const std::wstring wsFullPath = NSSystemPath::ShortenPath(NSSystemPath::Combine(wsSrcPath, wsPath));
-		return boost::starts_with(wsFullPath, wsCorePath);
+		return NSSystemPath::IsPathInDirectory(wsCorePath, wsFullPath);
 	}
 
-	if (wsPath.length() >= 3 && L"../" == wsPath.substr(0, 3))
+	const std::wstring wsShortenPath = NSSystemPath::ShortenPath(wsPath);
+
+	if (wsShortenPath.length() >= 3 && L"../" == wsShortenPath.substr(0, 3))
 		return false;
 
 	return true;
@@ -1574,7 +1611,7 @@ class CHtmlFile2_Private
 public:
 	XmlUtils::CXmlLiteReader m_oLightReader;   // SAX Reader
 	NSCSS::CCssCalculator m_oStylesCalculator; // CSS calculator
-	NSCSS::CDocumentStyle m_oXmlStyle;         // Ooxml style
+	NSCSS::CDocumentStyle m_oXmlStyle;         // OOXML style
 
 	NSCSS::NSProperties::CPage m_oPageData; // Page styles
 
@@ -1582,17 +1619,17 @@ public:
 	std::wstring m_sSrc;  // Source directory
 	std::wstring m_sDst;  // Destination directory
 	std::wstring m_sBase; // Full base address
-	std::wstring m_sCore; // Path to the root file (used for working with Epub)
+	std::wstring m_sCore; // Path to root file (used for Epub handling)
 
 private:
 	int m_nFootnoteId;  // Footnote ID
-	int m_nHyperlinkId; // Link ID
+	int m_nHyperlinkId; // Hyperlink ID
 	int m_nNumberingId; // List ID
-	int m_nId;          // ID other elements
+	int m_nId;          // ID for other elements
 	int m_nShapeId;     // Id shape's
 
 	using anchors_map = std::map<std::wstring, std::wstring>;
-	anchors_map m_mAnchors; // Map of anchors with individual ids
+	anchors_map m_mAnchors; // Map of anchors with individual IDs
 
 	NSStringUtils::CStringBuilder m_oStylesXml;   // styles.xml
 	NSStringUtils::CStringBuilder m_oDocXmlRels;  // document.xml.rels
@@ -1607,11 +1644,11 @@ private:
 		bool m_bInP;         // Is <w:p> open?
 		bool m_bInR;         // Is <w:r> open?
 		bool m_bInT;         // Is <w:t> open?
-		bool m_bWasPStyle;   // <w:pStyle> recorded?
+		bool m_bWasPStyle;   // Is <w:pStyle> written?
 		bool m_bWasSpace;    // Was there a space?
 		bool m_bInHyperlink; // Is <w:hyperlink> open?
 
-		bool m_bBanUpdatePageData; // Prevent page data from updating?
+		bool m_bBanUpdatePageData; // Prohibit page data update?
 
 		HtmlTag m_eLastElement;
 
@@ -1625,10 +1662,10 @@ private:
 	std::map<std::wstring, UINT>         m_mBookmarks; // Bookmarks
 	std::map<std::wstring, UINT>         m_mDivs;      // Div elements
 
-	NSFonts::IApplicationFonts*          m_pFonts;     // Needed to optimize font handling
+	NSFonts::IApplicationFonts*          m_pFonts;     // Required for font handling optimization
 public:
 
-	CHtmlFile2_Private()
+	CHtmlFile2_Private() 
 		: m_nFootnoteId(1), m_nHyperlinkId(1), m_nNumberingId(1), m_nId(1), m_nShapeId(1), m_pFonts(NULL)
 	{
 		m_oPageData.SetWidth (DEFAULT_PAGE_WIDTH,  NSCSS::UnitMeasure::Twips, 0, true);
@@ -1655,16 +1692,16 @@ public:
 			RELEASEINTERFACE(m_pFonts);
 	}
 
-	// Checks for the presence of an html tag
+	// Checks for html tag presence
 	bool isHtml()
 	{
 		return (m_oLightReader.ReadNextNode() ? m_oLightReader.GetName() == L"html" : false);
 	}
 
-	// Creates a docx base
+	// Creates docx base structure
 	void CreateDocxEmpty(CHtmlParams* oParams)
 	{
-		// Creating empty folders
+		// Create empty folders
 		NSDirectory::CreateDirectory(m_sDst + L"/_rels");
 		NSDirectory::CreateDirectory(m_sDst + L"/docProps");
 		NSDirectory::CreateDirectory(m_sDst + L"/word");
@@ -1759,31 +1796,31 @@ public:
 			if(!oParams->m_sBookTitle.empty())
 			{
 				sCore += L"<dc:title>";
-				sCore += HtmlFile2EncodeXmlString(oParams->m_sBookTitle);
+				sCore += EncodeXmlString(oParams->m_sBookTitle);
 				sCore += L"</dc:title>";
 			}
 			if(!oParams->m_sAuthors.empty())
 			{
 				sCore += L"<dc:creator>";
-				sCore += HtmlFile2EncodeXmlString(oParams->m_sAuthors);
+				sCore += EncodeXmlString(oParams->m_sAuthors);
 				sCore += L"</dc:creator>";
 			}
 			if(!oParams->m_sGenres.empty())
 			{
 				sCore += L"<dc:subject>";
-				sCore += HtmlFile2EncodeXmlString(oParams->m_sGenres);
+				sCore += EncodeXmlString(oParams->m_sGenres);
 				sCore += L"</dc:subject>";
 			}
 			if(!oParams->m_sDate.empty())
 			{
 				sCore += L"<dcterms:created xsi:type=\"dcterms:W3CDTF\">";
-				sCore += HtmlFile2EncodeXmlString(oParams->m_sDate);
+				sCore += EncodeXmlString(oParams->m_sDate);
 				sCore += L"</dcterms:created>";
 			}
 			if(!oParams->m_sDescription.empty())
 			{
 				sCore += L"<dc:description>";
-				sCore += HtmlFile2EncodeXmlString(oParams->m_sDescription);
+				sCore += EncodeXmlString(oParams->m_sDescription);
 				sCore += L"</dc:description>";
 			}
 			if (!oParams->m_sLanguage.empty())
@@ -1803,7 +1840,7 @@ public:
 			oCoreWriter.CloseFile();
 		}
 
-		// File starts
+		// File beginnings
 		m_oDocXmlRels  += L"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">";
 		m_oDocXmlRels  += L"<Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Target=\"styles.xml\"/>";
 		m_oDocXmlRels  += L"<Relationship Id=\"rId2\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings\" Target=\"settings.xml\"/>";
@@ -1853,14 +1890,14 @@ public:
 //		m_oStylesXml += L"<w:style w:type=\"table\" w:default=\"1\" w:styleId=\"table-based\"><w:name w:val=\"Normal Table\"/><w:uiPriority w:val=\"99\"/><w:semiHidden/><w:unhideWhenUsed/><w:tblPr><w:tblInd w:w=\"0\" w:type=\"dxa\"/><w:tblCellMar><w:top w:w=\"0\" w:type=\"dxa\"/><w:left w:w=\"108\" w:type=\"dxa\"/><w:bottom w:w=\"0\" w:type=\"dxa\"/><w:right w:w=\"108\" w:type=\"dxa\"/></w:tblCellMar></w:tblPr></w:style><w:style w:type=\"table\" w:styleId=\"table\"><w:name w:val=\"Table Grid\"/><w:basedOn w:val=\"table-based\"/><w:uiPriority w:val=\"59\"/><w:pPr><w:spacing w:lineRule=\"auto\" w:line=\"240\" w:after=\"0\"/></w:pPr><w:tblPr><w:tblBorders><w:top w:val=\"single\" w:sz=\"4\" w:space=\"0\" w:color=\"000000\"/><w:left w:val=\"single\" w:sz=\"4\" w:space=\"0\" w:color=\"000000\"/><w:bottom w:val=\"single\" w:sz=\"4\" w:space=\"0\" w:color=\"000000\"/><w:right w:val=\"single\" w:sz=\"4\" w:space=\"0\" w:color=\"000000\"/><w:insideH w:val=\"single\" w:sz=\"4\" w:space=\"0\" w:color=\"000000\"/><w:insideV w:val=\"single\" w:sz=\"4\" w:space=\"0\" w:color=\"000000\"/></w:tblBorders></w:tblPr></w:style>";
 		// Footnotes
 		m_oStylesXml += L"<w:style w:type=\"character\" w:styleId=\"footnote\"><w:name w:val=\"footnote reference\"/><w:uiPriority w:val=\"99\"/><w:unhideWhenUsed/><w:rPr><w:vertAlign w:val=\"superscript\"/></w:rPr></w:style><w:style w:type=\"paragraph\" w:styleId=\"footnote-p\"><w:name w:val=\"footnote text\"/><w:basedOn w:val=\"normal\"/><w:link w:val=\"footnote-c\"/><w:uiPriority w:val=\"99\"/><w:semiHidden/><w:unhideWhenUsed/><w:rPr><w:sz w:val=\"18\"/></w:rPr><w:pPr><w:spacing w:lineRule=\"auto\" w:line=\"240\" w:after=\"40\"/></w:pPr></w:style><w:style w:type=\"character\" w:styleId=\"footnote-c\" w:customStyle=\"1\"><w:name w:val=\"footnote text character\"/><w:link w:val=\"footnote-p\"/><w:uiPriority w:val=\"99\"/><w:rPr><w:sz w:val=\"18\"/></w:rPr></w:style>";
-		// Web style by default
+		// Default web style
 		m_oStylesXml += L"<w:style w:type=\"paragraph\" w:styleId=\"normal-web\"><w:name w:val=\"Normal (Web)\"/><w:basedOn w:val=\"normal\"/><w:uiPriority w:val=\"99\"/><w:semiHidden/><w:unhideWhenUsed/><w:pPr><w:spacing w:before=\"100\" w:beforeAutospacing=\"1\" w:after=\"100\" w:afterAutospacing=\"1\"/></w:pPr></w:style>";
 	}
 
-	// Reads the file
+	// Reads file
 	void readSrc()
 	{
-		// Reading html
+		// Read html
 		m_oLightReader.ReadNextNode();
 
 		int nDeath = m_oLightReader.GetDepth();
@@ -1874,7 +1911,7 @@ public:
 		}
 	}
 
-	// Finalizes the docx structure
+	// Appends docx endings
 	void write()
 	{
 		m_oDocXmlRels.WriteString(L"</Relationships>");
@@ -1914,7 +1951,7 @@ public:
 		m_oDocXml.WriteString(L"w:header=\"" + std::to_wstring(m_oPageData.GetHeader().ToInt(NSCSS::Twips)) + L"\" ");
 		m_oDocXml.WriteString(L"w:footer=\"" + std::to_wstring(m_oPageData.GetFooter().ToInt(NSCSS::Twips)) + L"\" ");
 		m_oDocXml.WriteString(L"w:gutter=\"0\"/><w:cols w:space=\"720\"/><w:docGrid w:linePitch=\"360\"/></w:sectPr></w:body></w:document>");
-
+		
 		NSFile::CFileBinary oDocumentWriter;
 		if (oDocumentWriter.CreateFileW(m_sDst + L"/word/document.xml"))
 		{
@@ -2087,7 +2124,7 @@ public:
 				readStyle2();
 			else
 			{
-				// Style by reference
+				// Style by link
 				if(sName == L"link")
 				{
 					while(m_oLightReader.MoveToNextAttribute())
@@ -2098,7 +2135,7 @@ public:
 						if(NSFile::GetFileExtention(sRef) != L"css")
 							continue;
 						std::wstring sFName = NSFile::GetFileName(sRef);
-						// Style on the web
+						// Style from network
 						if(sRef.substr(0, 4) == L"http")
 						{
 							sFName = m_sTmp + L'/' + sFName;
@@ -2118,7 +2155,7 @@ public:
 					}
 					m_oLightReader.MoveToElement();
 				}
-				// the style tag contains styles for styles.xml
+				// style tag contains styles for styles.xml
 				else if(sName == L"style")
 					m_oStylesCalculator.AddStyles(m_oLightReader.GetText2());
 				else
@@ -2130,7 +2167,7 @@ public:
 	void readStyle2()
 	{
 		std::wstring sName = m_oLightReader.GetName();
-		// Style by reference
+		// Style by link
 		if(sName == L"link")
 		{
 			while(m_oLightReader.MoveToNextAttribute())
@@ -2141,7 +2178,7 @@ public:
 				if(NSFile::GetFileExtention(sRef) != L"css")
 					continue;
 				std::wstring sFName = NSFile::GetFileName(sRef);
-				// Style on the web
+				// Style from network
 				if(sRef.substr(0, 4) == L"http")
 				{
 					sFName = m_sTmp + L'/' + sFName;
@@ -2161,7 +2198,7 @@ public:
 			}
 			m_oLightReader.MoveToElement();
 		}
-		// the style tag contains styles for styles.xml
+		// style tag contains styles for styles.xml
 		else if(sName == L"style")
 			m_oStylesCalculator.AddStyles(m_oLightReader.GetText2());
 
@@ -2211,10 +2248,10 @@ private:
 		return wsValue;
 	}
 
-	// Since the CSS calculator doesn't know for which node the style is being calculated
+	// Since CSS calculator doesn't know which node the style is being calculated for
 	// and doesn't know that some styles are intended only for a specific node,
-	// then it's easier to process it in advance
-	// ! Used for styles specified via arguments !
+	// it's easier for now to handle this in advance
+	// ! Used for styles specified through arguments !
 	bool CheckArgumentMath(const std::wstring& wsNodeName, const std::wstring& wsStyleName) const
 	{
 		if (L"border" == wsStyleName && L"table" != wsNodeName)
@@ -2430,7 +2467,7 @@ private:
 		{
 			std::wstring sName  = m_oLightReader.GetName();
 			if(sName == L"class")
-				oNode.m_wsClass  = HtmlFile2EncodeXmlString(m_oLightReader.GetText());
+				oNode.m_wsClass  = EncodeXmlString(m_oLightReader.GetText());
 			else if(sName == L"id")
 			{
 				oNode.m_wsId = EncodeXmlString(m_oLightReader.GetText());
@@ -2485,9 +2522,9 @@ private:
 	void readBody()
 	{
 		std::vector<NSCSS::CNode> sSelectors;
-
+		
 		sSelectors.push_back(NSCSS::CNode(L"html", L"", L""));
-
+		
 		GetSubClass(&m_oDocXml, sSelectors);
 
 		if (!sSelectors.back().m_mAttributes.empty())
@@ -2532,7 +2569,7 @@ private:
 		{
 			NSCSS::CCompiledStyle* pCompiledStyle{arSelectors.back().m_pCompiledStyle};
 
-			// TODO::behavior should be slightly different (implement)
+			// TODO:: behavior should be slightly different (implement)
 			switch(pCompiledStyle->m_oDisplay.GetWhiteSpace().ToInt())
 			{
 				case NSCSS::NSProperties::EWhiteSpace::Pre:
@@ -2559,7 +2596,7 @@ private:
 
 		GetSubClass(pXml, arSelectors);
 
-		//TODO:: make the paragraph (with its styles) open when reading the corresponding node, and not when reading the text
+		//TODO:: make paragraph (with its styles) open when reading corresponding node, not when reading text
 		OpenP(pXml);
 
 		NSStringUtils::CStringBuilder oPPr;
@@ -3216,7 +3253,7 @@ private:
 
 	bool readInside (NSStringUtils::CStringBuilder* oXml, std::vector<NSCSS::CNode>& sSelectors, CTextSettings& oTS, const std::wstring& sName)
 	{
-		//TODO:: process all return options
+		//TODO:: handle all return variants
 		if(sName == L"#text")
 			return ReadText(oXml, sSelectors, oTS);
 
@@ -3366,7 +3403,7 @@ private:
 			case HTML_TAG(STYLE):
 			case HTML_TAG(SCRIPT):
 			{
-				//Skip unhandled tags
+				//If we encounter unhandled tags, just skip them
 				sSelectors.pop_back();
 				return false;
 			}
@@ -3661,7 +3698,7 @@ private:
 			pColgroup->AddCol(pCol);
 		}
 	}
-
+	
 	struct TRowspanElement
 	{
 		UINT  m_unRowSpan;
@@ -3721,7 +3758,7 @@ private:
 					else if(m_oLightReader.GetName() == L"rowspan")
 					{
 						pCell->SetRowspan(NSStringFinder::ToInt(m_oLightReader.GetText(), 1));
-
+						
 						if (1 != pCell->GetRowspan())
 							arRowspanElements.push_back({pCell->GetRowspan(), unColumnIndex, pCell});
 					}
@@ -3730,7 +3767,7 @@ private:
 				m_oLightReader.MoveToElement();
 				m_oState.m_bWasPStyle = false;
 
-				// Read th. Table header cell. Center alignment. Shown in bold
+				// Read th. Table header cell. Center aligned. Bold text
 				if(m_oLightReader.GetName() == L"th")
 				{
 					CTextSettings oTSR(oTS);
@@ -3742,7 +3779,7 @@ private:
 
 					readStream(pCell->GetData(), sSelectors, oTSR, true);
 				}
-				// Reading td. Table cell
+				// Read td. Table cell
 				else if(m_oLightReader.GetName() == L"td")
 					readStream(pCell->GetData(), sSelectors, oTS, true);
 
@@ -4007,7 +4044,7 @@ private:
 		//------
 
 		int nDeath = m_oLightReader.GetDepth();
-		while(m_oLightReader.ReadNextSiblingNode(nDeath))
+		while(m_oLightReader.ReadNextSiblingNode(nDeath)) 
 		{
 			const std::wstring sName = m_oLightReader.GetName();
 			GetSubClass(oXml, sSelectors);
@@ -4243,7 +4280,7 @@ private:
 		else
 			wrP(oXml, sSelectors, oTS);
 
-		// Cross reference within a file
+		// Cross-reference within file
 		if(bCross)
 		{
 			m_oState.m_bInHyperlink = true;
@@ -4273,7 +4310,7 @@ private:
 		// External link
 		else
 		{
-			// Writing the rels
+			// Write relationships
 			NSStringUtils::CStringBuilder* oRelationshipXml = &m_oDocXmlRels;
 			if (oXml == &m_oNoteXml)
 				oRelationshipXml = &m_oNoteXmlRels;
@@ -4284,7 +4321,7 @@ private:
 			oRelationshipXml->WriteString(L"\" TargetMode=\"External\"/>");
 
 			m_oState.m_bInHyperlink = true;
-			// Write in document.xml
+			// Write to document.xml
 			oXml->WriteString(L"<w:hyperlink w:tooltip=\"");
 			oXml->WriteEncodeXmlString(sNote);
 			oXml->WriteString(L"\" r:id=\"rHyp");
@@ -4406,15 +4443,11 @@ private:
 		bool bRes = false;
 		bool bAllow = true;
 
-		std::wstring wsSrc = wscSrc;
 		if (!bIsAllowExternalLocalFiles)
-		{
-			wsSrc = NSSystemPath::NormalizePath(wsSrc);
-			std::wstring wsStartSrc = NSSystemPath::NormalizePath(m_sSrc);
-			bAllow = wsSrc.substr(0, wsStartSrc.length()) == wsStartSrc;
-		}
+			bAllow = NSSystemPath::IsPathInDirectory(m_sSrc, wscSrc);
+
 		if (bAllow)
-			bRes = NSFile::CFileBinary::Copy(wsSrc, wsDst);
+			bRes = NSFile::CFileBinary::Copy(wscSrc, wsDst);
 
 		return bRes;
 	}
@@ -4509,7 +4542,7 @@ private:
 
 		std::wstring sExtention;
 
-		// Assume the image is Base64-encoded
+		// Assume image in Base64
 		if (sSrcM.length() > 4 && sSrcM.substr(0, 4) == L"data" && sSrcM.find(L"/", 4) != std::wstring::npos)
 			bRes = readBase64(sSrcM, sExtention);
 
@@ -4526,7 +4559,7 @@ private:
 			}
 		}
 
-		// Checking the extension
+		// Check extension
 		if (!bRes)
 		{
 			sExtention = NSFile::GetFileExtention(sSrcM);
@@ -4538,14 +4571,14 @@ private:
 				sExtention.erase(itFound, sExtention.cend());
 		}
 
-		// Assume the image is remote
+		// Assume image from network
 		if (!bRes &&
 		    ((!m_sBase.empty() && m_sBase.length() > 4 && m_sBase.substr(0, 4) == L"http") ||
 		      (sSrcM.length() > 4 && sSrcM.substr(0, 4) == L"http")))
 		{
 			const std::wstring wsDst = m_sDst + L"/word/media/i" + std::to_wstring(m_arrImages.size()) + L'.' + ((!sExtention.empty()) ? sExtention : L"png");
 
-			// The gc_allowNetworkRequest check is assumed in kernel_network
+			// gc_allowNetworkRequest check is assumed in kernel_network
 			NSNetwork::NSFileTransport::CFileDownloader oDownloadImg(m_sBase + sSrcM, false);
 			oDownloadImg.SetFilePath(wsDst);
 			bRes = oDownloadImg.DownloadSync();
@@ -4568,7 +4601,7 @@ private:
 			}
 			else if (sExtention.empty())
 			{
-				//TODO:: Better recognize image format from content
+				//TODO:: better to determine image format from content
 				sExtention = L"png";
 			}
 		}
@@ -4583,7 +4616,7 @@ private:
 				return true;
 			}
 
-			// Repeat check
+			// Check for duplicate
 			std::vector<std::wstring>::iterator nFind = std::find(m_arrImages.begin(), m_arrImages.end(), sSrcM);
 			if (nFind != m_arrImages.end())
 			{
@@ -4592,7 +4625,7 @@ private:
 			}
 		}
 
-		// Assume the image uses a local path
+		// Assume image by local path
 		if (!bRes)
 		{
 			const std::wstring wsDst = m_sDst + L"/word/media/i" + std::to_wstring(m_arrImages.size()) + L'.' + sExtention;
@@ -4737,7 +4770,7 @@ private:
 
 		OpenR(pXml);
 
-		// Write in document.xml
+		// Write to document.xml
 		if (oImageData.ZeroSpaces())
 		{
 			pXml->WriteString(L"<w:drawing><wp:inline distT=\"0\" distB=\"0\" distL=\"0\" distR=\"0\"><wp:extent cx=\"");
@@ -4829,7 +4862,7 @@ private:
 			NSFile::CFileBinary::Remove(m_sDst + L"/word/media/i" + sImageName);
 			return;
 		}
-		// Write the rels
+		// Write relationships
 		if (bNew)
 		{
 			m_arrImages.push_back(sImageSrc);
@@ -4970,7 +5003,7 @@ private:
 			return false;
 
 		unsigned int alfa = 0xffffff;
-		//default tone should be transparent, not white
+		//default background should be transparent, not white
 		//memset(pBgraData, 0xff, nWidth * nHeight * 4);
 		for (int i = 0; i < nWidth * nHeight; i++)
 		{
@@ -5032,7 +5065,7 @@ bool CHtmlFile2::IsHtmlFile(const std::wstring& sFile)
 	// Convert to xhtml
 	if(!m_internal->htmlXhtml(sFile))
 		return false;
-	// Reading html
+	// Read html
 	return m_internal->isHtml();
 }
 
@@ -5041,7 +5074,7 @@ bool CHtmlFile2::IsMhtFile(const std::wstring& sFile)
 	// Convert to xhtml
 	if(!m_internal->mhtXhtml(sFile))
 		return false;
-	// Reading html
+	// Read html
 	return m_internal->isHtml();
 }
 #endif
@@ -5176,10 +5209,10 @@ HRESULT CHtmlFile2::ConvertHTML2OOXML(const std::vector<std::wstring>& arPaths, 
 			m_internal->m_sBase.clear();
 		}
 
-		// Clearing allowed style files
-		// This is necessary so that we can't take styles from an unconnected file, but at the same time, so that the data remains,
-		// because the same file can be connected to many files (the problem occurs when it is large)
-		// and connecting (in our case re-parsing) it will take a long time
+		// Clear allowed style files
+		// This is necessary so we can't take styles from an unconnected file, but the data remains,
+		// since many files can have the same file connected (problem occurs when it's large)
+		// and connecting (in our case reparsing) it will take a long time
 		m_internal->m_oStylesCalculator.ClearAllowedStyleFiles();
 		m_internal->m_oStylesCalculator.ClearEmbeddedStyles();
 	}

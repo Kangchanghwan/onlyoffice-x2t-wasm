@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "draw_shapes.h"
@@ -79,7 +89,7 @@ void draw_shape::add_child_element( xml::sax * Reader, const std::wstring & Ns, 
 }
 void draw_shape::add_attributes( const xml::attributes_wc_ptr & Attributes )
 {
-	CP_APPLY_ATTR(L"draw:id", draw_id_);//or here draw_shape_attlist_???
+	CP_APPLY_ATTR(L"draw:id", draw_id_);// or here draw_shape_attlist_???
 	
 	common_draw_attlists_.shape_with_text_and_styles_.add_attributes(Attributes);
     common_draw_attlists_.position_.add_attributes(Attributes);
@@ -245,6 +255,27 @@ void draw_path::add_attributes( const xml::attributes_wc_ptr & Attributes )
 	sub_type_ = 6;
 	
 }
+
+std::vector<double> transform_svg_view_box(std::wstring& svg_view_box)
+{
+	std::wstring::iterator it_start = svg_view_box.begin(), it_end = svg_view_box.end();
+	std::vector<double> vec_svg_view_box;
+	std::wstring element{};
+	for(;it_start != it_end; it_start++)
+	{
+		if(std::iswspace(*it_start) && !element.empty())
+		{
+			vec_svg_view_box.push_back(std::stod(element));
+			element.clear();
+		}
+		else if(std::isdigit(*it_start) || *it_start == L'\u002D')
+			element.push_back(*it_start);
+	}
+	if(!element.empty())
+		vec_svg_view_box.push_back(std::stod(element));
+
+	return vec_svg_view_box;
+}
 void draw_path::reset_svg_path()
 {
 	if (!draw_path_attlist_.svg_d_)
@@ -255,7 +286,19 @@ void draw_path::reset_svg_path()
 	{
 		std::vector<::svg_path::_polyline> o_Polyline_pt;
 		std::vector<::svg_path::_polyline> o_Polyline_cm;
-	
+		std::vector<double> svg_view_box = transform_svg_view_box(draw_path_attlist_.svg_viewbox_.get());
+
+		double scale_y{0.0}, scale_x{0.0};
+		if(svg_view_box.size() == 4)
+		{
+			if (draw_path_attlist_.svg_height_)
+				scale_y = draw_path_attlist_.svg_height_->get_value()/(svg_view_box[3]/1000.);
+
+			if (draw_path_attlist_.svg_width_)
+				scale_x = draw_path_attlist_.svg_width_->get_value()/(svg_view_box[2]/1000.);
+		}
+
+
 		bool bClosed = false, bStroked = true;
 		bool res = ::svg_path::parseSvgD(o_Polyline_cm, draw_path_attlist_.svg_d_.get(), false, bClosed, bStroked);
 		
@@ -269,18 +312,24 @@ void draw_path::reset_svg_path()
 			{
 				if (poly.points[i].x)
 				{
-					poly.points[i].x =  length(poly.points[i].x.get()/1000.,length::cm).get_value_unit(length::emu); 
+					if(svg_view_box.size() == 4 && scale_x != 0.0)
+						poly.points[i].x =  length((poly.points[i].x.get() - svg_view_box[0])/1000. * scale_x,length::cm).get_value_unit(length::emu);
+					else
+						poly.points[i].x =  length(poly.points[i].x.get()/1000.,length::cm).get_value_unit(length::emu);
 				}
 				if (poly.points[i].y)
 				{
-					poly.points[i].y = length(poly.points[i].y.get()/1000.,length::cm).get_value_unit(length::emu); 
+					if(svg_view_box.size() == 4 && scale_y != 0.0)
+						poly.points[i].y = length((poly.points[i].y.get() - svg_view_box[1])/1000. * scale_y,length::cm).get_value_unit(length::emu);
+					else
+						poly.points[i].y = length(poly.points[i].y.get()/1000.,length::cm).get_value_unit(length::emu);
 				}
 			}
 			o_Polyline_pt.push_back(poly);
 		}
 		if (false == o_Polyline_pt.empty())
 		{
-			//Create xml-oox here... otherwise we'll have to create arrays in drawing... although it's not pretty...
+			// form xml-oox here... otherwise will have to create arrays in drawing.. not pretty though..
 			std::wstringstream output_;   
             ::svg_path::oox_serialize(output_, o_Polyline_pt);
 			additional_.push_back(odf_reader::_property(L"custom_path",output_.str()));
@@ -352,7 +401,7 @@ void draw_polygon::reset_polygon_path()
 		}
 		if (false == o_Polyline_pt.empty())
 		{
-			//Create xml-oox here... otherwise we'll have to create arrays in drawing... although it's not pretty...
+			// form xml-oox here... otherwise will have to create arrays in drawing.. not pretty though..
 			std::wstringstream output_;   
             ::svg_path::oox_serialize(output_, o_Polyline_pt);
 			additional_.push_back(odf_reader::_property(L"custom_path", output_.str()));
@@ -404,7 +453,7 @@ void draw_polyline::reset_polyline_path()
 			{
 				if (poly.points[i].x)
 				{
-					if (!start_x)//actually this isn't true .. but due to different points of the rotation axes the shape can "fly away"
+					if (!start_x)// actually this is not correct.. but due to different rotation axis points the shape may "fly away"
 						start_x = length(poly.points[i].x.get()/1000., length::cm).get_value_unit(length::emu); 
 					poly.points[i].x =  length(poly.points[i].x.get()/1000., length::cm).get_value_unit(length::emu);// - *start_x; 
 				}
@@ -419,7 +468,7 @@ void draw_polyline::reset_polyline_path()
 		}
 		if (false == o_Polyline_pt.empty())
 		{
-			//Create xml-oox here... otherwise we'll have to create arrays in drawing... although it's not pretty...
+			// form xml-oox here... otherwise will have to create arrays in drawing.. not pretty though..
 			std::wstringstream output_;   
             
 			::svg_path::oox_serialize(output_, o_Polyline_pt);
@@ -541,7 +590,7 @@ bool convert_equation(std::wstring formula, std::wstring &result)
 		{
 			if (operators.size() > 1 && !function.empty())
 			{
-				return false; // ? TODO
+				return false; // ? todooo
 			}
 
 			operators += formula[pos++];
@@ -1031,7 +1080,7 @@ bool draw_enhanced_geometry::oox_convert(std::vector<odf_reader::_property>& pro
 
 			if (!o_Polyline.empty() && res)
 			{
-				//Create xml-oox here... otherwise we'll have to create arrays in drawing... although it's not pretty...
+				// form xml-oox here... otherwise will have to create arrays in drawing.. not pretty though..
 				std::wstringstream output_;
 
 				::svg_path::oox_serialize(output_, o_Polyline);
@@ -1101,7 +1150,7 @@ void draw_connector::add_attributes( const xml::attributes_wc_ptr & Attributes )
     draw_line_attlist_.add_attributes(Attributes);
 	draw_shape::add_attributes(Attributes);
 
-	sub_type_ = 10; //connector is a line, if it is a polyline (defined below) then it is a path
+	sub_type_ = 10; // connector - line, if polyline (determined below) - then path
 	lined_shape_ = true;	
 	connector_ = true;
 }
@@ -1142,7 +1191,7 @@ void draw_connector::reset_svg_path()
 		if (o_Polyline_pt.size() > 0)
 		{
 			sub_type_ = 6;
-			//Create xml-oox here... otherwise we'll have to create arrays in drawing... although it's not pretty...
+			// form xml-oox here... otherwise will have to create arrays in drawing.. not pretty though..
 			std::wstringstream output_;   
             ::svg_path::oox_serialize(output_, o_Polyline_pt);
 			additional_.push_back(odf_reader::_property(L"custom_path",output_.str()));

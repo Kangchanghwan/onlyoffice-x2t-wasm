@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "CSVReader.h"
 #include "CellFormatController/CellFormatController.h"
@@ -186,7 +196,7 @@ int CSVReader::Impl::AddCell(std::wstring &sText, INT nStartCell, std::stack<INT
 	}
 	size_t length = sText.length();
 
-// Don't write empty words
+// Don't write empty
 	if ((0 == length) || (sText[0] == L'\0'))
 		return result;
 
@@ -207,7 +217,7 @@ _UINT32 CSVReader::Impl::Read(const std::wstring &sFileName, OOX::Spreadsheet::C
 	NSFile::CFileBinary oFile;
 	if (false == oFile.OpenFile(sFileName)) return AVS_FILEUTILS_ERROR_CONVERT;
 	//-----------------------------------------------------------------------------------
-	// Create a Workbook
+	// Create Workbook
 	oXlsx.CreateWorkbook();
 	// Create styles
 	oXlsx.CreateStyles();
@@ -271,7 +281,7 @@ _UINT32 CSVReader::Impl::Read(const std::wstring &sFileName, OOX::Spreadsheet::C
 	size_t nSize = sFileDataW.length();
 
 	if (nSize < 1 && nInputBufferSize > 0)
-	{//for synchronization of preview output and normal result
+	{//for synchronization of preview and normal result output
 		const NSUnicodeConverter::EncodindId& oEncodindId = NSUnicodeConverter::Encodings[nCodePage];
 
 		NSUnicodeConverter::CUnicodeConverter oUnicodeConverter;
@@ -401,7 +411,7 @@ _UINT32 CSVReader::Impl::Read(const std::wstring &sFileName, OOX::Spreadsheet::C
 
 			if (wcNewLineR == wcCurrent && nIndex + 1 != nSize && wcNewLineN == pTemp[nIndex + 1])
 			{
-				// There should be only 1 carriage return per combination \r\n
+				// For \r\n combination there should be only 1 newline
 				++nIndex;
 			}
 
@@ -432,7 +442,7 @@ _UINT32 CSVReader::Impl::Read(const std::wstring &sFileName, OOX::Spreadsheet::C
 			if (pWorksheet->m_oSheetData->m_arrItems.size() > 1048576)
 			{
 				bMsLimit = true;
-				break; // ms limits
+				break; // MS limit
 			}
 		}
 		else if (wcQuote == wcCurrent)
@@ -440,16 +450,16 @@ _UINT32 CSVReader::Impl::Read(const std::wstring &sFileName, OOX::Spreadsheet::C
 			// Quote
 			if (false == bInQuote && nStartCell == nIndex && nIndex + 1 != nSize)
 			{
-				// Start of a new cell (only if we are immediately after the delimiter and not at the end of the file)
+				// Start of new cell (only if we're right after delimiter and not at end of file)
 				bInQuote = !bInQuote;
 				nStartCell = nIndex + 1;
 			}
 			else if (bInQuote)
 			{
-				// Need to remove the quote delimiter
+				// Need to remove delimiter quote
 				oDeleteChars.push(nIndex);
 
-				// If the next character is a quote, then we haven't completed the quoted field (1997,Ford,E350,"Super, ""luxurious"" truck")
+				// If next character is quote, then we haven't finished string delimiter (1997,Ford,E350,"Super, ""luxurious"" truck")
 				if (nIndex + 1 != nSize && wcQuote == pTemp[nIndex + 1])
 					++nIndex;
 				else

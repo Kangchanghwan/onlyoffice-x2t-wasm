@@ -1,3 +1,38 @@
+/*
+ * Copyright (C) Ascensio System SIA, 2009-2026
+ *
+ * This program is a free software product. You can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License (AGPL)
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
+ * Section 5 of the GNU AGPL version 3.
+ *
+ * No trademark rights are granted under this License.
+ *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 #ifndef CTEXT_H
 #define CTEXT_H
 
@@ -32,7 +67,22 @@ namespace SVG
 		void InheritStyles(const CTSpan* pTSpan);
 	private:
 		void ApplyStyle(IRenderer* pRenderer, const TSvgStyles* pStyles, const CSvgFile* pFile, int& nTypePath, const CRenderedObject* pContexObject = NULL) const override;
-		void ApplyFont(IRenderer* pRenderer, double& dX, double& dY, Aggplus::CMatrix& oOldMatrix) const;
+		void ApplyFont(IRenderer* pRenderer, double& dX, double& dY, Aggplus::CMatrix& oOldMatrix, double& dScaleX, double& dScaleY, double& dFontSize) const;
+
+		struct TTextRun
+		{
+			std::wstring m_wsText;
+			double       m_dX;
+			double       m_dY;
+		};
+
+		static void SetCoordinates(const std::wstring& wsValue, SvgDigit& oFirst, std::vector<SvgDigit>& arValues);
+		std::vector<TTextRun> GetPositionedRuns(bool bUseParentBounds) const;
+		void DrawPositionedText(IRenderer* pRenderer, const std::vector<TTextRun>& arRuns, double dOffsetX, double dOffsetY, double dScaleX, double dScaleY, double dFontSize) const;
+		void DrawDecoration(IRenderer* pRenderer, const std::wstring& wsText, double dX, double dY, double dFontSize) const;
+		double MeasureText(const std::wstring& wsText) const;
+		void GetFontParams(std::wstring& wsFontFamily, int& nStyle) const;
+		double GetAnchorFactor() const;
 
 		void UpdateFontSize();
 		bool UseExternalFont(const CSvgFile* pFile, double dX, double dY, IRenderer* pRenderer, CommandeMode oMode = CommandeModeDraw, const TSvgStyles* pOtherStyles = NULL, const CRenderedObject* pContexObject = NULL) const;
@@ -43,6 +93,7 @@ namespace SVG
 		void CorrectFontFamily(std::wstring& wsFontFamily) const;
 
 		void CalculatePosition(double& dX, double& dY) const;
+		void CalculatePositions(std::vector<double>& arX, std::vector<double>& arY, bool bUseParentBounds) const;
 
 		void NormalizeFontSize(double& dFontHeight, double& dScaleX, double& dScaleY) const;
 		void SetPosition(const Point& oPosition);
@@ -57,6 +108,9 @@ namespace SVG
 
 		SvgDigit     m_oX;
 		SvgDigit     m_oY;
+
+		std::vector<SvgDigit> m_arX;
+		std::vector<SvgDigit> m_arY;
 
 		std::wstring m_wsText;
 

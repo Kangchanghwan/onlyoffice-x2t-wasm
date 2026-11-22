@@ -1,26 +1,36 @@
 /*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #pragma once
 
@@ -448,11 +458,32 @@ namespace PPT
         NSFile::CFileBinary oFile;
 
         // tableStyles.xml
-        oFile.CreateFileW(m_strDestPath + FILE_SEPARATOR_STR + L"ppt" + FILE_SEPARATOR_STR + L"tableStyles.xml");
+        std::wstring strTableStylesPath = m_strDestPath + FILE_SEPARATOR_STR + L"ppt" + FILE_SEPARATOR_STR + L"tableStyles.xml";
+        bool bTableStylesWrite = false;
 
-        oFile.WriteStringUTF8(L"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>\
+        if (m_pUserInfo)
+        {
+            std::vector<RoundTripCustomTableStyles12Atom*> arrRTTableStyles;
+            m_pUserInfo->m_oDocument.GetRecordsByType(&arrRTTableStyles, false, true);
+
+            if (!arrRTTableStyles.empty() && m_pUserInfo->m_pDocumentInfo && m_pUserInfo->m_pDocumentInfo->m_pCommonInfo)
+            {
+                RoundTripExtractor extractor(arrRTTableStyles[0], m_pUserInfo->m_pDocumentInfo->m_pCommonInfo->tempPath);
+                std::wstring strRTTableStylesPath = extractor.getOneFile(L"tableStyles.xml");
+
+                if (!strRTTableStylesPath.empty())
+                    bTableStylesWrite = NSFile::CFileBinary::Copy(strRTTableStylesPath, strTableStylesPath);
+
+                NSDirectory::DeleteDirectory(extractor.extractedFolderPath());
+            }
+        }
+        if (!bTableStylesWrite)
+        {
+            oFile.CreateFileW(strTableStylesPath);
+            oFile.WriteStringUTF8(L"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>\
                           <a:tblStyleLst xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" def=\"{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}\"/>");
-        oFile.CloseFile();
+            oFile.CloseFile();
+        }
 
         // presProps.xml
         oFile.CreateFileW(m_strDestPath + FILE_SEPARATOR_STR + L"ppt" + FILE_SEPARATOR_STR + L"presProps.xml");
@@ -844,7 +875,7 @@ namespace PPT
                 for (size_t i = 0; i < pGroupElement->m_pChildElements.size(); ++i)
                 {
                     if (isBodyPlaceholder(pGroupElement->m_pChildElements[i]->m_lPlaceholderType))
-                        pGroupElement->m_pChildElements[i]->m_lPlaceholderType = 100; //body type to register !!
+                        pGroupElement->m_pChildElements[i]->m_lPlaceholderType = 100; // must set body type !!
 
                     //if (pGroupElement->m_pChildElements[i]->m_bAnchorEnabled == false &&
                     //	pGroupElement->m_pChildElements[i]->m_bChildAnchorEnabled == false)
@@ -868,7 +899,7 @@ namespace PPT
             for (size_t i = start_index; i < pTheme->m_arElements.size(); ++i)
             {
                 if (isBodyPlaceholder(pTheme->m_arElements[i]->m_lPlaceholderType))
-                    pTheme->m_arElements[i]->m_lPlaceholderType = 100; //body type to register !!
+                    pTheme->m_arElements[i]->m_lPlaceholderType = 100; // must set body type !!
 
                 //if (pTheme->m_arElements[i]->m_bAnchorEnabled == false &&
                 //	pTheme->m_arElements[i]->m_bChildAnchorEnabled == false)
@@ -1049,20 +1080,27 @@ namespace PPT
 
         WriteColorScheme(oStringWriter, L"Default", pTheme->m_arColorScheme);
 
-        if (!pTheme->m_arFonts.empty())
+        if (!pTheme->m_sRoundTripFontScheme.empty())
         {
-            oStringWriter.WriteString(std::wstring(L"<a:fontScheme name=\"default\"><a:majorFont><a:latin typeface=\""));
-            oStringWriter.WriteStringXML(pTheme->m_arFonts[0].Name);
-            oStringWriter.WriteString(std::wstring(L"\"/><a:ea typeface=\"\"/><a:cs typeface=\"\"/></a:majorFont>"));
-
-            oStringWriter.WriteString(std::wstring(L"<a:minorFont><a:latin typeface=\""));
-
-            if (pTheme->m_arFonts.size() > 1)	oStringWriter.WriteString(pTheme->m_arFonts[1].Name);
-            else                                oStringWriter.WriteStringXML(pTheme->m_arFonts[0].Name);
+            oStringWriter.WriteString(pTheme->m_sRoundTripFontScheme);
         }
+        else
+        {
+            if (!pTheme->m_arFonts.empty())
+            {
+                oStringWriter.WriteString(std::wstring(L"<a:fontScheme name=\"default\"><a:majorFont><a:latin typeface=\""));
+                oStringWriter.WriteStringXML(pTheme->m_arFonts[0].Name);
+                oStringWriter.WriteString(std::wstring(L"\"/><a:ea typeface=\"\"/><a:cs typeface=\"\"/></a:majorFont>"));
 
-        oStringWriter.WriteString(std::wstring(L"\"/><a:ea typeface=\"\"/><a:cs typeface=\"\"/></a:minorFont>"));
-        oStringWriter.WriteString(std::wstring(L"</a:fontScheme>"));
+                oStringWriter.WriteString(std::wstring(L"<a:minorFont><a:latin typeface=\""));
+
+                if (pTheme->m_arFonts.size() > 1)	oStringWriter.WriteString(pTheme->m_arFonts[1].Name);
+                else                                oStringWriter.WriteStringXML(pTheme->m_arFonts[0].Name);
+            }
+
+            oStringWriter.WriteString(std::wstring(L"\"/><a:ea typeface=\"\"/><a:cs typeface=\"\"/></a:minorFont>"));
+            oStringWriter.WriteString(std::wstring(L"</a:fontScheme>"));
+        }
 
         oStringWriter.WriteString(std::wstring(L"<a:fmtScheme name=\"Default\">\
                                            <a:fillStyleLst><a:solidFill><a:schemeClr val=\"phClr\"/></a:solidFill><a:gradFill rotWithShape=\"1\"><a:gsLst><a:gs pos=\"0\"><a:schemeClr val=\"phClr\">\
@@ -1149,7 +1187,7 @@ namespace PPT
             for (size_t i = 0; i < pGroupElement->m_pChildElements.size(); ++i)
             {
                 if (isBodyPlaceholder(pGroupElement->m_pChildElements[i]->m_lPlaceholderType))
-                    pGroupElement->m_pChildElements[i]->m_lPlaceholderType = 100; //body type to register !!
+                    pGroupElement->m_pChildElements[i]->m_lPlaceholderType = 100; // must set body type !!
 
                 //if (pGroupElement->m_pChildElements[i]->m_bAnchorEnabled == false &&
                 //	pGroupElement->m_pChildElements[i]->m_bChildAnchorEnabled == false)
@@ -1173,7 +1211,7 @@ namespace PPT
         for (size_t i = start_index; i < pTheme->m_arElements.size(); ++i)
         {
             if (isBodyPlaceholder(pTheme->m_arElements[i]->m_lPlaceholderType))
-                pTheme->m_arElements[i]->m_lPlaceholderType = 100; //body type to register !!
+                pTheme->m_arElements[i]->m_lPlaceholderType = 100; // must set body type !!
 
             //if (pTheme->m_arElements[i]->m_bAnchorEnabled == false &&
             //	pTheme->m_arElements[i]->m_bChildAnchorEnabled == false)
@@ -1712,7 +1750,7 @@ xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\""));
     }
 
     void CPPTXWriter::WriteLayoutAfterTheme(CThemePtr pTheme, const int nIndexTheme, int& nStartLayout)
-    {//nIndexTheme is already here +1
+    {// nIndexTheme is already +1 here
         CRelsGenerator oRels(&m_oManager);
         int nCountLayouts = (int)pTheme->m_arLayouts.size();
         oRels.StartMaster(nIndexTheme - 1, nStartLayout, nCountLayouts);
@@ -1749,7 +1787,7 @@ xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\""));
             for (size_t i = 0; i < pGroupElement->m_pChildElements.size(); ++i)
             {
                 if (isBodyPlaceholder(pGroupElement->m_pChildElements[i]->m_lPlaceholderType))
-                    pGroupElement->m_pChildElements[i]->m_lPlaceholderType = 100; //body type to register !!
+                    pGroupElement->m_pChildElements[i]->m_lPlaceholderType = 100; // must set body type !!
 
                 //if (pGroupElement->m_pChildElements[i]->m_bAnchorEnabled == false &&
                 //	pGroupElement->m_pChildElements[i]->m_bChildAnchorEnabled == false)
@@ -1773,7 +1811,7 @@ xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\""));
         for (size_t i = start_index; i < pTheme->m_arElements.size(); ++i)
         {
             if (isBodyPlaceholder(pTheme->m_arElements[i]->m_lPlaceholderType))
-                pTheme->m_arElements[i]->m_lPlaceholderType = 100; //body type to register !!
+                pTheme->m_arElements[i]->m_lPlaceholderType = 100; // must set body type !!
 
             //if (pTheme->m_arElements[i]->m_bAnchorEnabled == false &&
             //	pTheme->m_arElements[i]->m_bChildAnchorEnabled == false)

@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #ifndef CEXTRACTTOOLS_H
 #define CEXTRACTTOOLS_H
@@ -172,7 +182,7 @@ namespace NExtractTools
 		TCD_ODF_FLAT2OOX,
 		TCD_ODF_FLAT2OOT,
 		TCD_ODF_FLAT2OOT_BIN,
-		TCD_ODF_FLAT2ODF, // TODO directly
+		TCD_ODF_FLAT2ODF, // todooo directly
 		// 2 odt
 		TCD_DOCX2ODT,
 		TCD_DOCT2ODT,
@@ -346,29 +356,29 @@ namespace NExtractTools
 	class InputParamsThumbnail
 	{
 	public:
-		int* format;
-		int* aspect;
-		bool* first;
+		int*  format;
+		int*  aspect;
 		bool* zip;
-		int* width;
-		int* height;
+		int*  width;
+		int*  height;
+		int*  page;
 		InputParamsThumbnail()
 		{
 			format = NULL;
 			aspect = NULL;
-			first = NULL;
-			zip = NULL;
-			width = NULL;
+			zip    = NULL;
+			width  = NULL;
 			height = NULL;
+			page   = NULL;
 		}
 		~InputParamsThumbnail()
 		{
 			RELEASEOBJECT(format);
 			RELEASEOBJECT(aspect);
-			RELEASEOBJECT(first);
 			RELEASEOBJECT(zip);
 			RELEASEOBJECT(width);
 			RELEASEOBJECT(height);
+			RELEASEOBJECT(page);
 		}
 
 		bool FromXmlNode(XmlUtils::CXmlNode& oNode)
@@ -389,14 +399,16 @@ namespace NExtractTools
 								format = new int(XmlUtils::GetInteger(sValue));
 							else if (_T("aspect") == sName)
 								aspect = new int(XmlUtils::GetInteger(sValue));
-							else if (_T("first") == sName)
-								first = new bool(XmlUtils::GetBoolean2(sValue));
+							else if (_T("first") == sName) // deprecated
+								page = new int(XmlUtils::GetBoolean2(sValue) ? 0 : -1);
 							else if (_T("zip") == sName)
 								zip = new bool(XmlUtils::GetBoolean2(sValue));
 							else if (_T("width") == sName)
 								width = new int(XmlUtils::GetInteger(sValue));
 							else if (_T("height") == sName)
 								height = new int(XmlUtils::GetInteger(sValue));
+							else if (_T("page") == sName)
+								page = new int(XmlUtils::GetInteger(sValue));
 						}
 					}
 				}
@@ -483,13 +495,22 @@ namespace NExtractTools
 
 		std::wstring m_sPdfOformMetaName;
 		std::wstring m_sPdfOformMetaData;
+
+		std::wstring m_sOverrideSdkJsPath;
+
+	public:
+		void InitDoctRenderer(NSDoctRenderer::CDoctrenderer* renderer) const
+		{
+			if (!m_sOverrideSdkJsPath.empty())
+				renderer->SetAdditionalParam(NSDoctRenderer::AdditionalParamType::SDKJS_OVERRIDE_PATH, (void*)(&m_sOverrideSdkJsPath));
+		}
 	};
 
 	class InputParams
 	{
 	public:
-        std::wstring* m_sDefaultFontName;
-        int* m_nDefaultFontSize;
+		std::wstring* m_sDefaultFontName;
+		int* m_nDefaultFontSize;
 		std::wstring* m_sKey;
 		std::wstring* m_sFileFrom;
 		std::wstring* m_sFileTo;
@@ -504,6 +525,7 @@ namespace NExtractTools
 		int* m_nCsvDelimiterTo;
 		int* m_nCsvFormatTo;
 		std::wstring* m_sCsvDelimiterCharTo;
+		bool* m_bCsvAllSheets;
 		int* m_nLcid;
 		bool* m_bPaid;
 		bool* m_bFromChanges;
@@ -528,6 +550,7 @@ namespace NExtractTools
 		mutable bool m_bOutputConvertCorrupted;
 		mutable bool m_bMacro;
 		std::wstring* m_sCmapDir;
+		std::wstring* m_sOverrideSdkJsPath;
 
 	public:
 		InputParams()
@@ -548,6 +571,7 @@ namespace NExtractTools
 			m_nCsvTxtEncodingTo = NULL;
 			m_nCsvDelimiterTo = NULL;
 			m_sCsvDelimiterCharTo = NULL;
+			m_bCsvAllSheets = NULL;
 			m_nLcid = NULL;
 			m_bPaid = NULL;
 			m_bFromChanges = NULL;
@@ -572,6 +596,7 @@ namespace NExtractTools
 			m_bMacro = false;
 
 			m_sCmapDir = NULL;
+			m_sOverrideSdkJsPath = NULL;
 		}
 		~InputParams()
 		{
@@ -591,6 +616,7 @@ namespace NExtractTools
 			RELEASEOBJECT(m_nCsvTxtEncodingTo);
 			RELEASEOBJECT(m_nCsvDelimiterTo);
 			RELEASEOBJECT(m_sCsvDelimiterCharTo);
+			RELEASEOBJECT(m_bCsvAllSheets);
 			RELEASEOBJECT(m_nLcid);
 			RELEASEOBJECT(m_bPaid);
 			RELEASEOBJECT(m_bFromChanges);
@@ -611,6 +637,7 @@ namespace NExtractTools
 			RELEASEOBJECT(m_sConvertToOrigin);
 			RELEASEOBJECT(m_sSigningKeyStorePath);
 			RELEASEOBJECT(m_sCmapDir);
+			RELEASEOBJECT(m_sOverrideSdkJsPath);
 		}
 
 		bool FromXmlFile(const std::wstring& sFilename)
@@ -743,6 +770,11 @@ namespace NExtractTools
 									RELEASEOBJECT(m_sCsvDelimiterCharTo);
 									m_sCsvDelimiterCharTo = new std::wstring(sValue);
 								}
+								else if (_T("m_bCsvAllSheets") == sName)
+								{
+									RELEASEOBJECT(m_bCsvAllSheets);
+									m_bCsvAllSheets = new bool(XmlUtils::GetBoolean2(sValue));
+								}
 								else if (_T("m_nLcid") == sName)
 								{
 									RELEASEOBJECT(m_nLcid);
@@ -827,6 +859,11 @@ namespace NExtractTools
 								{
 									RELEASEOBJECT(m_sCmapDir);
 									m_sCmapDir = new std::wstring(sValue);
+								}
+								else if (_T("m_sOverrideSdkJsPath") == sName)
+								{
+									RELEASEOBJECT(m_sOverrideSdkJsPath);
+									m_sOverrideSdkJsPath = new std::wstring(sValue);
 								}
 							}
 							else if (_T("m_nCsvDelimiterChar") == sName)
@@ -914,6 +951,10 @@ namespace NExtractTools
 		bool getIsPDFA() const
 		{
 			return (NULL != m_bIsPDFA) ? (*m_bIsPDFA) : false;
+		}
+		bool getCsvAllSheets() const
+		{
+			return (NULL != m_bCsvAllSheets) ? (*m_bCsvAllSheets) : false;
 		}
 		std::wstring getConvertToOrigin() const
 		{
@@ -1090,6 +1131,10 @@ namespace NExtractTools
 			if (m_nCsvFormatTo)
 			{
 				sRes += L"' csvFormat='" + std::to_wstring(*m_nCsvFormatTo);
+			}
+			if (getCsvAllSheets())
+			{
+				sRes += L"' csvAllSheets='1";
 			}
 			if (m_bMacro)
 			{

@@ -1,3 +1,38 @@
+/*
+ * Copyright (C) Ascensio System SIA, 2009-2026
+ *
+ * This program is a free software product. You can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License (AGPL)
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
+ * Section 5 of the GNU AGPL version 3.
+ *
+ * No trademark rights are granted under this License.
+ *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 #include "../CEpubFile.h"
 #include "../../DesktopEditor/common/Directory.h"
 #include "../../OfficeUtils/src/OfficeUtils.h"
@@ -13,7 +48,7 @@
 #include <sstream>
 #include <random>
 
-// Replaces all occurrences of s1 in string s with s2
+// Replaces all occurrences of s1 with s2 in string s
 void replace_all(std::wstring& s, const std::wstring& s1, const std::wstring& s2)
 {
     size_t pos = s.find(s1);
@@ -23,6 +58,16 @@ void replace_all(std::wstring& s, const std::wstring& s1, const std::wstring& s2
         s.replace(pos, s1.length(), s2);
         pos = s.find(s1, pos + l);
     }
+}
+
+static bool GetStatusUsingExternalLocalFiles()
+{
+    return false;
+
+    if (NSProcessEnv::IsPresent(NSProcessEnv::Converter::gc_allowPrivateIP))
+        return NSProcessEnv::GetBoolValue(NSProcessEnv::Converter::gc_allowPrivateIP);
+
+    return true;
 }
 
 std::wstring GenerateUUID()
@@ -84,12 +129,15 @@ HRESULT CEpubFile::Convert(const std::wstring& sInputFile, const std::wstring& s
         sContent = sFileContent.substr(nContent, sFileContent.find_first_of(L"\"'", nContent) - nContent);
     }
 
-    std::wstring sContentPath;
+    const bool bIsAllowExternalLocalFiles{GetStatusUsingExternalLocalFiles()};
+    const std::wstring sTempDir{NSSystemPath::ShortenPath(m_sTempDir)};
 
-    if (std::wstring::npos != sContent.find(L'/') || std::wstring::npos != sContent.find(L'\\'))
-        sContentPath = NSFile::GetDirectoryName(sContent);
+    sContent = NSSystemPath::ShortenPath(NSSystemPath::Combine(sTempDir, sContent.empty() ? L"content.opf" : sContent));
 
-    sContent = m_sTempDir + (sContent.empty() ? L"/content.opf" : L'/' + sContent);
+    if (!bIsAllowExternalLocalFiles && !NSSystemPath::IsPathInDirectory(sTempDir, sContent))
+        return S_FALSE;
+
+    const std::wstring sContentDir = NSFile::GetDirectoryName(sContent);
 
     XmlUtils::CXmlLiteReader oXmlLiteReader;
     if (!oXmlLiteReader.FromFile(sContent))
@@ -156,21 +204,25 @@ HRESULT CEpubFile::Convert(const std::wstring& sInputFile, const std::wstring& s
     std::wstring sDocxFileTempDir = m_sTempDir + L"/tmp";
     NSDirectory::CreateDirectory(sDocxFileTempDir);
     oFile.SetTempDirectory(sDocxFileTempDir);
-    oFile.SetCoreDirectory(NSFile::GetDirectoryName(sContent));
+    oFile.SetCoreDirectory(sContentDir);
 
     std::vector<std::wstring> arFiles;
 
     for (const CBookContentItem& oContent : m_arContents)
     {
-        std::wstring sFile = NSSystemPath::ShortenPath(m_mapRefs[oContent.m_sID].GetRef());
-        replace_all(sFile, L"%20", L" ");
+        std::wstring sRef = m_mapRefs[oContent.m_sID].GetRef();
+        replace_all(sRef, L"%20", L" ");
 
-        if (sFile.length() > 3 && L'.' == sFile[0] && L'.' == sFile[1] && L'/' == sFile[2] &&
-            NSProcessEnv::IsPresent(NSProcessEnv::Converter::gc_allowPrivateIP) &&
-            !NSProcessEnv::GetBoolValue(NSProcessEnv::Converter::gc_allowPrivateIP))
+        if (sRef.empty())
             continue;
 
-        arFiles.push_back(m_sTempDir + ((!sContentPath.empty()) ? (L"/" + sContentPath) : L"" ) + L"/" + sFile);
+        const std::wstring sFile = bIsAllowExternalLocalFiles ? NSSystemPath::ShortenPath(NSSystemPath::Combine(sContentDir, sRef))
+                                                              : NSSystemPath::ResolveInDirectory(sTempDir, sContentDir, sRef);
+
+        if (sFile.empty())
+            continue;
+
+        arFiles.push_back(sFile);
     }
 
 #ifdef _DEBUG
@@ -390,7 +442,7 @@ HRESULT CEpubFile::FromHtml(const std::wstring& sHtmlFile, const std::wstring& s
         sIndexHtml.replace(nImage, nImageEnd - nImage, L"images/img" + std::to_wstring(nNumImage++) + L".png");
         nImage = sIndexHtml.find(L"data:image/png;base64, ", nImage);
     }
-    // delete &nbsp;
+    // remove &nbsp;
     nImage = sIndexHtml.find(L"&nbsp;");
     while (nImage != std::wstring::npos)
     {
@@ -409,7 +461,7 @@ HRESULT CEpubFile::FromHtml(const std::wstring& sHtmlFile, const std::wstring& s
         sIndexHtml.insert(nEndTag, L";text-decoration:line-through");
         nImage = sIndexHtml.find(L"<s>", nImage);
     }
-    // remove the width attribute from <td>
+    // remove width attribute from <td>
     nImage = sIndexHtml.find(L"<td");
     while (nImage != std::wstring::npos)
     {
@@ -422,7 +474,7 @@ HRESULT CEpubFile::FromHtml(const std::wstring& sHtmlFile, const std::wstring& s
         }
         nImage = sIndexHtml.find(L"<td", nImage);
     }
-    // remove the clear attribute from <br/>
+    // remove clear attribute from <br/>
     nImage = sIndexHtml.find(L"<br");
     while (nImage != std::wstring::npos)
     {
@@ -461,7 +513,7 @@ HRESULT CEpubFile::FromHtml(const std::wstring& sHtmlFile, const std::wstring& s
     replace_all(sTitle, L"\r", L"&#xD;");
     replace_all(sTitle, L"\t", L"&#x9;");
 
-    // Splitting html by <br>
+    // Split html by <br>
     int nFile = 0;
     nImage = sIndexHtml.find(L"<br");
     sIndexHtml.replace(0, 6, L"<?xml version=\"1.0\" encoding=\"UTF-8\"?><!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" \"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\"><html xmlns=\"http://www.w3.org/1999/xhtml\">");

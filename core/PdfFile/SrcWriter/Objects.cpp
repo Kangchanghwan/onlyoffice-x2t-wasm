@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "Objects.h"
 #include "Utils.h"
@@ -30,14 +40,14 @@
 #include "Document.h"
 #include "EncryptDictionary.h"
 
-// If the OTYPE_DIRECT bit is set, then this object belongs to another
-// object. If the OTYPE_INDIRECT bit is set, then the object is controlled by the xref table.
+// If OTYPE_DIRECT bit is set, the object belongs to another object.
+// If OTYPE_INDIRECT bit is set, the object is managed by the xref table.
 #define  FLAG_NONE     0x0
 #define  FLAG_HIDDEN   0x1
 #define  FLAG_INDIRECT 0x4
 #define  FLAG_DIRECT   0x8
 
-//------ Values related to the xref object ------------------------------------
+//------ Values related to xref object ------------------------------------
 #define FREE_ENTRY             'f'
 #define IN_USE_ENTRY           'n'
 
@@ -285,12 +295,31 @@ namespace PdfWriter
 	//----------------------------------------------------------------------------------------
 	// CArrayObject
 	//----------------------------------------------------------------------------------------
-    void CArrayObject::Add(CObjectBase* pObject, bool bPushBack)
+	void CArrayObject::GetChildRefs(std::vector<CObjectBase*>& arrOut) const
+	{
+		for (size_t i = 0; i < m_arrList.size(); ++i)
+		{
+			CObjectBase* pVal = m_arrList[i];
+			if (!pVal)
+				continue;
+
+			CProxyObject* pProxy = dynamic_cast<CProxyObject*>(pVal);
+			if (pProxy)
+			{
+				CObjectBase* pTarget = pProxy->Get();
+				if (pTarget && std::find(arrOut.begin(), arrOut.end(), pTarget) == arrOut.end())
+					arrOut.push_back(pTarget);
+			}
+			else
+				pVal->GetChildRefs(arrOut);
+		}
+	}
+	void CArrayObject::Add(CObjectBase* pObject, bool bPushBack)
 	{
 		if (!pObject)
 			return;
 
-		// Don't allow complex objects to be written into an array not by reference
+		// Do not allow writing complex objects to array without reference
 		if (pObject->IsDirect())
 			return;
 
@@ -383,8 +412,8 @@ namespace PdfWriter
 
 		pObject->SetDirect();
 
-		//get target-object from the list
-		//consider the case where a pointer to the contents of a list
+		//get target-object from list
+		//consider case when pointer to list contents
 		//may be proxy-object.
 
 		for (int nIndex = 0, nCount = m_arrList.size(); nIndex < nCount; nIndex++)
@@ -402,7 +431,7 @@ namespace PdfWriter
 			}
 		}
 
-		// If we got here, it means we didn't insert this object, so delete it
+		// Reached here, meaning we did not insert this object, so delete it
 		RELEASE_OBJECT(pObject);
 	}
 	CObjectBase*  CArrayObject::Get(unsigned int unIndex, bool bCheckProxy) const
@@ -525,9 +554,9 @@ namespace PdfWriter
 					AddToObject(new CStringObject(sAText.c_str()))
 				else if (sType == "Name")
 					AddToObject(sAText.c_str())
-				// Null below
+				// Null  below
 				// Array below
-				// Dict below
+				// Dict  below
 				// Stream is ignored
 				else if (sType == "Ref")
 				{
@@ -608,7 +637,7 @@ namespace PdfWriter
 
 		CNumberObject* pLength = new CNumberObject(0);
 
-		// Only stream objects are added to the xref table automatically
+		// Only stream objects are added to xref table automatically
 		pXref->Add((CObjectBase*)this);
 		pXref->Add((CObjectBase*)pLength);
 
@@ -626,6 +655,25 @@ namespace PdfWriter
 
 		if (m_pStream)
 			delete m_pStream;
+	}
+	void CDictObject::GetChildRefs(std::vector<CObjectBase*>& arrOut) const
+	{
+		for (std::map<std::string, CObjectBase*>::const_iterator it = m_mList.begin(); it != m_mList.end(); ++it)
+		{
+			CObjectBase* pVal = it->second;
+			if (!pVal)
+				continue;
+
+			CProxyObject* pProxy = dynamic_cast<CProxyObject*>(pVal);
+			if (pProxy)
+			{
+				CObjectBase* pTarget = pProxy->Get();
+				if (pTarget && std::find(arrOut.begin(), arrOut.end(), pTarget) == arrOut.end())
+					arrOut.push_back(pTarget);
+			}
+			else
+				pVal->GetChildRefs(arrOut);
+		}
 	}
 	CObjectBase* CDictObject::Get(const std::string& sKey) const
 	{
@@ -655,7 +703,7 @@ namespace PdfWriter
 			return;
 		}
 
-		// Delete the old entry, if there was one
+		// Remove old entry if it existed
 		Remove(sKey);
 		
 		if (pObject->IsIndirect())
@@ -723,7 +771,8 @@ namespace PdfWriter
 			if (!pObject)
 				continue;
 
-			if (pObject->IsHidden())
+			// a proxy to a deleted object writes nothing, the key would take the next key as its value
+			if (pObject->IsHidden() || (object_type_PROXY == pObject->GetType() && !((CProxyObject*)pObject)->Get()))
 			{
 				// do nothing
 			}
@@ -749,7 +798,7 @@ namespace PdfWriter
 		{
 			CNumberObject* pLength = new CNumberObject(0);
 
-			// Only stream objects are added to the xref table automatically
+			// Only stream objects are added to xref table automatically
 			if (bThis)
 				pXref->Add((CObjectBase*)this);
 			pXref->Add((CObjectBase*)pLength);
@@ -816,8 +865,8 @@ namespace PdfWriter
 
 		if (0 == m_unStartOffset)
 		{
-			// Adding the first element to the xref table
-			// it should look like 0000000000 65535 f
+			// Add first element to xref table
+			// it should have the form 0000000000 65535 f
 			TXrefEntry* pEntry = new TXrefEntry;
 			pEntry->nEntryType  =  FREE_ENTRY;
 			pEntry->unByteOffset = 0;
@@ -836,8 +885,8 @@ namespace PdfWriter
 		m_pPrev         = NULL;
 		m_pTrailer      = NULL;
 
-		// Add the element to be removed to the xref table
-		// it should look like 0000000000 gen+1 f
+		// Add the element to be removed to xref table
+		// it should have the form 0000000000 gen+1 f
 		TXrefEntry* pEntry = new TXrefEntry;
 		pEntry->nEntryType  =  FREE_ENTRY;
 		pEntry->unByteOffset = 0;
@@ -927,7 +976,7 @@ namespace PdfWriter
 			return;
 		}
 
-		// In case of an error, the object needs to be disposed
+		// In case of error, dispose should be applied to the object
 		TXrefEntry* pEntry = new TXrefEntry;
 		if (NULL == pEntry)
 		{
@@ -958,7 +1007,7 @@ namespace PdfWriter
 			return;
 		}
 
-		// In case of an error, the object needs to be disposed
+		// In case of error, dispose should be applied to the object
 		TXrefEntry* pEntry = new TXrefEntry;
 		if (NULL == pEntry)
 		{
@@ -998,6 +1047,24 @@ namespace PdfWriter
 				break;
 			}
 		}
+	}
+	// The entry of pObject turns free (gen + 1) and pObject is deleted: an object copied into an incremental
+	// update, in an xref of its own, that leaves it
+	void CXref::Free(CObjectBase* pObject)
+	{
+		TXrefEntry* pEntry = pObject ? pObject->GetXrefEntry() : NULL;
+		if (!pEntry || pEntry->pObject != pObject)
+			return;
+
+		for (int i = 0; i < pEntry->pRefObj.size(); ++i)
+			pEntry->pRefObj[i]->Clear();
+		pEntry->pRefObj.clear();
+
+		pEntry->nEntryType   = FREE_ENTRY;
+		pEntry->unByteOffset = 0;
+		pEntry->unGenNo      = pEntry->unGenNo + 1 > MAX_GENERATION_NUM ? MAX_GENERATION_NUM : pEntry->unGenNo + 1;
+		pEntry->pObject      = NULL;
+		delete pObject;
 	}
     void CXref::WriteTrailer(CStream* pStream)
 	{
@@ -1107,7 +1174,7 @@ namespace PdfWriter
 			pTrailer->Add("Filter", "FlateDecode");
 #endif
 
-			// Sort pXref, Index should be in ascending order
+			// Sort pXref, Index must be in ascending order
 			pXref = this;
 			CXref* q, *p, *pr, *out = NULL;
 			while (pXref)
@@ -1127,7 +1194,7 @@ namespace PdfWriter
 				}
 			}
 
-			// Writing the stream
+			// Write stream
 			pXref = out;
 			pXref->m_unAddr = nStreamOffset;
 			CStream* pTrailerStream = new CMemoryStream();
@@ -1164,7 +1231,7 @@ namespace PdfWriter
 				pXref = pXref->m_pPrev;
 			}
 
-			// Adding the last element
+			// Add last element
 			pIndex->Add(unEntries);
 			pIndex->Add(unEntriesSize);
 			pTrailerStream->WriteChar('\001');
@@ -1173,7 +1240,7 @@ namespace PdfWriter
 			pTrailerStream->WriteChar('\000');
 			pTrailerStream->WriteChar('\000');
 
-			// Filter the stream, pEncrypt = NULL the cross-reference stream isn't encrypted
+			// Filter stream, pEncrypt = NULL - cross-reference stream is not encrypted
 			CStream* pFlateStream = new CMemoryStream();
 			pFlateStream->WriteStream(pTrailerStream, pTrailer->GetFilter(), NULL);
 			pLength->Set(pFlateStream->Size());
@@ -1229,11 +1296,15 @@ namespace PdfWriter
 			pXref = pXref->m_pPrev;
 		}
 
-		// Writing the Trailer
+		// Write Trailer
 		WriteTrailer(pStream);
 	}
 	bool CXref::IsPDFA() const
 	{
 		return m_pDocument->IsPDFA();
+	}
+	bool CXref::IsPDFUA() const
+	{
+		return m_pDocument->IsPDFUA();
 	}
 }

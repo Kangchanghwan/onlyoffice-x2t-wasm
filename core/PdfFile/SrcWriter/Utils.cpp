@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "Utils.h"
 #include <vector>
@@ -175,11 +185,11 @@ namespace PdfWriter
 			dVal = -dVal;
 		}
 
-		// separate the whole and fractional parts
+		// Separate integer and fractional parts
 		nNPartVal = (int)(dVal + 0.000005);
 		nFPartVal = (int)((float)(dVal - nNPartVal + 0.000005) * 100000);
 
-		// write the fractional part
+		// Write fractional part
 		for (nIndex = 0; nIndex < 5; nIndex++)
 		{
 			*sTemp = (char)(nFPartVal % 10) + '0';
@@ -187,7 +197,7 @@ namespace PdfWriter
 			sTemp--;
 		}
 
-		// write the whole part
+		// Write integer part
 		*sTemp-- = '.';
 		*sTemp = '0';
 		if (nNPartVal == 0)
@@ -207,7 +217,7 @@ namespace PdfWriter
 		sDst--;
 
 
-		// TODO: when getting rid of zeros during a shift, the end of the string also needs to be cleaned
+		// TODO: when removing zeros during shift, the end of the string also needs to be cleaned
 		// example number -00.90123 result "-0.901234"
 
 		while (sDst > sptr)
@@ -344,7 +354,7 @@ namespace PdfWriter
 			axes.push_back(normal);
 		}
 
-		// Checking all axes for separation
+		// Check all axes for separation
 		for (const auto& axis : axes)
 		{
 			double min1, max1, min2, max2;
@@ -354,7 +364,7 @@ namespace PdfWriter
 			if (max1 < min2 || max2 < min1)
 				return false; // Separating axis found
 		}
-		return true; // Intersect
+		return true; // Intersecting
 	}
 	bool isPolygonInsidePolygon(const std::vector<CPoint>& inner, const std::vector<CPoint>& outer)
 	{
@@ -374,7 +384,7 @@ namespace PdfWriter
 		if (x1 == x2 && x2 == x3 && x3 == x4 && y1 == y2 && y2 == y3 && y3 == y4)
 			return (px == x1 && py == y1);
 
-		// Checking the signs of vector products for all sides
+		// Check cross product signs for all sides
 		double cross1 = crossProduct(x1, y1, x2, y2, px, py);
 		double cross2 = crossProduct(x2, y2, x3, y3, px, py);
 		double cross3 = crossProduct(x3, y3, x4, y4, px, py);
@@ -434,7 +444,7 @@ namespace PdfWriter
 
 		if (length < 1e-10) return 0;
 
-		// Projection of the vector (point - start) onto the direction of the segment
+		// Project vector (point - start) onto segment direction
 		double proj = ((point.x - start.x) * dx + (point.y - start.y) * dy) / length;
 		return proj;
 	}
@@ -442,7 +452,7 @@ namespace PdfWriter
 	{
 		std::vector<CPoint> allIntersections;
 
-		// Collecting all intersection points with all rectangles
+		// Collect all intersection points with all rectangles
 		for (const auto& rect : rectangles)
 		{
 			for (int i = 0; i < rect.size(); i++)
@@ -453,11 +463,11 @@ namespace PdfWriter
 			}
 		}
 
-		// Adding the ends of the segment
+		// Add segment endpoints
 		allIntersections.push_back(line.start);
 		allIntersections.push_back(line.end);
 
-		// Removing duplicates
+		// Remove duplicates
 		std::sort(allIntersections.begin(), allIntersections.end(), [&line](const CPoint& a, const CPoint& b)
 		{
 			return distanceAlongLine(line.start, line.end, a) < distanceAlongLine(line.start, line.end, b);
@@ -466,21 +476,21 @@ namespace PdfWriter
 		auto last = std::unique(allIntersections.begin(), allIntersections.end());
 		allIntersections.erase(last, allIntersections.end());
 
-		// Check each segment between the intersection points
+		// Check each segment between intersection points
 		std::vector<CSegment> result;
 
 		for (size_t i = 0; i < allIntersections.size() - 1; i++) {
 			CPoint start = allIntersections[i];
 			CPoint end = allIntersections[i + 1];
 
-			// Finding the midpoint of the segment
+			// Find segment midpoint
 			CPoint mid =
 			{
 				(start.x + end.x) / 2,
 				(start.y + end.y) / 2
 			};
 
-			// Checking if the midpoint is inside a rectangle
+			// Check if midpoint is inside any rectangle
 			bool isInsideAnyRectangle = false;
 			for (const auto& rect : rectangles)
 			{
@@ -491,7 +501,7 @@ namespace PdfWriter
 				}
 			}
 
-			// If the midpoint isn't inside any rectangle, it is an outer segment
+			// If midpoint is not inside any rectangle - this is an external segment
 			if (!isInsideAnyRectangle)
 				result.push_back(CSegment(start, end));
 		}
@@ -500,10 +510,10 @@ namespace PdfWriter
 	}
 	std::vector<CSegment> RectangleIntersection::findSegmentsOutsideRectanglesSequential(const CSegment& line, const std::vector<std::vector<CPoint>>& rectangles)
 	{
-		// Start with a full segment
+		// Start with full segment
 		std::vector<CSegment> currentSegments = {line};
 
-		// Subtract each rectangle sequentially
+		// Sequentially subtract each rectangle
 		for (const auto& rect : rectangles) {
 			std::vector<CSegment> newSegments;
 

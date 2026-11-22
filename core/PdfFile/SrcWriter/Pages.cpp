@@ -1,26 +1,36 @@
 /*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "Objects.h"
 #include "Pages.h"
@@ -120,14 +130,14 @@ namespace PdfWriter
 	}
 	static double AngToEllPrm(double dAngle, double dXRad, double dYRad)
 	{
-		// Function for converting a real angle into a parametric ellipse specification
-		// i.e. x= a cos(t) y = b sin(t) - parametric specification of the ellipse.
+		// Function to convert real angle to parametric ellipse representation
+		// i.e. x= a cos(t) y = b sin(t) - parametric ellipse representation.
 		// x = r cos(p), y = r sin(p) => t = atan2( sin(p) / b, cos(p) / a );
 		return atan2(sin(dAngle) / dYRad, cos(dAngle) / dXRad);
 	}
 	static void WriteEllipseArc(CStream* pStream, double dX, double dY, double dXRad, double dYRad, double dAngle1, double dAngle2, double& dXCur, double& dYCur, bool bClockDirection = false)
 	{
-		// Calculate the start, end and control points
+		// Calculate start, end and control points
 		double dX1  = 0.0, dX2  = 0.0, dY1  = 0.0, dY2  = 0.0;
 		double dCX1 = 0.0, dCX2 = 0.0, dCY1 = 0.0, dCY2 = 0.0;
 	
@@ -200,7 +210,7 @@ namespace PdfWriter
 	}
 	void CPageTree::Fix()
 	{
-		// Initializing the current m_pPages
+		// Initialize current m_pPages
 		CObjectBase* pPages = Get("Kids");
 		if (pPages && pPages->GetType() == object_type_ARRAY)
 			m_pPages = (CArrayObject*)pPages;
@@ -210,7 +220,7 @@ namespace PdfWriter
 			Add("Kids", m_pPages);
 		}
 
-		// Initializing the current m_pCount
+		// Initialize current m_pCount
 		CObjectBase* pCount = Get("Count");
 		if (pCount && pCount->GetType() == object_type_NUMBER)
 			m_pCount = (CNumberObject*)pCount;
@@ -385,7 +395,7 @@ namespace PdfWriter
 	}
 	void CPage::Fix()
 	{
-		// Initializing the current contents
+		// Initialize current contents
 		CObjectBase* pContents = Get("Contents");
 		if (pContents)
 		{
@@ -412,7 +422,7 @@ namespace PdfWriter
 			Add("Contents", m_pContents);
 		}
 
-		// Initializing the current MediaBox
+		// Initialize current MediaBox
 		CObjectBase* pMediaBox = Get("MediaBox");
 		if (pMediaBox && pMediaBox->GetType() == object_type_ARRAY)
 		{
@@ -447,7 +457,7 @@ namespace PdfWriter
 		else
 			Add("MediaBox", CArrayObject::CreateBox(0, 0, DEF_PAGE_WIDTH, DEF_PAGE_HEIGHT));
 
-		// Initializing the current Rotate
+		// Initialize current Rotate
 		CObjectBase* pRotate = GetRotateItem();
 		if (pRotate && pRotate->GetType() == object_type_NUMBER)
 			Add("Rotate", ((CNumberObject*)pRotate)->Get() % 360);
@@ -457,7 +467,7 @@ namespace PdfWriter
 		{
 			pResources->Fix();
 
-			// Initializing the current Shading
+			// Initialize current Shading
 			CObjectBase* pShading = pResources->Get("Shading");
 			if (pShading && pShading->GetType() == object_type_DICT)
 			{
@@ -465,7 +475,7 @@ namespace PdfWriter
 				m_unShadingsCount = m_pShadings->GetSize();
 			}
 
-			// Initializing the current Pattern
+			// Initialize current Pattern
 			CObjectBase* pPattern = pResources->Get("Pattern");
 			if (pPattern && pPattern->GetType() == object_type_DICT)
 			{
@@ -490,6 +500,7 @@ namespace PdfWriter
 		Add("MediaBox", CArrayObject::CreateBox(0, 0, DEF_PAGE_WIDTH, DEF_PAGE_HEIGHT));
 		Add("Type", "Page");
 		Add("Contents", m_pContents);
+		Add("Tabs", "S");
 		AddResource();
 	}
 	CPage::~CPage()
@@ -508,19 +519,21 @@ namespace PdfWriter
 		m_eGrMode   = grmode_PAGE;
 		m_pGrState  = new CGrState(NULL);
 
+		m_pContents         = NULL;
 		m_pFont             = NULL;
 		m_pShadings         = NULL;
 		m_unShadingsCount   = 0;
 		m_pPatterns         = NULL;
 		m_unPatternsCount   = 0;
 		m_eType             = fontUnknownType;
+		m_nDestAnchorMCID   = -1;
 	}
     void CPage::SetWidth(double dValue)
 	{
         dValue = std::min(std::max(dValue, 1.0), 14400.0);
 		SetMediaBoxValue(2, dValue);
 	}
-	double        CPage::GetWidth()
+	double CPage::GetWidth()
 	{
         TBox oBox = GetMediaBox();
         return oBox.fRight - oBox.fLeft;
@@ -530,10 +543,15 @@ namespace PdfWriter
         dValue = std::min(std::max(dValue, 1.0), 14400.0);
 		SetMediaBoxValue(3, dValue);
 	}
-	double        CPage::GetHeight()
+	double CPage::GetHeight()
 	{
         TBox oBox = GetMediaBox();
         return oBox.fTop - oBox.fBottom;
+	}
+	double CPage::GetCropHeight()
+	{
+		TBox oBox = GetBox(Get("CropBox") ? "CropBox" : "MediaBox");
+		return oBox.fTop - oBox.fBottom;
 	}
 	TBox CPage::GetBox(const std::string& sBox)
 	{
@@ -558,7 +576,7 @@ namespace PdfWriter
 
 		return oBox;
 	}
-	TBox          CPage::GetMediaBox()
+	TBox CPage::GetMediaBox()
 	{
 		return GetBox("MediaBox");
 	}
@@ -582,7 +600,7 @@ namespace PdfWriter
 	{
 		CObjectBase* pObject = Get("Resources");
 
-		// If the Resources object is null, then find Resources from the parent object recursively
+		// If Resources object is null, search for Resources in parent object recursively
 		if (!pObject)
 		{
 			CPageTree* pPageTree = NULL;
@@ -634,16 +652,16 @@ namespace PdfWriter
     void CPage::SetGrMode(EGrMode eMode)
 	{
 		m_eGrMode = eMode;
-		// TODO: Check bad situations
+		// TODO: Add validation for error cases
 	}
     void CPage::CheckGrMode(EGrMode eMode)
 	{
-		// TODO: Check bad situations
+		// TODO: Add validation for error cases
 	}
     void CPage::MoveTo (double dX, double dY)
 	{
 		// Operator   : m
-		// Description: Start a new subpath, moving the current pointer to the point (x, y) (also the starting point).
+		// Description: Begin a new subpath, moving the current pointer to point (x, y) (which is also the start point). 
 
 		SetGrMode(grmode_PATH);
 		m_pStream->WriteReal(dX);
@@ -657,7 +675,7 @@ namespace PdfWriter
     void CPage::LineTo (double dX, double dY)
 	{
 		// Operator   : l
-		// Description: Add a line from the current point to the point (x, y). We set the current point (x, y).
+		// Description: Add a line from current point to point (x, y). Set current point to (x, y).
 		CheckGrMode(grmode_PATH);
 
 		m_pStream->WriteReal(dX);
@@ -670,9 +688,9 @@ namespace PdfWriter
     void CPage::CurveTo(double dX1, double dY1, double dX2, double dY2, double dX3, double dY3)
 	{
 		// Operator   : c
-		// Description: Add a Bezier curve (cubic). The curve starts at the current position and ends
-		//              at point (x3, y3). (x1, y1) and (x2, y2) are control points. Set the current point
-		//              in (x3, y3).
+		// Description: Add a cubic Bezier curve. The curve starts at current position and ends
+		//              at point (x3, y3). (x1, y1) and (x2, y2) are control points. Set current point
+		//              to (x3, y3).
 		CheckGrMode(grmode_PATH);
 
 		m_pStream->WriteReal(dX1);
@@ -711,18 +729,18 @@ namespace PdfWriter
 	{
 		CheckGrMode(grmode_PATH);
 	
-		// convert angles to radians
+		// Convert angles to radians
 		double dAngle1 = _dAngle1 * 3.141592f / 180;
 		double dAngle2 = _dAngle2 * 3.141592f / 180;
 	
-		// Find out in which quarters the starting and ending points are located
+		// Determine which quadrants contain the start and end points
 		int nFirstPointQuard  = int(_dAngle1) / 90 + 1;
 		int nSecondPointQuard = int(_dAngle2) / 90 + 1;
 	
         nSecondPointQuard = std::min(4, std::max(1, nSecondPointQuard));
         nFirstPointQuard  = std::min(4, std::max(1, nFirstPointQuard));
 
-		// Draw a line to the starting point of the arc
+		// Draw line to arc start point
 		double dStartX = 0.0, dStartY = 0.0, dEndX = 0.0, dEndY = 0.0;
 	
 		dStartX = dX + dXRad * cos(AngToEllPrm(dAngle1, dXRad, dYRad));
@@ -733,7 +751,7 @@ namespace PdfWriter
 		//m_pStream->WriteReal(dStartY);
 		//m_pStream->WriteStr(" m\012");
 
-		// Next, draw by quadrants
+		// Continue drawing by quadrants
 		double dCurX = dStartX, dCurY = dStartY;
 		double dStartAngle = dAngle1;
 		double dEndAngle = 0;
@@ -774,7 +792,7 @@ namespace PdfWriter
 	}
     void CPage::EllipseArcTo(double dX, double dY, double dXRad, double dYRad, double _dAngle1, double _dAngle2, bool bClockDirection)
 	{
-		// Checking the ellipse for non-degeneracy
+		// Check ellipse for degeneracy
 		if (dXRad < 0.001 || dYRad < 0.001)
 		{
 			double dAngle1 = _dAngle1 * 3.141592f / 180;
@@ -832,8 +850,8 @@ namespace PdfWriter
     void CPage::ClosePath()
 	{
 		// Operator   : h
-		// Description: Close the subpath, connecting the current point with the initial straight line. If subpath
-		//              is already closed, then we do nothing
+		// Description: Close subpath by connecting current point to start point with a straight line. If subpath
+		//              is already closed, do nothing
 		CheckGrMode(grmode_PATH);
 		m_pStream->WriteStr("h\012");
 		m_oCurPos = m_oStartPos;
@@ -850,8 +868,8 @@ namespace PdfWriter
     void CPage::Fill()
 	{
 		// Operator   : f
-		// Description: Filling the path using the Nonzero Winding Number Rule (see specification PDF Part1: PDF 1.7
-		//              page 136, tab 8.5.3.3.2).
+		// Description: Fill path using Nonzero Winding Number Rule (see PDF Part1: PDF 1.7 specification
+		//              page 136, section 8.5.3.3.2). 
 		SetGrMode(grmode_PAGE);
 		m_pStream->WriteStr("f\012");
 		m_oCurPos.Reset();
@@ -859,8 +877,8 @@ namespace PdfWriter
     void CPage::EoFill()
 	{
 		// Operator   : f*
-		// Description: Fill path according to the Even-Odd Rule (see specification PDF Part1: PDF 1.7 page 137,
-		//              tab 8.5.3.3.3).
+		// Description: Fill path using Even-Odd Rule (see PDF Part1: PDF 1.7 specification page 137,
+		//              section 8.5.3.3.3). 
 		SetGrMode(grmode_PAGE);
 		m_pStream->WriteStr("f*\012");
 		m_oCurPos.Reset();
@@ -868,10 +886,10 @@ namespace PdfWriter
     void CPage::FillStroke()
 	{
 		// Operator   : B
-		// Description: Fill and stroke the path using the Nonzero Winding Number Rule (see
-		//              specification PDF Part1: PDF 1.7 page 136, tab 8.5.3.3.2). This operator must
-		//              lead to the same result as constructing two identical path objects,
-		//              applying the operator f to the first and S to the second.
+		// Description: Fill and stroke path using Nonzero Winding Number Rule for fill (see PDF Part1: PDF 1.7
+		//              specification page 136, section 8.5.3.3.2). This operator should produce the same result
+		//              as constructing two identical path objects, applying operator f to the first
+		//              and operator S to the second.
 		SetGrMode(grmode_PAGE);
 		m_pStream->WriteStr("B\012");
 		m_oCurPos.Reset();
@@ -879,10 +897,10 @@ namespace PdfWriter
     void CPage::EoFillStroke()
 	{
 		// Operator   : B*
-		// Description: Fill and stroke the path using the Even-Odd Rule (see
-		//              specification PDF Part1: PDF 1.7 page 137, tab 8.5.3.3.3). This operator must
-		//              lead to the same result as constructing two identical path objects,
-		//              applying operator f* to the first and S to the second.
+		// Description: Fill and stroke path using Even-Odd Rule for fill (see PDF Part1: PDF 1.7
+		//              specification page 137, section 8.5.3.3.3). This operator should produce the same result
+		//              as constructing two identical path objects, applying operator f* to the first
+		//              and operator S to the second.
 		SetGrMode(grmode_PAGE);
 		m_pStream->WriteStr("B*\012");
 		m_oCurPos.Reset();
@@ -890,16 +908,16 @@ namespace PdfWriter
     void CPage::EndPath()
 	{
 		// Operator   : n
-		// Description: Close the path without filling or stroking it. This operator is used primarily for
-		//              changes the current path.
+		// Description: Close path without filling or stroking it. This operator is primarily used for
+		//              modifying the current path.
 		SetGrMode(grmode_PAGE);
 		m_pStream->WriteStr("n\012");
 		m_oCurPos.Reset();
 	}
     void CPage::SetLineWidth(double dLineWidth)
 	{
-		// Operator   : w 
-		// Description: set the line width
+		// Operator   : w
+		// Description: Set line width
 
         dLineWidth = std::max(dLineWidth, 0.0);
 		m_pStream->WriteReal(dLineWidth);
@@ -908,8 +926,8 @@ namespace PdfWriter
 	}
     void CPage::SetLineCap(ELineCapStyle eLineCap)
 	{
-		// Operator   : J 
-		// Description: set the type of line ending (LineCapStyle)
+		// Operator   : J
+		// Description: Set line cap style (LineCapStyle)
 
         eLineCap = std::max(linecap_Min, std::min(linecap_Max, eLineCap));
 		m_pStream->WriteInt((unsigned int)eLineCap);
@@ -919,7 +937,7 @@ namespace PdfWriter
     void CPage::SetLineJoin(ELineJoinStyle eLineJoin)
 	{
 		// Operator   : j
-		// Description: set the line join style (LineJoinStyle)
+		// Description: Set line join style (LineJoinStyle)
         eLineJoin = std::max(linejoin_Min, std::min(linejoin_Max, eLineJoin));
 		m_pStream->WriteInt((unsigned int)eLineJoin);
 		m_pStream->WriteStr(" j\012");
@@ -928,7 +946,7 @@ namespace PdfWriter
     void CPage::SetMiterLimit(double dMiterLimit)
 	{
 		// Operator   : M
-		// Description: set MiterLimit - a constant related to the line join style
+		// Description: Set MiterLimit - constant related to line join style
         dMiterLimit = std::max(1.0, dMiterLimit);
 		m_pStream->WriteReal(dMiterLimit);
 		m_pStream->WriteStr(" M\012");
@@ -937,7 +955,7 @@ namespace PdfWriter
     void CPage::SetDash(const double* pPattern, unsigned int unCount, double dPhase)
 	{
 		// Operator   : d
-		// Description: set the line dash pattern
+		// Description: Set line dash pattern (DashMode)
 
 		if (0 == unCount || !pPattern)
 			return;
@@ -970,7 +988,7 @@ namespace PdfWriter
     void CPage::SetFlat(double dFlatness)
 	{
 		// Operator   : i
-		// Description: set the line error threshold (Flatness tolerance)
+		// Description: Set flatness tolerance
         dFlatness = std::min(100.0, std::max(0.0, dFlatness));
 		m_pStream->WriteReal(dFlatness);
 		m_pStream->WriteStr(" i\012");
@@ -979,7 +997,7 @@ namespace PdfWriter
     void CPage::GrSave()
 	{
 		// Operator   : q
-		// Description: save the current GState on the graphics stack
+		// Description: Save current GState to graphics stack
 		CheckGrMode(grmode_PAGE);
 		CGrState* pState = new CGrState(m_pGrState);
 		if (!pState)
@@ -987,11 +1005,14 @@ namespace PdfWriter
 
 		m_pStream->WriteStr("q\012");
 		m_pGrState = pState;
+
+		if (m_pDocument->IsPDFUA())
+			m_pStream->WriteStr("/Artifact <</Type /Layout>> BDC\012");
 	}
     void CPage::GrRestore()
 	{
 		// Operator   : Q
-		// Description: Restore GState by deleting the most recent GState and make this GState current
+		// Description: Restore GState by removing the most recent GState and making it current
 		CheckGrMode(grmode_PAGE);
 
 		if (!m_pGrState->m_pPrev)
@@ -1001,13 +1022,28 @@ namespace PdfWriter
 		delete m_pGrState;
 		m_pGrState = pPrev;
 
+		if (m_pDocument->IsPDFUA())
+			m_pStream->WriteStr("EMC\012");
+
 		m_pStream->WriteStr("Q\012");
+	}
+	int CPage::GetOrCreateDestAnchorMCID()
+	{
+		if (m_nDestAnchorMCID >= 0)
+			return m_nDestAnchorMCID;
+
+		m_nDestAnchorMCID = 0;
+		m_pStream->WriteStr("/Anchor <</MCID ");
+		m_pStream->WriteStr(std::to_string(m_nDestAnchorMCID).c_str());
+		m_pStream->WriteStr(">> BDC\012EMC\012");
+
+		return m_nDestAnchorMCID;
 	}
     void CPage::SetStrokeColor(unsigned char unR, unsigned char unG, unsigned char unB)
 	{
 		// Operator   : RG
-		// Description: Set the color space for the stroke to DeviceRGB and set the color for
-		//              operations related to tracing shapes.
+		// Description: Set color space for stroking to DeviceRGB and set color for
+		//              stroking operations.
 
 		double dR = unR / 255.0;
 		double dG = unG / 255.0;
@@ -1022,8 +1058,8 @@ namespace PdfWriter
     void CPage::SetFillColor(unsigned char unR, unsigned char unG, unsigned char unB)
 	{
 		// Operator   : rg
-		// Description: Set the color space for the fill to DeviceRGB and set the color for
-		//              operations related to filling shapes.
+		// Description: Set color space for filling to DeviceRGB and set color for
+		//              fill operations.
 
 		double dR = unR / 255.0;
 		double dG = unG / 255.0;
@@ -1038,7 +1074,7 @@ namespace PdfWriter
 	void CPage::SetStrokeG(double dG)
 	{
 		// Operator   : G
-		// Description: Filling in DeviceG
+		// Description: Stroke in DeviceGray
 
 		m_pStream->WriteReal(dG);
 		m_pStream->WriteStr(" G\012");
@@ -1072,7 +1108,7 @@ namespace PdfWriter
 	void CPage::SetFillG(double dG)
 	{
 		// Operator   : g
-		// Description: Filling in DeviceG
+		// Description: Fill in DeviceGray
 
 		m_pStream->WriteReal(dG);
 		m_pStream->WriteStr(" g\012");
@@ -1080,7 +1116,7 @@ namespace PdfWriter
 	void CPage::SetFillRGB(double dR, double dG, double dB)
 	{
 		// Operator   : rg
-		// Description: Fill to DeviceRGB
+		// Description: Fill in DeviceRGB
 
 		m_pStream->WriteReal(dR);
 		m_pStream->WriteChar(' ');
@@ -1092,7 +1128,7 @@ namespace PdfWriter
 	void CPage::SetFillCMYK(double dC, double dM, double dY, double dK)
 	{
 		// Operator   : k
-		// Description: Filling in DeviceCMYK
+		// Description: Fill in DeviceCMYK
 
 		m_pStream->WriteReal(dC);
 		m_pStream->WriteChar(' ');
@@ -1106,8 +1142,22 @@ namespace PdfWriter
 	void CPage::Concat(double dM11, double dM12, double dM21, double dM22, double dX, double dY)
 	{
 		// Operator   : cm
-		// Description: changing the transformation matrix (CTM - Current Transformation Matrix)
+		// Description: Modify the transformation matrix (CTM - Current Transformation Matrix)
 
+		Transform(dM11, dM12, dM21, dM22, dX, dY);
+	
+		CMatrix oCTM = m_pGrState->m_oMatrix;
+	
+		// Multiply matrices oCTM(new) = oCTM(transformation(given by parameters)) x oCTM(old)
+		m_pGrState->m_oMatrix.m11 = dM11 * oCTM.m11 + dM12 * oCTM.m21;
+		m_pGrState->m_oMatrix.m12 = dM11 * oCTM.m12 + dM12 * oCTM.m22;
+		m_pGrState->m_oMatrix.m21 = dM21 * oCTM.m11 + dM22 * oCTM.m21;
+		m_pGrState->m_oMatrix.m22 = dM21 * oCTM.m12 + dM22 * oCTM.m22;
+		m_pGrState->m_oMatrix.x   =   dX * oCTM.m11 + dY * oCTM.m21 + oCTM.x;
+		m_pGrState->m_oMatrix.y   =   dX * oCTM.m12 + dY * oCTM.m22 + oCTM.y;
+	}
+	void CPage::Transform(double dM11, double dM12, double dM21, double dM22, double dX, double dY)
+	{
 		m_pStream->WriteReal(dM11);
 		m_pStream->WriteChar(' ');
 		m_pStream->WriteReal(dM12);
@@ -1120,16 +1170,6 @@ namespace PdfWriter
 		m_pStream->WriteChar(' ');
 		m_pStream->WriteReal(dY);
 		m_pStream->WriteStr(" cm\012");
-	
-		CMatrix oCTM = m_pGrState->m_oMatrix;
-	
-		// multiply the matrices oCTM(new)= oCTM(transformation (which is specified by the parameters)) x oCTM(old)
-		m_pGrState->m_oMatrix.m11 = dM11 * oCTM.m11 + dM12 * oCTM.m21;
-		m_pGrState->m_oMatrix.m12 = dM11 * oCTM.m12 + dM12 * oCTM.m22;
-		m_pGrState->m_oMatrix.m21 = dM21 * oCTM.m11 + dM22 * oCTM.m21;
-		m_pGrState->m_oMatrix.m22 = dM21 * oCTM.m12 + dM22 * oCTM.m22;
-		m_pGrState->m_oMatrix.x   =   dX * oCTM.m11 + dY * oCTM.m21 + oCTM.x;
-		m_pGrState->m_oMatrix.y   =   dX * oCTM.m12 + dY * oCTM.m22 + oCTM.y;
 	}
 	void CPage::StartTransform(double dM11, double dM12, double dM21, double dM22, double dX, double dY)
 	{
@@ -1158,16 +1198,16 @@ namespace PdfWriter
     void CPage::Clip()
 	{
 		// Operator   : W
-		// Description: Change the current clipping path, intersecting it with the current path, using the Nonzero rule
-		//              Winding Number Rule, to determine which regions lie inside the clipping path.
+		// Description: Modify current clipping path by intersecting it with current path, using Nonzero
+		//              Winding Number Rule to determine which regions are inside the clipping path.
 		SetGrMode(grmode_CLIP);
 		m_pStream->WriteStr("W\012");
 	}
     void CPage::Eoclip()
 	{
 		// Operator   : W*
-		// Description: Change the current clipping path, intersecting it with the current path, using the Even-Odd rule
-		//              Rule, to determine which regions lie inside the clipping path.
+		// Description: Modify current clipping path by intersecting it with current path, using Even-Odd
+		//              Rule to determine which regions are inside the clipping path.
 		SetGrMode(grmode_CLIP);
 		m_pStream->WriteStr("W*\012");
 	}
@@ -1177,7 +1217,7 @@ namespace PdfWriter
 			return;
 
 		// Operator   : gs
-		// Description: set all the settings for this graphical state at once (ExtGState)
+		// Description: Set all settings of the given graphics state (ExtGState) at once
 
 		CResourcesDict* pResources = GetResourcesItem();
 		if (!pResources)
@@ -1189,7 +1229,7 @@ namespace PdfWriter
 	void CPage::SetExtGrStateKey(const char* sKey)
 	{
 		// Operator   : gs
-		// Description: set all the settings for this graphical state at once (ExtGState)
+		// Description: Set all settings of the given graphics state (ExtGState) at once
 
 		if (!sKey)
 			return;
@@ -1220,7 +1260,7 @@ namespace PdfWriter
 		for (int i = 0; i < pArray->GetCount(); i++)
 		{
 			CObjectBase* pObj = pArray->Get(i);
-			if (pObj->GetObjId() == nID)
+			if (pObj && pObj->GetObjId() == nID) // NULL - a deleted annotation
 			{
 				CObjectBase* pDelete = pArray->Remove(i);
 				if (pDelete->GetType() == object_type_UNKNOWN)
@@ -1233,7 +1273,7 @@ namespace PdfWriter
     void CPage::BeginText()
 	{
 		// Operator   : BT
-		// Description: Beginning of text
+		// Description: Begin text
 		SetGrMode(grmode_TEXT);
 		m_pStream->WriteStr("BT\012");
 
@@ -1243,7 +1283,7 @@ namespace PdfWriter
     void CPage::EndText()
 	{
 		// Operator   : ET
-		// Description: End of text
+		// Description: End text
 		CheckGrMode(grmode_TEXT);
 		m_pStream->WriteStr("ET\012");	
 		SetGrMode(grmode_PAGE);
@@ -1251,7 +1291,7 @@ namespace PdfWriter
     void CPage::MoveTextPos(double dX, double dY)
 	{
 		// Operator   : Td
-		// Description: Move to the beginning of the next line, shifting from the beginning of the current one by ( fX, fY ).
+		// Description: Move to the beginning of next line, offset from current line start by (fX, fY).
 		CheckGrMode(grmode_TEXT);
 
 		m_pStream->WriteReal(dX);
@@ -1266,7 +1306,7 @@ namespace PdfWriter
     void CPage::ShowText(const BYTE* sText, unsigned int unLen)
 	{
 		// Operator   : Tj
-		// Description: Show a text string.
+		// Description: Show text string.
 		CheckGrMode(grmode_TEXT);
 		WriteText(sText, unLen);
 		m_pStream->WriteStr(" Tj\012");
@@ -1368,7 +1408,7 @@ namespace PdfWriter
 	void CPage::SetTextRise(double dS)
 	{
 		// Operator   : Ts
-		// Description: Set the text rise
+		// Description: Set text rise
 		CheckGrMode(grmode_TEXT);
 
 		m_pStream->WriteReal(dS);
@@ -1377,7 +1417,7 @@ namespace PdfWriter
 	void CPage::SetCharSpace(double dValue)
 	{
 		// Operator   : Tc
-		// Description: Set the distance between letters
+		// Description: Set character spacing
 		CheckGrMode(grmode_TEXT);
 
         dValue = std::min((double)MAX_CHARSPACE, std::max((double)MIN_CHARSPACE, dValue));
@@ -1387,7 +1427,7 @@ namespace PdfWriter
 	void CPage::SetWordSpace(double dValue)
 	{
 		// Operator   : Tw
-		// Description: Set the distance between words
+		// Description: Set word spacing
 		CheckGrMode(grmode_TEXT);
 
 		m_pStream->WriteReal(dValue);
@@ -1396,7 +1436,7 @@ namespace PdfWriter
 	void CPage::SetHorizontalScaling(double dValue)
 	{
 		// Operator   : Tz
-		// Description: Set horizontal stretch/compression
+		// Description: Set horizontal scaling
 		CheckGrMode(grmode_TEXT);
 
         dValue = std::min((double)MAX_HORIZONTALSCALING, std::max((double)MIN_HORIZONTALSCALING, dValue));
@@ -1406,7 +1446,7 @@ namespace PdfWriter
     void CPage::SetFontAndSize(CFontDict* pFont, double dSize)
 	{
 		// Operator   : Tf
-		// Description: Set the font and font size
+		// Description: Set font and font size
 
         dSize = std::min((double)MAX_FONTSIZE, std::max(0.0, dSize));
 		CResourcesDict* pResources = GetResourcesItem();
@@ -1427,7 +1467,7 @@ namespace PdfWriter
 	void CPage::SetFontKeyAndSize(const char* sKey, double dSize)
 	{
 		// Operator   : Tf
-		// Description: Set the font and font size
+		// Description: Set font and font size
 
 		dSize = std::min((double)MAX_FONTSIZE, std::max(0.0, dSize));
 		if (!sKey)
@@ -1445,7 +1485,7 @@ namespace PdfWriter
     void CPage::SetTextRenderingMode(ETextRenderingMode eMode)
 	{
 		// Operator   : Tr
-		// Description: Set the character rendering type (TextRenderingMode)
+		// Description: Set text rendering mode (TextRenderingMode)
 		CheckGrMode(grmode_TEXT);
 		m_pStream->WriteInt((int)eMode);
 		m_pStream->WriteStr(" Tr\012");
@@ -1453,7 +1493,7 @@ namespace PdfWriter
     void CPage::SetTextMatrix(double dM11, double dM12, double dM21, double dM22, double dX, double dY)
 	{
 		// Operator   : Tm
-		// Description: Set the transformation matrix for the text.
+		// Description: Set text transformation matrix.
 		CheckGrMode(grmode_TEXT);
 
 		m_pStream->WriteReal(dM11);
@@ -1503,7 +1543,7 @@ namespace PdfWriter
     void CPage::DrawShading(CShading* pShading)
 	{
 		// Operator   : sh
-		// Description: draw a gradient
+		// Description: Draw gradient
 
 		const char* sShadingName = GetLocalShadingName(pShading);
 		if (!sShadingName)
@@ -1605,7 +1645,7 @@ namespace PdfWriter
     void CPage::SetPatternColorSpace(CImageTilePattern* pPattern)
 	{
 		// Operator   : csn
-		// Description: set the pattern for drawing
+		// Description: Set pattern for drawing
 
 		const char* sPatternName = GetLocalPatternName(pPattern);
 		if (!sPatternName)
@@ -1681,15 +1721,21 @@ namespace PdfWriter
 	void CPage::BeginMarkedContent(const std::string& sName)
 	{
 		// Operator   : BMC
-		// Description: Beginning of marked content
+		// Description: Begin marked content
 
 		m_pStream->WriteEscapeName(sName.c_str());
 		m_pStream->WriteStr(" BMC\012");
 	}
-	void CPage::BeginMarkedContentDict(const std::string& sName, CDictObject* pBDC)
+	void CPage::BeginMarkedContentDict(const std::string& sName, CObjectBase* pBDC)
 	{
 		// Operator   : BDC
-		// Description: Beginning of marked content with a list of properties
+		// Description: Begin marked content with args
+
+		if (!pBDC)
+		{
+			BeginMarkedContent(sName);
+			return;
+		}
 
 		m_pStream->WriteEscapeName(sName.c_str());
 		m_pStream->WriteChar(' ');
@@ -1699,14 +1745,14 @@ namespace PdfWriter
 	void CPage::EndMarkedContent()
 	{
 		// Operator   : EMC
-		// Description: End of marked content
+		// Description: End marked content
 
 		m_pStream->WriteStr("EMC\012");
 	}
 	void CPage::SetRenderingIntent(ERenderingIntent eRenderingIntent)
 	{
 		// Operator   : ri
-		// Description: Rendering/color methods
+		// Description: Rendering intent / color rendering methods
 
 		m_pStream->WriteEscapeName(c_sRenderingIntent[(int)eRenderingIntent]);
 		m_pStream->WriteStr(" ri\012");

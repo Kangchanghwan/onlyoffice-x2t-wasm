@@ -399,7 +399,7 @@ void Header::load( const unsigned char* buffer ) {
   num_mbat     = readU32( buffer + 0x48 ); // [48H,04] number of SECTs in the DIFAT chain
 
   if (threshold == 0) 
-	  threshold = 4096; //field not specified...xls file from user
+	  threshold = 4096; //field not set ... xls file from user
   
   for( unsigned int i = 0; i < 8; i++ )
     id[i] = buffer[i]; 
@@ -2129,7 +2129,9 @@ uint64 StreamIO::read( uint64 pos, unsigned char* data, uint64 maxlen )
   uint64 totalbytes = 0;
   
   DirEntry *entry = io->dirtree->entry(entryIdx);
-  if (pos + maxlen > entry->size)
+  if (pos > entry->size)
+      maxlen = 0;
+  else if (pos + maxlen > entry->size)
       maxlen = entry->size - pos;
   if ( entry->size < io->header->threshold )
   {

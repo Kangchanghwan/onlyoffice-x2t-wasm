@@ -1,26 +1,36 @@
 /*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #ifndef _BUILD_ANNOTFIELD_H_
 #define _BUILD_ANNOTFIELD_H_
@@ -52,6 +62,7 @@ public:
 		Ink = 14,
 		Popup = 15,
 		FileAttachment = 16,
+		Screen = 20,
 		Redact = 25,
 		Widget = 26,
 		WidgetPushButton = 27,
@@ -195,6 +206,8 @@ public:
 		const std::vector<double>& GetBC();
 		const std::vector<double>& GetBG();
 		const std::vector<CActionFieldPr*>& GetActions();
+
+		void SetFontName(const std::wstring& sName);
 
 		CButtonWidgetPr*    GetButtonWidgetPr();
 		CTextWidgetPr*      GetTextWidgetPr();
@@ -481,6 +494,7 @@ public:
 
 		BYTE GetH()    const;
 		int GetFlags() const;
+		void GetRD(double& dRD1, double& dRD2, double& dRD3, double& dRD4);
 		const std::vector<double>& GetQuadPoints();
 		CActionFieldPr* GetA();
 		CActionFieldPr* GetPA();
@@ -490,9 +504,76 @@ public:
 	private:
 		BYTE m_nH;
 		int m_nFlags;
+		double m_dRD[4]{};
 		std::vector<double> m_arrQuadPoints;
 		CActionFieldPr* m_pAction;
 		CActionFieldPr* m_pPA;
+	};
+
+	class GRAPHICS_DECL CFileAttachmentAnnotPr
+	{
+	public:
+		CFileAttachmentAnnotPr();
+		~CFileAttachmentAnnotPr();
+
+		int GetFileFlag() const;
+		const std::wstring& GetName();
+		const std::wstring& GetFS();
+		const std::wstring& GetF();
+		const std::wstring& GetUF();
+		const std::wstring& GetDOS();
+		const std::wstring& GetMac();
+		const std::wstring& GetUnix();
+		const std::wstring& GetDesc();
+		const std::wstring& GetFileF();
+		const std::wstring& GetFileUF();
+		const std::wstring& GetFileDOS();
+		const std::wstring& GetFileMac();
+		const std::wstring& GetFileUnix();
+		const std::pair<std::wstring, std::wstring>& GetID();
+
+		void Read(NSOnlineOfficeBinToPdf::CBufferReader* pReader, int nFlags);
+
+	private:
+		int m_nFileFlag;
+		std::wstring m_wsName;
+		std::wstring m_wsFS;
+		std::wstring m_wsF;
+		std::wstring m_wsUF;
+		std::wstring m_wsDOS;
+		std::wstring m_wsMac;
+		std::wstring m_wsUnix;
+		std::wstring m_wsDesc;
+		std::wstring m_wsFileF;
+		std::wstring m_wsFileUF;
+		std::wstring m_wsFileDOS;
+		std::wstring m_wsFileMac;
+		std::wstring m_wsFileUnix;
+		std::pair<std::wstring, std::wstring> m_wsID;
+	};
+
+	class GRAPHICS_DECL CScreenAnnotPr
+	{
+	public:
+		CScreenAnnotPr();
+		~CScreenAnnotPr();
+
+		int GetR()     const;
+		int GetFlags() const;
+		const std::wstring& GetT();
+		const std::vector<double>& GetBC();
+		const std::vector<double>& GetBG();
+		const std::vector<CActionFieldPr*>& GetActions();
+
+		void Read(NSOnlineOfficeBinToPdf::CBufferReader* pReader);
+
+	private:
+		int m_nR;
+		int m_nFlags;
+		std::wstring m_wsT;
+		std::vector<double> m_arrBC;
+		std::vector<double> m_arrBG;
+		std::vector<CActionFieldPr*> m_arrAction;
 	};
 
 	CAnnotFieldInfo();
@@ -536,21 +617,25 @@ public:
 	bool IsStamp()           const;
 	bool IsRedact()          const;
 	bool IsLink()            const;
+	bool IsFileAttachment()  const;
+	bool IsScreen()          const;
 
-	CMarkupAnnotPr*       GetMarkupAnnotPr();
-	CTextAnnotPr*         GetTextAnnotPr();
-	CInkAnnotPr*          GetInkAnnotPr();
-	CLineAnnotPr*         GetLineAnnotPr();
-	CTextMarkupAnnotPr*   GetTextMarkupAnnotPr();
-	CSquareCircleAnnotPr* GetSquareCircleAnnotPr();
-	CPolygonLineAnnotPr*  GetPolygonLineAnnotPr();
-	CPopupAnnotPr*        GetPopupAnnotPr();
-	CFreeTextAnnotPr*     GetFreeTextAnnotPr();
-	CCaretAnnotPr*        GetCaretAnnotPr();
-	CStampAnnotPr*        GetStampAnnotPr();
-	CRedactAnnotPr*       GetRedactAnnotPr();
-	CLinkAnnotPr*         GetLinkAnnotPr();
-	CWidgetAnnotPr*       GetWidgetAnnotPr();
+	CMarkupAnnotPr*         GetMarkupAnnotPr();
+	CTextAnnotPr*           GetTextAnnotPr();
+	CInkAnnotPr*            GetInkAnnotPr();
+	CLineAnnotPr*           GetLineAnnotPr();
+	CTextMarkupAnnotPr*     GetTextMarkupAnnotPr();
+	CSquareCircleAnnotPr*   GetSquareCircleAnnotPr();
+	CPolygonLineAnnotPr*    GetPolygonLineAnnotPr();
+	CPopupAnnotPr*          GetPopupAnnotPr();
+	CFreeTextAnnotPr*       GetFreeTextAnnotPr();
+	CCaretAnnotPr*          GetCaretAnnotPr();
+	CStampAnnotPr*          GetStampAnnotPr();
+	CRedactAnnotPr*         GetRedactAnnotPr();
+	CLinkAnnotPr*           GetLinkAnnotPr();
+	CFileAttachmentAnnotPr* GetFileAttachmentAnnotPr();
+	CScreenAnnotPr*         GetScreenAnnotPr();
+	CWidgetAnnotPr*         GetWidgetAnnotPr();
 
 	bool Read(NSOnlineOfficeBinToPdf::CBufferReader* pReader, IMetafileToRenderter* pCorrector);
 
@@ -583,20 +668,22 @@ private:
 	LONG         m_nRenderLen;
 	BYTE*        m_pRender;
 
-	CMarkupAnnotPr*       m_pMarkupPr;
-	CTextAnnotPr*         m_pTextPr;
-	CInkAnnotPr*          m_pInkPr;
-	CLineAnnotPr*         m_pLinePr;
-	CTextMarkupAnnotPr*   m_pTextMarkupPr;
-	CSquareCircleAnnotPr* m_pSquareCirclePr;
-	CPolygonLineAnnotPr*  m_pPolygonLinePr;
-	CPopupAnnotPr*        m_pPopupPr;
-	CFreeTextAnnotPr*     m_pFreeTextPr;
-	CCaretAnnotPr*        m_pCaretPr;
-	CStampAnnotPr*        m_pStampPr;
-	CRedactAnnotPr*       m_pRedactPr;
-	CLinkAnnotPr*         m_pLinkPr;
-	CWidgetAnnotPr*       m_pWidgetPr;
+	CMarkupAnnotPr*         m_pMarkupPr;
+	CTextAnnotPr*           m_pTextPr;
+	CInkAnnotPr*            m_pInkPr;
+	CLineAnnotPr*           m_pLinePr;
+	CTextMarkupAnnotPr*     m_pTextMarkupPr;
+	CSquareCircleAnnotPr*   m_pSquareCirclePr;
+	CPolygonLineAnnotPr*    m_pPolygonLinePr;
+	CPopupAnnotPr*          m_pPopupPr;
+	CFreeTextAnnotPr*       m_pFreeTextPr;
+	CCaretAnnotPr*          m_pCaretPr;
+	CStampAnnotPr*          m_pStampPr;
+	CRedactAnnotPr*         m_pRedactPr;
+	CLinkAnnotPr*           m_pLinkPr;
+	CFileAttachmentAnnotPr* m_pFileAttachmentPr;
+	CScreenAnnotPr*         m_pScreenPr;
+	CWidgetAnnotPr*         m_pWidgetPr;
 };
 
 class GRAPHICS_DECL CAnnotFieldDelete : public IAdvancedCommand
@@ -637,15 +724,17 @@ public:
 	CWidgetsInfo();
 	virtual ~CWidgetsInfo();
 
+	const std::wstring& GetRoles();
 	const std::vector< std::pair<int, int> >& GetCO();
 	const std::vector<std::wstring>& GetButtonImg();
 	const std::vector<CParent*>& GetParents();
 
 	void ChangeCO(int i, int nNum, int nGen);
 
-	bool Read(NSOnlineOfficeBinToPdf::CBufferReader* pReader, IMetafileToRenderter* pCorrector);
+	bool Read(NSOnlineOfficeBinToPdf::CBufferReader* pReader, IMetafileToRenderter* pCorrector, int nLen);
 
 private:
+	std::wstring m_wsRoles;
 	std::vector< std::pair<int, int> > m_arrCO;
 	std::vector<std::wstring> m_arrButtonImg;
 	std::vector<CParent*> m_arrParents;
@@ -672,6 +761,34 @@ public:
 
 private:
 	std::vector<SRedact*> m_arrRedact;
+};
+
+class GRAPHICS_DECL CRedactAnnot : public IAdvancedCommand
+{
+public:
+	CRedactAnnot();
+
+	int GetID();
+
+	bool Read(NSOnlineOfficeBinToPdf::CBufferReader* pReader, IMetafileToRenderter* pCorrector);
+
+private:
+	int m_nID;
+};
+
+class GRAPHICS_DECL CRedactMeta : public IAdvancedCommand
+{
+public:
+	CRedactMeta();
+
+	const std::vector<int>& GetWidgetID();
+	const std::vector<std::wstring>& GetRedactID();
+
+	bool Read(NSOnlineOfficeBinToPdf::CBufferReader* pReader, IMetafileToRenderter* pCorrector);
+
+private:
+	std::vector<int> m_arrWidgetID;
+	std::vector<std::wstring> m_arrRedactID;
 };
 
 #endif // _BUILD_ANNOTFIELD_H_

@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #ifndef _BUILD_IRENDERER_H_
 #define _BUILD_IRENDERER_H_
@@ -92,7 +102,7 @@ const long c_nClipRegionTypeEvenOdd		= 0x0001;
 // path transformation type for clips
 const long c_nClipToPath				= 0x0000;
 const long c_nClipToStrokePath			= 0x0010;
-// clip merge type
+// clip union type
 const long c_nClipRegionIntersect		= 0x0000;
 const long c_nClipRegionUnion			= 0x0100;
 const long c_nClipRegionXor             = 0x0200;
@@ -142,7 +152,7 @@ public:
 		Link        = 1,
 		DocInfo     = 2,
 		FormField   = 3, // Backward compatibility for docxf
-		Annotaion   = 4,
+		Annotation  = 4,
 		DeleteAnnot = 5,
 		WidgetsInfo = 6,
 		ShapeStart  = 7,
@@ -151,6 +161,9 @@ public:
 		PageRotate  = 10,
 		Headings    = 11,
 		Redact      = 12,
+		RedactAnnot = 13,
+		RedactMeta  = 14,
+		Macros      = 15,
 
 		Undefined   = 255
 	};
@@ -180,9 +193,9 @@ public:
 	}
 
 public:
-	// renderer type------------------------------------------------------------------------------
+	// renderer type-----------------------------------------------------------------------------
 	virtual HRESULT get_Type(LONG* lType)				= 0;
-	//-------- Functions for working with the page --------------------------------------------------
+	//-------- Page functions --------------------------------------------------
 	virtual HRESULT NewPage()							= 0;
 	virtual HRESULT get_Height(double* dHeight)			= 0;
 	virtual HRESULT put_Height(const double& dHeight)	= 0;
@@ -285,7 +298,7 @@ public:
 	virtual HRESULT get_FontFaceIndex(int* lFaceIndex)			= 0;
 	virtual HRESULT put_FontFaceIndex(const int& lFaceIndex)	= 0;
 
-	//-------- Functions for text output --------------------------------------------------------
+	//-------- Text output functions --------------------------------------------------------
 	virtual HRESULT CommandDrawTextCHAR(const LONG& c, const double& x, const double& y, const double& w, const double& h) = 0;
 	virtual HRESULT CommandDrawText(const std::wstring& bsText, const double& x, const double& y, const double& w, const double& h) = 0;
 
@@ -298,12 +311,16 @@ public:
 		LONG c = (NULL == codepoints) ? 32 : codepoints[0];
 		return CommandDrawTextExCHAR(c, (LONG)gid, x, y, w, h);
 	}
+	virtual HRESULT CommandDrawType3CHAR(const std::wstring& wsUnicodeText, const double& x, const double& y, const double& w, const double& h, const double& ascent, const double& descent, const double& unitsPerEm)
+	{
+		return S_OK;
+	}
 
-	//-------- Markers for commands ---------------------------------------------------------------
+	//-------- Command markers ---------------------------------------------------------------
 	virtual HRESULT BeginCommand(const DWORD& lType)	= 0;
 	virtual HRESULT EndCommand(const DWORD& lType)		= 0;
 
-	//-------- Functions for working with Graphics Path -----------------------------------------------
+	//-------- Graphics Path functions -----------------------------------------------
 	virtual HRESULT PathCommandMoveTo(const double& x, const double& y)			= 0;
 	virtual HRESULT PathCommandLineTo(const double& x, const double& y)			= 0;
 	virtual HRESULT PathCommandLinesTo(double* points, const int& count)		= 0;
@@ -324,7 +341,7 @@ public:
 
 	HRESULT AddPath(const Aggplus::CGraphicsPath& path);
 
-	//-------- Functions for displaying images ------------------------------------------------------------------
+	//-------- Image output functions ---------------------------------------------------
 	virtual HRESULT DrawImage(IGrObject* pImage, const double& x, const double& y, const double& w, const double& h)		= 0;
 	virtual HRESULT DrawImageFromFile(const std::wstring&, const double& x, const double& y, const double& w, const double& h, const BYTE& lAlpha = 255)	= 0;
 

@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "ShapeWriter.h"
 #include "StylesWriter.h"
@@ -45,7 +55,7 @@ CStylesWriter::CStylesWriter() : m_pTheme(NULL) {}
 CStylesWriter::CStylesWriter(PPT::CTheme* pTheme) : m_pTheme(pTheme) {}
 
 void CStylesWriter::ConvertStyleLevel(PPT::CTextStyleLevel& oLevel, PPT::CStringWriter& oWriter, const int& nLevel)
-{//duplication of CTextPFRun and CTextCFRun with ShapeWriter - TODO - move separately
+{// duplication of CTextPFRun and CTextCFRun with ShapeWriter - todo - extract separately
     std::wstring str1;
     if (nLevel == 9)
         str1 = L"<a:defPPr";
@@ -272,6 +282,45 @@ std::wstring PPT::CShapeWriter::ConvertLineEnd(unsigned char cap, unsigned char 
     }
     return sResult;
 }
+static std::vector<std::pair<double, std::wstring>> ConvertGradientFocus(const std::vector<std::pair<double, std::wstring>>& stops, int focus, bool bNegativeAngle)
+{
+    if (focus > 100)	focus = 100;
+    if (focus < -100)	focus = -100;
+
+    std::vector<std::pair<double, std::wstring>> base = stops;
+
+    if (bNegativeAngle && focus != 0 && focus != 100 && focus != -100)
+    {// swap
+        std::reverse(base.begin(), base.end());
+        for (size_t i = 0; i < base.size(); i++)
+            base[i].first = 100 - base[i].first;
+    }
+
+    std::vector<std::pair<double, std::wstring>> result;
+
+    auto add_segment = [&](double from, double to, bool reverse)
+    {
+        if (from >= to) return;
+
+        for (size_t i = 0; i < base.size(); i++)
+        {
+            const std::pair<double, std::wstring>& stop = reverse ? base[base.size() - 1 - i] : base[i];
+
+            double pos = reverse ? (100 - stop.first) : stop.first;
+            pos = from + (to - from) * pos / 100;
+
+            if (false == result.empty() && result.back().first == pos && result.back().second == stop.second)
+                continue;
+            result.push_back(std::make_pair(pos, stop.second));
+        }
+    };
+    double point = focus >= 0 ? focus : 100 + focus;
+
+    add_segment(0, point, focus < 0);
+    add_segment(point, 100, focus >= 0);
+
+    return result;
+}
 std::wstring PPT::CShapeWriter::ConvertBrush(CBrush & brush)
 {
     PPT::CStringWriter brush_writer;
@@ -280,7 +329,7 @@ std::wstring PPT::CShapeWriter::ConvertBrush(CBrush & brush)
     {
         if (m_pElement && ( m_pElement->m_etType == etPicture ||
                             m_pElement->m_etType == etAudio ||
-                            m_pElement->m_etType == etVideo))		//background for images with transparency
+                            m_pElement->m_etType == etVideo))		// background for image with transparency
         {
             brush_writer.WriteString(L"<a:noFill/>");
         }
@@ -317,38 +366,39 @@ std::wstring PPT::CShapeWriter::ConvertBrush(CBrush & brush)
                 brush.Type == c_BrushTypeHorizontal		||
                 brush.Type == c_BrushTypeVertical)
     {
-        brush_writer.WriteString(L"<a:gradFill><a:gsLst>");
+        std::vector<std::pair<double, std::wstring>> stops;
         if (brush.ColorsPosition.empty() == false)
         {
             for (size_t i = 0; i < brush.ColorsPosition.size(); i++)
-            {
-                std::wstring str = std::to_wstring( (int)(brush.ColorsPosition[i].second * 1000));
-
-                brush_writer.WriteString(L"<a:gs pos=\"" + str + L"\">");
-                brush_writer.WriteString(ConvertColor(brush.ColorsPosition[i].first, 255));
-                brush_writer.WriteString(L"</a:gs>");
-            }
+                stops.push_back(std::make_pair(brush.ColorsPosition[i].second, ConvertColor(brush.ColorsPosition[i].first, 255)));
         }
         else
         {
-            brush_writer.WriteString(L"<a:gs pos=\"0\">");
-            brush_writer.WriteString(ConvertColor(brush.Color1, brush.Alpha1));
-            brush_writer.WriteString(L"</a:gs>");
+            stops.push_back(std::make_pair(0., ConvertColor(brush.Color1, brush.Alpha1)));
+            stops.push_back(std::make_pair(100., ConvertColor(brush.Color2, brush.Alpha2)));
+        }
+        if (brush.Type == c_BrushTypePathGradient1)
+            stops = ConvertGradientFocus(stops, brush.Focus, brush.LinearAngle < 0);
 
-            brush_writer.WriteString(L"<a:gs pos=\"100000\">");
-            brush_writer.WriteString(ConvertColor(brush.Color2, brush.Alpha2));
+        brush_writer.WriteString(L"<a:gradFill><a:gsLst>");
+        for (size_t i = 0; i < stops.size(); i++)
+        {
+            std::wstring str = std::to_wstring((int)(stops[i].first * 1000 + 0.5));
+
+            brush_writer.WriteString(L"<a:gs pos=\"" + str + L"\">");
+            brush_writer.WriteString(stops[i].second);
             brush_writer.WriteString(L"</a:gs>");
         }
         brush_writer.WriteString(L"</a:gsLst>");
         brush_writer.WriteString(L"<a:lin ang=\"");
-        {
-            double val = 360 - brush.LinearAngle;
-            val += 90;
+        {// fillAngle: 0 - vector from bottom to top; negative - opposite direction
+            double val = 90 - brush.LinearAngle;
+            if (brush.LinearAngle < 0)	val += 180;
 
+            val = fmod(val, 360.);
             if (val < 0)	val += 360;
-            if (val >= 360)	val -= 360;
 
-            std::wstring str = std::to_wstring((int)(val * 60000));
+            std::wstring str = std::to_wstring((int)(val * 60000) % 21600000);
             brush_writer.WriteString(str);
         }
         brush_writer.WriteString(L"\"");
@@ -357,7 +407,7 @@ std::wstring PPT::CShapeWriter::ConvertBrush(CBrush & brush)
         brush_writer.WriteString(L"</a:gradFill>");
     }
     else if(brush.Type == c_BrushTypePattern)
-    {//There are no types in ppt - instead of them there is an image template
+    {// types don't exist in ppt - pattern-image is used instead
         brush_writer.WriteString(L"<a:pattFill prst=\"pct80\">");
         brush_writer.WriteString(L"<a:fgClr>");
         brush_writer.WriteString(ConvertColor(brush.Color1, brush.Alpha1));
@@ -565,7 +615,7 @@ void PPT::CShapeWriter::WriteImageInfo()
     m_oWriter.WriteString(std::wstring(L"\""));
 
     if (!pImageElement->m_sDescription.empty())
-    {//there are all sorts of different things saved
+    {// sometimes various junk is saved
         m_oWriter.WriteString(std::wstring(L" descr=\""));
         m_oWriter.WriteString(XmlUtils::EncodeXmlStringExtend(pImageElement->m_sDescription, true));
         m_oWriter.WriteString(std::wstring(L"\""));
@@ -621,10 +671,9 @@ void PPT::CShapeWriter::WriteImageInfo()
         bool bExternal = false;
         std::wstring strRid = m_pRels->WriteAudio(pAudioElement->m_strAudioFileName, bExternal);
 
-//        if ((int)pAudioElement->m_strAudioFileName.find(L".WAV") == -1 &&
-//                (int)pAudioElement->m_strAudioFileName.find(L".wav") == -1)
-//            m_oWriter.WriteString(L"<a:wavAudioFile r:embed=\"" + strRid + L"\"/>");
-//        else
+        if (!bExternal && pAudioElement->m_strAudioFileName.find(L".wav") != std::wstring::npos)
+            m_oWriter.WriteString(L"<a:wavAudioFile r:embed=\"" + strRid + L"\"/>");
+        else
             m_oWriter.WriteString(L"<a:audioFile r:link=\"" + strRid + L"\"/>"); // todo for anim connection
 
         sMediaFile = bExternal ? L"" : pAudioElement->m_strAudioFileName;
@@ -1190,7 +1239,7 @@ void PPT::CShapeWriter::WriteTextInfo(PPT::CTextCFRun* pLastCF)
         std::wstring prstTxWarp = oox::Spt2WordArtShapeType((oox::MSOSPT)pShapeElement->m_lShapeType);
         m_oWriter.WriteString(std::wstring(L"<a:prstTxWarp"));
         m_oWriter.WriteString(std::wstring(L" prst=\"") + prstTxWarp + L"\">");
-        m_oWriter.WriteString(std::wstring(L"<a:avLst>"));//modifiers
+        m_oWriter.WriteString(std::wstring(L"<a:avLst>"));// modifiers
 
         CPPTShape *pPPTShape = dynamic_cast<CPPTShape *>(pShapeElement->m_pShape->getBaseShape().get());
         std::wstring strVal;
@@ -1201,7 +1250,7 @@ void PPT::CShapeWriter::WriteTextInfo(PPT::CTextCFRun* pLastCF)
             {
             case oox::msosptTextFadeUp:
             {
-                double kf = 4.63; //"magic"
+                double kf = 4.63; // "magic"
                 std::wstring strVal = std::to_wstring((int)(kf * pPPTShape->m_arAdjustments[i]));
 
                 m_oWriter.WriteString(L"<a:gd name=\"adj\" fmla=\"val ");
@@ -1357,7 +1406,7 @@ void PPT::CShapeWriter::WriteTextInfo(PPT::CTextCFRun* pLastCF)
             m_oWriter.WriteString(std::wstring(L">"));
 
             if (m_bWordArt)
-            {//The order is important - line, fill, shadow!!!
+            {// order is important - line, fill, shadow !!!
                 if (pShapeElement->m_bLine)
                 {
                     m_oWriter.WriteString(ConvertLine(pShapeElement->m_oPen));
@@ -2059,7 +2108,7 @@ void PPT::CShapeWriter::ParseXmlAlternative(const std::wstring & xml)
 
             //            writer.ClearNoAttack();
             //            if ((shape->txBody.IsInit()) && (shape->txBody->bodyPr.IsInit()) && (shape->txBody->bodyPr->prstTxWarp.IsInit()))
-            //            {//WordArt only
+            //            {// WordArt only
             //                shape->txBody->toXmlWriter(&writer);
             //                m_xmlTxBodyAlternative = writer.GetXmlString();
         }
@@ -2082,7 +2131,7 @@ std::wstring PPT::CShapeWriter::ConvertImage()
     if (pImageElement->m_bImagePresent == false)
     {
         if (pImageElement->m_sName.empty()) return L"";
-        //ppt_presentation.ppt - link to a file on disk
+        // ppt_presentation.ppt - link to file on disk
 
         pImageElement->m_strImageFileName.clear();
         pImageElement->m_bImagePresent = true;
@@ -2261,7 +2310,7 @@ HRESULT PPT::CShapeWriter::get_Type(LONG* lType)
     *lType = c_nSVGConverter;
     return S_OK;
 }
-//-------- Functions for working with the page --------------------------------------------------
+//-------- Functions for working with page --------------------------------------------------
 HRESULT PPT::CShapeWriter::NewPage()
 {
     return S_OK;
@@ -2790,7 +2839,7 @@ HRESULT PPT::CShapeWriter::CommandDrawTextEx(const std::wstring& bsUnicodeText, 
     }
     return S_OK;
 }
-//-------- Markers for commands ---------------------------------------------------------------
+//-------- Command markers ---------------------------------------------------------------
 HRESULT PPT::CShapeWriter::BeginCommand(const _UINT32& lType)
 {
     if (c_nPathType == lType)
@@ -2942,7 +2991,7 @@ HRESULT PPT::CShapeWriter::PathCommandText(const std::wstring& bsText, const dou
 HRESULT PPT::CShapeWriter::PathCommandTextEx(const std::wstring& bsUnicodeText, const unsigned int* pGids, const unsigned int nGidsCount, const double& x, const double& y, const double& w, const double& h)
 {
     bool bGid = m_oFont.StringGID;
-    //TODO
+    //TODOO
     //if (NULL != bsGidText)
     //{
     //       m_oFont.StringGID = true;
@@ -2955,7 +3004,7 @@ HRESULT PPT::CShapeWriter::PathCommandTextEx(const std::wstring& bsUnicodeText, 
     m_oFont.StringGID = bGid;
     return S_OK;
 }
-//-------- Functions for displaying images ------------------------------------------------------------------
+//-------- Functions for image output ---------------------------------------------------
 HRESULT PPT::CShapeWriter::DrawImage(IGrObject* pImage, const double& x, const double& y, const double& w, const double& h)
 {
     return S_OK;

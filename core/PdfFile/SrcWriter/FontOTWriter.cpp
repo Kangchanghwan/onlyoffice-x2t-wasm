@@ -1,26 +1,36 @@
 /*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "FontTTWriter.h"
 
@@ -28,6 +38,7 @@
 #include <vector>
 #include <list>
 #include <set>
+#include "./../../OOXML/Base/Rand.h"
 
 namespace PdfWriter
 {
@@ -589,7 +600,7 @@ namespace PdfWriter
 		CharSetInfoVector mCharSets;// count is NOT the same as fonts count [some charsets may be shared]. consult the top dict charset pointer for the right charset
 		EncodingsInfoVector mEncodings; // count is NOT the same as fonts count [some encodinds may be shared].
 
-		CMemoryStream* mPrimitivesReader; // external, no need to release
+		CMemoryStream* mPrimitivesReader; // external, no need to free
 		StringToUShort mNameToIndex;
 		long long mNameIndexPosition;
 		long long mTopDictIndexPosition;
@@ -3662,7 +3673,7 @@ namespace PdfWriter
 		CharStringOperand newOperand;
 
 		newOperand.IsInteger = false;
-		newOperand.RealValue = ((double)rand() + 1) / ((double)RAND_MAX + 1);
+		newOperand.RealValue = ((double)RandUInt() + 1) / ((double)RAND_MAX + 1);
 
 		mOperandStack.push_back(newOperand);
 		return inProgramCounter;
@@ -4391,7 +4402,7 @@ namespace PdfWriter
 			subsetGlyphIDs.push_back(0);
 
 		// Add dependent glyphs
-		// They are in m_vCodeToGid from pCodeToGID. In pUseGlyfs they are also from m_mGlyphs, but only in m_mGlyphs, they have false
+		// They exist in m_vCodeToGid from pCodeToGID. They also exist in pUseGlyfs from m_mGlyphs, but only in m_mGlyphs they have false
 
 		mSubsetFontGlyphsCount = subsetGlyphIDs.size(); // == unCodesCount
 
@@ -5031,7 +5042,7 @@ namespace PdfWriter
 	{
 		if (!m_bOpenTypeCFF)
 		{
-			// If the font isn't OpenType CFF, exit
+			// If font is not OpenType CFF, exit
 			return;
 		}
 

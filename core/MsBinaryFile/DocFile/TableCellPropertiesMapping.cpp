@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 
@@ -28,6 +38,15 @@
 
 namespace DocFileFormat
 {
+	static const int c_nDefTableShdCells = 22; // sprmTDefTableShd (cells 0-21), sprmTDefTableShd2nd (22-43) and sprmTDefTableShd3rd (44-62)
+
+	static std::shared_ptr<BorderCode> readTableBorder(unsigned char* sprmArg, int size, int brcSize, int ind)
+	{
+		if (!sprmArg || (ind + 1) * brcSize > size)
+			return std::shared_ptr<BorderCode>();
+		return std::shared_ptr<BorderCode>(new BorderCode(sprmArg + ind * brcSize, brcSize));
+	}
+
 	TableCellPropertiesMapping::TableCellPropertiesMapping (XMLTools::CStringXmlWriter* pWriter, 
 		const std::vector<short>* grid, int gridIndex, int cellIndex, unsigned int depth) : 
 										PropertiesMapping(pWriter)
@@ -43,6 +62,10 @@ namespace DocFileFormat
 		_brcLeft	=	NULL;
 		_brcRight	=	NULL;
 		_brcBottom	=	NULL;
+
+		_bFirstRow	=	true;
+		_bLastRow	=	true;
+		_bLastCell	=	true;
 
         _tcPr		=	new XMLTools::XMLElement(L"w:tcPr");
         _tcMar		=	new XMLTools::XMLElement(L"w:tcMar");
@@ -229,24 +252,24 @@ namespace DocFileFormat
 				break;
 				case sprmTDefTableShd80:
 				{
-					if (!tapx->IsSkipShading97())	// if such an operand is the only one, then we take it into account, otherwise we skip it
+					if (!tapx->IsSkipShading97())	// if this operand is the only one, take it into account, otherwise skip it
 					{
 						apppendCellShading(iter->Arguments, iter->argumentsSize, _cellIndex);
 					}
 				}break;
 				case sprmOldTDefTableShd:
 				case sprmTDefTableShd:
-				{ //	cell shading for cells 0-20
+				{
 					apppendCellShading(iter->Arguments, iter->argumentsSize, _cellIndex);
 				}break;
 
 				case sprmTDefTableShd2nd:
-				{						//	cell shading for cells 21-42
-					apppendCellShading(iter->Arguments, iter->argumentsSize, (_cellIndex - 21));
+				{
+					apppendCellShading(iter->Arguments, iter->argumentsSize, (_cellIndex - c_nDefTableShdCells));
 				}break;
 				case sprmTDefTableShd3rd:
-				{						//	cell shading for cells 43-62
-					apppendCellShading(iter->Arguments, iter->argumentsSize, (_cellIndex - 43));
+				{
+					apppendCellShading(iter->Arguments, iter->argumentsSize, (_cellIndex - 2 * c_nDefTableShdCells));
 				}break;
 				case sprmTCellWidth:
 				{ //width
@@ -284,58 +307,12 @@ namespace DocFileFormat
 				break;
 				case sprmTTableBorders80:
 				{
-					const int size = 4;
-					unsigned char brc80[size];
-
-					memcpy(brc80, iter->Arguments, size);
-					if (!_brcTop)
-						_brcTop = std::shared_ptr<BorderCode>(new BorderCode(brc80, size));
-
-					memcpy(brc80, (iter->Arguments + 4), size);
-					if (!_brcLeft)
-						_brcLeft = std::shared_ptr<BorderCode>(new BorderCode(brc80, size));
-
-					memcpy(brc80, (iter->Arguments + 8), size);
-					if (!_brcBottom)
-						_brcBottom = std::shared_ptr<BorderCode>(new BorderCode(brc80, size));
-
-					memcpy(brc80, (iter->Arguments + 12), size);
-					if (!_brcRight)
-						_brcRight = std::shared_ptr<BorderCode>(new BorderCode(brc80, size));
-
-					//memcpy(brc80, (iter->Arguments + 16), size);
-					//_brcHorz = std::shared_ptr<BorderCode>(new BorderCode(brc80, size));
-
-					//memcpy(brc80, (iter->Arguments + 20), size);
-					//_brcVert = std::shared_ptr<BorderCode>(new BorderCode(brc80, size));
+					applyTableBorders(iter->Arguments, iter->argumentsSize, 4);
 				}break;
 				case sprmOldTTableBorders:
 				case sprmTTableBorders:
 				{
-					const int size = 8;
-					unsigned char brc[size];
-
-					memcpy(brc, iter->Arguments, size);
-					if (!_brcTop)
-						_brcTop = std::shared_ptr<BorderCode>(new BorderCode(brc, size));
-
-					memcpy(brc, (iter->Arguments + 8), size);
-					if (!_brcLeft)
-						_brcLeft = std::shared_ptr<BorderCode>(new BorderCode(brc, size));
-
-					memcpy(brc, (iter->Arguments + 16), size);
-					if (!_brcBottom)
-						_brcBottom = std::shared_ptr<BorderCode>(new BorderCode(brc, size));
-
-					memcpy(brc, (iter->Arguments + 24), size);
-					if (!_brcRight)
-						_brcRight = std::shared_ptr<BorderCode>(new BorderCode(brc, size));
-
-					//memcpy(brc, (iter->Arguments + 32), size);
-					//_brcHorz = std::shared_ptr<BorderCode>(new BorderCode(brc, size));
-
-					//memcpy(brc, (iter->Arguments + 40), size);
-					//_brcVert = std::shared_ptr<BorderCode>(new BorderCode(brc, size));
+					applyTableBorders(iter->Arguments, iter->argumentsSize, 8);
 				}break;
 				case sprmOldTSetBrc:
 				case sprmTSetBrc:
@@ -499,6 +476,19 @@ namespace DocFileFormat
 				RELEASEARRAYOBJECTS(shdBytes);
 			}
 		}
+	}
+
+	void TableCellPropertiesMapping::applyTableBorders(unsigned char* sprmArg, int size, int brcSize)
+	{
+		const int indTop	= _bFirstRow		? 0 : 4;
+		const int indLeft	= (_cellIndex == 0) ? 1 : 5;
+		const int indBottom	= _bLastRow			? 2 : 4;
+		const int indRight	= _bLastCell		? 3 : 5;
+
+		if (!_brcTop)		_brcTop		= readTableBorder(sprmArg, size, brcSize, indTop);
+		if (!_brcLeft)		_brcLeft	= readTableBorder(sprmArg, size, brcSize, indLeft);
+		if (!_brcBottom)	_brcBottom	= readTableBorder(sprmArg, size, brcSize, indBottom);
+		if (!_brcRight)		_brcRight	= readTableBorder(sprmArg, size, brcSize, indRight);
 	}
 
 	bool TableCellPropertiesMapping::IsTableBordersDefined (const std::vector<SinglePropertyModifier>* grpprl) const

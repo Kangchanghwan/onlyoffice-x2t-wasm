@@ -1,3 +1,38 @@
+/*
+ * Copyright (C) Ascensio System SIA, 2009-2026
+ *
+ * This program is a free software product. You can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License (AGPL)
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
+ * Section 5 of the GNU AGPL version 3.
+ *
+ * No trademark rights are granted under this License.
+ *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 #include "Fb2File.h"
 #include "../DesktopEditor/xml/include/xmlutils.h"
 #include "../DesktopEditor/xml/include/xmlencoding.h"
@@ -39,7 +74,7 @@ struct CTc
 	}
 };
 
-// Description of information about the work. Tag title-info, src-title-info
+// Description of book information. Tag: title-info, src-title-info
 struct STitleInfo
 {
 	std::wstring m_sGenres;    // Genres
@@ -57,7 +92,7 @@ struct STitleInfo
 	*/
 };
 
-// Description of information about the fb2 document. Document-info tag
+// Description of fb2-document information. Tag: document-info
 /*
 struct SDocumentInfo
 {
@@ -68,8 +103,8 @@ struct SDocumentInfo
 	std::wstring m_sId;                            // Identifier
 	std::wstring m_sVersion;                       // Document version
 
-	std::wstring* m_pProgramUsed; // Used programs
-	std::wstring* m_pSrcOcr;      // Author of the text
+	std::wstring* m_pProgramUsed; // Programs used
+	std::wstring* m_pSrcOcr;      // Text author
 	std::wstring* m_pHistory;     // History
 
 	SDocumentInfo()
@@ -91,13 +126,13 @@ struct SDocumentInfo
 };
 */
 
-// Information about the paper edition. Tag publish-info
+// Information about print edition. Tag: publish-info
 /*
 struct SPublishInfo
 {
-	std::wstring* m_pBookName;  // Name
-	std::wstring* m_pPublisher; // Publishing house
-	std::wstring* m_pCity;      // Place
+	std::wstring* m_pBookName;  // Title
+	std::wstring* m_pPublisher; // Publisher
+	std::wstring* m_pCity;      // City
 	std::wstring* m_pYear;      // Year
 	std::wstring* m_pIsbn;      // ISBN
 
@@ -168,8 +203,8 @@ class CFb2File_Private
 {
 public:
 	XmlUtils::CXmlLiteReader m_oLightReader;  // SAX Reader
-	STitleInfo m_oTitleInfo;                  // Book details
-	// SDocumentInfo m_oDocumentInfo;         // Information about the fb2 document
+	STitleInfo m_oTitleInfo;                  // Book data
+	// SDocumentInfo m_oDocumentInfo;         // fb2-document information
 	// std::wstring m_sTmpFolder;             // Working folder
 	std::map<std::wstring, std::vector<std::wstring>> m_mImages; // Images
 	std::map<std::wstring, std::wstring> m_mFootnotes;           // Footnotes
@@ -178,8 +213,8 @@ public:
 	NSStringUtils::CStringBuilder m_oNoteXmlRels; // footnotes.xml.rels
 
 private:
-	int m_nContentsId;       // Content ID
-	int m_nCrossReferenceId; // Cross reference ID
+	int m_nContentsId;       // Table of contents ID
+	int m_nCrossReferenceId; // Cross-reference ID
 	int m_nHyperlinkId;      // External link ID
 	bool m_bFootnote;        // Reading Footnote from html
 	bool m_bInP;
@@ -188,9 +223,9 @@ private:
 
 	ParagraphProperties m_arParagraphProperties;
 
-	// STitleInfo* m_pSrcTitleInfo;  // Data about the book source
-	// SPublishInfo* m_pPublishInfo; // Information about the publication of the book
-	// std::map<std::wstring, std::wstring> m_mCustomInfo;       // Arbitrary information
+	// STitleInfo* m_pSrcTitleInfo;  // Source book data
+	// SPublishInfo* m_pPublishInfo; // Book publication info
+	// std::map<std::wstring, std::wstring> m_mCustomInfo;       // Custom information
 
 public:
 	CFb2File_Private()
@@ -220,15 +255,15 @@ public:
 		*/
 	}
 
-	// wrapper for reading from a file
+	// wrapper for reading from file
 	bool OpenFromFile(const std::wstring& sFile)
 	{
-		// Assume that this is XML, since the format check happens earlier (x2t)
+		// assume this is xml, since format check will happen earlier (x2t)
 		std::string sFileContentUtf8 = XmlUtils::GetXmlContentAsUTF8(sFile);
 		return m_oLightReader.FromStringA(sFileContentUtf8);
 	}
 
-	// Checks for the presence of the FictionBook tag
+	// Checks for presence of FictionBook tag
 	bool isFictionBook()
 	{
 		return m_oLightReader.ReadNextNode() && m_oLightReader.GetName() == L"FictionBook";
@@ -287,10 +322,10 @@ public:
 	}
 
 	// Reads image
-	// NOT allowed to write p
+	// Does NOT have permission to write p
 	void readImage(NSStringUtils::CStringBuilder& oBuilder)
 	{
-		// Reading href
+		// Read href
 		std::wstring sImageName;
 		while (m_oLightReader.MoveToNextAttribute())
 		{
@@ -313,7 +348,7 @@ public:
 		std::map<std::wstring, std::vector<std::wstring>>::iterator it = m_mImages.find(sImageName);
 		if (it != m_mImages.end())
 		{
-			// Writing an image to a file
+			// Write image to file
 			// extent
 			oBuilder += L"<w:r><w:drawing><wp:inline distT=\"0\" distB=\"0\" distL=\"0\" distR=\"0\"><wp:extent cx=\"";
 			oBuilder += it->second[1];
@@ -327,7 +362,7 @@ public:
 			oBuilder += L"\" name=\"\"/><a:graphic xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\"><a:graphicData uri=\"http://schemas.openxmlformats.org/drawingml/2006/picture\"><pic:pic xmlns:pic=\"http://schemas.openxmlformats.org/drawingml/2006/picture\"><pic:nvPicPr><pic:cNvPr id=\"";
 			oBuilder += it->second[0];
 			// pic:blipFill
-			// rels rPic + id
+			// relationships rPic + id
 			oBuilder += L"\" name=\"\"/><pic:cNvPicPr></pic:cNvPicPr></pic:nvPicPr><pic:blipFill><a:blip r:embed=\"rPic";
 			oBuilder += it->second[0];
 			// pic:spPr
@@ -335,7 +370,7 @@ public:
 			oBuilder += it->second[1];
 			oBuilder += L"\" cy=\"";
 			oBuilder += it->second[2];
-			// End of writing
+			// End of record
 			oBuilder += L"\"/></a:xfrm><a:prstGeom prst=\"rect\"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>";
 		}
 	}
@@ -350,21 +385,21 @@ public:
 		int nDeath = m_oLightReader.GetDepth();
 		while (m_oLightReader.ReadNextSiblingNode(nDeath))
 		{
-			// Writing the header
+			// Write title
 			if (m_oLightReader.GetName() == L"p")
 			{
 				// Write title + sLevel
 				oBuilder += L"<w:p><w:pPr><w:pStyle w:val=\"";
 				oBuilder += sLevel;
 				oBuilder += L"\"/>";
-				// Book title from new page
+				// Book title starts from new page
 				if (sLevel == L"title" && bFirstP)
 				{
 					oBuilder += L"<w:pageBreakBefore/>";
 					bFirstP = false;
 				}
 				oBuilder += L"</w:pPr>";
-				// Write a link from the table of contents
+				// Write link from table of contents
 				std::wstring sContentsId;
 				if (sLevel == L"title1")
 				{
@@ -376,7 +411,7 @@ public:
 					oBuilder += L"\"/>";
 				}
 				readP(L"", oBuilder);
-				// Write a link from the table of contents
+				// Write link from table of contents
 				if (sLevel == L"title1")
 				{
 					oBuilder += L"<w:bookmarkEnd w:id=\"";
@@ -412,7 +447,7 @@ public:
 				readCite(oBuilder);
 			else if (sName == L"empty-line")
 				oBuilder += L"<w:p><w:pPr><w:pStyle w:val=\"epigraph-p\"/></w:pPr></w:p>";
-			// The author of the epigraph is highlighted in bold
+			// Epigraph author is highlighted in bold
 			else if (sName == L"text-author")
 			{
 				oBuilder += L"<w:p><w:pPr><w:pStyle w:val=\"epigraph-p\"/></w:pPr>";
@@ -423,7 +458,7 @@ public:
 	}
 
 	// Reads p
-	// NOT allowed to write p
+	// Does NOT have permission to write p
 	// sRStyle - accumulated style
 	void readP(const std::wstring& sRStyle, NSStringUtils::CStringBuilder& oBuilder)
 	{
@@ -436,7 +471,7 @@ public:
 		while (m_oLightReader.ReadNextSiblingNode2(nDepth))
 		{
 			std::wstring sName = m_oLightReader.GetName();
-			// Reading plain text
+			// Read plain text
 			if (sName == L"#text")
 			{
 				// Text style
@@ -448,20 +483,20 @@ public:
 				oBuilder += L"</w:t></w:r>";
 
 			}
-			// Reading bold text
+			// Read bold text
 			else if (sName == L"strong")
 				readP(sRStyle + L"<w:b/>", oBuilder);
-			// Reading italic text
+			// Read italic text
 			else if (sName == L"emphasis")
 				readP(sRStyle + L"<w:i/>", oBuilder);
-			// Reading stylized text
+			// Read styled text
 			else if (sName == L"style")
 				readP(sRStyle, oBuilder);
-			// Read the link
+			// Read link
 			else if (sName == L"a")
 			{
 				bool bCross = true, bMsoFootnote = false;
-				// Reading href
+				// Read href
 				std::wstring sRef;
 				while (m_oLightReader.MoveToNextAttribute())
 				{
@@ -493,7 +528,7 @@ public:
 					std::map<std::wstring, std::wstring>::iterator it = m_mFootnotes.find(sRef);
 					if (it != m_mFootnotes.end())
 					{
-						// Reading the text inside the footnote
+						// Read text inside footnote
 						if (!bMsoFootnote)
 							readP(sRStyle, oBuilder);
 						// Footnote style
@@ -501,20 +536,20 @@ public:
 						oBuilder += it->second;
 						oBuilder += L"\"/></w:r>";
 					}
-					// Cross reference
+					// Cross-reference
 					else
 					{
 						oBuilder += L"<w:hyperlink w:tooltip=\"Current Document\" w:anchor=\"";
 						oBuilder += sRef;
 						oBuilder += L"\">";
-						// Reading the text inside the link
+						// Read text inside link
 						readP(sRStyle + L"<w:rStyle w:val=\"cross\"/>", oBuilder);
 						oBuilder += L"</w:hyperlink>";
 					}
 				}
 				else
 				{
-					// Writing the rels
+					// Write relationships
 					NSStringUtils::CStringBuilder* oRelationshipXml = &m_oDocXmlRels;
 					if (m_bInNote)
 						oRelationshipXml = &m_oNoteXmlRels;
@@ -524,37 +559,37 @@ public:
 					oRelationshipXml->WriteEncodeXmlString(sRef);
 					oRelationshipXml->WriteString(L"\" TargetMode=\"External\"/>");
 
-					// Write in document.xml
+					// Write to document.xml
 					oBuilder.WriteString(L"<w:hyperlink w:tooltip=\"");
 					oBuilder.WriteEncodeXmlString(sRef);
 					oBuilder.WriteString(L"\" r:id=\"rHyp");
 					oBuilder.WriteString(std::to_wstring(m_nHyperlinkId++));
 					oBuilder.WriteString(L"\">");
 
-					// Reading the text inside the link
+					// Read text inside link
 					readP(sRStyle, oBuilder);
 					oBuilder += L"</w:hyperlink>";
 				}
 			}
-			// Reading the crossed out text
+			// Read strikethrough text
 			else if (sName == L"strikethrough")
 				readP(sRStyle + L"<w:strike/>", oBuilder);
-			// Reads subscript text
+			// Read subscript text
 			else if (sName == L"sub")
 				readP(sRStyle + L"<w:vertAlign w:val=\"subscript\"/>", oBuilder);
-			// Reads superscript text
+			// Read superscript text
 			else if (sName == L"sup")
 				readP(sRStyle + L"<w:vertAlign w:val=\"superscript\"/>", oBuilder);
-			// Reads the code
+			// Read code
 			else if (sName == L"code")
 				readP(sRStyle + L"<w:rStyle w:val=\"code\"/>", oBuilder);
-			// Reads the image in the text
+			// Read inline image
 			else if (sName == L"image")
 				readImage(oBuilder);
 		}
 	}
 
-	// Reads a poem
+	// Read poem
 	void readPoem(NSStringUtils::CStringBuilder& oBuilder)
 	{
 		readCrossReference(oBuilder);
@@ -589,7 +624,7 @@ public:
 					}
 				}
 			}
-			// The author of the poem is highlighted in bold
+			// Poem author is highlighted in bold
 			else if (sName == L"text-author")
 			{
 				oBuilder += L"<w:p><w:pPr><w:pStyle w:val=\"v-stanza\"/></w:pPr>";
@@ -605,7 +640,7 @@ public:
 		}
 	}
 
-	// Reads cite
+	// Read cite
 	void readCite(NSStringUtils::CStringBuilder& oBuilder)
 	{
 		readCrossReference(oBuilder);
@@ -629,7 +664,7 @@ public:
 				readPoem(oBuilder);
 			else if (sName == L"table")
 				readTable(oBuilder);
-			// The author of the quote is highlighted in bold
+			// Quote author is highlighted in bold
 			else if (sName == L"text-author")
 			{
 				oBuilder += L"<w:p><w:pPr><w:pStyle w:val=\"cite-p\"/></w:pPr>";
@@ -639,7 +674,7 @@ public:
 		}
 	}
 
-	// Reads table
+	// Read table
 	void readTable(NSStringUtils::CStringBuilder& oBuilder)
 	{
 		readCrossReference(oBuilder);
@@ -657,7 +692,7 @@ public:
 		int nDeath = m_oLightReader.GetDepth();
 		while (m_oLightReader.ReadNextSiblingNode(nDeath))
 		{
-			// tr - rows in the table
+			// tr - rows in table
 			if (m_oLightReader.GetName() != L"tr" || m_oLightReader.IsEmptyNode())
 				continue;
 			int nTCol = 0;
@@ -677,7 +712,7 @@ public:
 				}
 				m_oLightReader.MoveToElement();
 
-				// Insert cells up to
+				// Insert cells before
 				std::vector<CTc>::iterator it1 = std::find_if(mTable.begin(), mTable.end(), [i, j](const CTc& item){ return item.i == i && item.j == j; });
 				std::vector<CTc>::iterator it2 = std::find_if(mTable.begin(), mTable.end(), [j]   (const CTc& item){ return item.i == 0 && item.j == j; });
 				while(it1 != mTable.end() || it2 != mTable.end())
@@ -710,7 +745,7 @@ public:
 					j += nColspan - 1;
 				}
 				oTmpBuilder.WriteString(L"</w:tcPr><w:p>");
-				// Read th. Table header cell. Center alignment. Shown in bold
+				// Read th. Table header cell. Center alignment. Bold
 				if (m_oLightReader.GetName() == L"th")
 				{
 					if (++nTCol > nGridCol)
@@ -718,7 +753,7 @@ public:
 					oTmpBuilder += L"<w:pPr><w:jc w:val=\"center\"/></w:pPr>";
 					readP(L"<w:b/>", oTmpBuilder);
 				}
-				// Reading td. Table cell. Align right
+				// Read td. Table cell. Right alignment
 				else if (m_oLightReader.GetName() == L"td")
 				{
 					if(++nTCol > nGridCol)
@@ -761,7 +796,7 @@ public:
 		// End of table
 		oBuilder += oTmpBuilder.GetData();
 		oBuilder += L"</w:tbl>";
-		// Blank line after the table so that the following text doesn't stick
+		// Empty line after table so next text doesn't stick
 		oBuilder += L"<w:p></w:p>";
 	}
 
@@ -785,7 +820,7 @@ public:
 		}
 	}
 
-	// Reads annotation
+	// Read annotation
 	void readAnnotation(NSStringUtils::CStringBuilder& oBuilder)
 	{
 		readCrossReference(oBuilder);
@@ -814,11 +849,11 @@ public:
 		}
 	}
 
-	// Reads cross references
+	// Read cross-references
 	void readCrossReference(NSStringUtils::CStringBuilder& oBuilder)
 	{
 		bool bPBB = false, bCBB = false;
-		// id for cross references
+		// id for cross-references
 		while (m_oLightReader.MoveToNextAttribute())
 		{
 			std::wstring sAtrName = m_oLightReader.GetName();
@@ -850,7 +885,7 @@ public:
 		}
 	}
 
-	// Reads section
+	// Read section
 	void readSection(int nLevel, NSStringUtils::CStringBuilder& oBuilder)
 	{
 		readCrossReference(oBuilder);
@@ -904,7 +939,7 @@ public:
 		}
 	}
 
-	// Reads body
+	// Read body
 	void readBody(NSStringUtils::CStringBuilder& oBuilder)
 	{
 		if (m_oLightReader.IsEmptyNode())
@@ -929,15 +964,15 @@ public:
 		}
 	}
 
-	// Reads table of contents, binary, body, footnotes, description
+	// Read content, binary, body, footnotes, description
 	bool readText(const std::wstring& sPath, const std::wstring& sMediaDirectory, NSStringUtils::CStringBuilder& oContents, NSStringUtils::CStringBuilder& oFootnotes)
 	{
 		if (!m_oLightReader.IsValid())
 		{
-			// Opens a file for verification
+			// Open file for validation
 			if (!OpenFromFile(sPath))
 				return false;
-			// Reading FictionBook
+			// Read FictionBook
 			if (!isFictionBook())
 				return false;
 		}
@@ -954,7 +989,7 @@ public:
 		while (m_oLightReader.ReadNextSiblingNode(nDeath))
 		{
 			std::wstring sName = m_oLightReader.GetName();
-			// Reading body
+			// Read body
 			if (sName == L"body")
 			{
 				// Footnotes
@@ -966,14 +1001,14 @@ public:
 						bNotes = true;
 				}
 				m_oLightReader.MoveToElement();
-				// Reading the footnotes
+				// Read footnotes
 				if (bNotes)
 					readNotes(nFootnoteId, oFootnotes);
-				// Reading the contents
+				// Read contents
 				else
 					readContents(nContentsId, oContents);
 			}
-			// Reading images
+			// Read images
 			else if (sName == L"binary")
 				getImage(std::to_wstring(nImageId++), sMediaDirectory);
 		}
@@ -981,7 +1016,7 @@ public:
 		return true;
 	}
 
-	// Reads the content
+	// Read contents
 	void readContents(int& nContentsId, NSStringUtils::CStringBuilder& oContents)
 	{
 		if (m_oLightReader.IsEmptyNode())
@@ -991,13 +1026,13 @@ public:
 		int nBDeath = m_oLightReader.GetDepth();
 		while (m_oLightReader.ReadNextSiblingNode(nBDeath))
 		{
-			// Reading section
+			// Read section
 			if (m_oLightReader.GetName() != L"section" || m_oLightReader.IsEmptyNode())
 				continue;
 			int nSDeath = m_oLightReader.GetDepth();
 			while (m_oLightReader.ReadNextSiblingNode(nSDeath))
 			{
-				// Read the title
+				// Read title
 				if (m_oLightReader.GetName() != L"title" || m_oLightReader.IsEmptyNode())
 					continue;
 				oContents += L"<w:p><w:pPr><w:pStyle w:val=\"contents\"/><w:tabs><w:tab w:val=\"right\" w:pos=\"9355\" w:leader=\"none\"/></w:tabs>";
@@ -1020,7 +1055,7 @@ public:
 					if (m_oLightReader.GetName() == L"p")
 					{
 						readP(L"<w:rStyle w:val=\"contents-p\"/>", oContents);
-						// Insert a space between words
+						// Insert space between words
 						oContents += L"<w:r><w:t xml:space=\"preserve\"> </w:t></w:r>";
 					}
 				}
@@ -1031,7 +1066,7 @@ public:
 			oContents += L"<w:p><w:r><w:fldChar w:fldCharType=\"end\"/></w:r></w:p>";
 	}
 
-	// Reads footnotes
+	// Read footnotes
 	void readNotes(int& nFootnoteId, NSStringUtils::CStringBuilder& oFootnotes)
 	{
 		if (m_oLightReader.IsEmptyNode())
@@ -1043,7 +1078,7 @@ public:
 		{
 			if (m_oLightReader.GetName() != L"section")
 				continue;
-			// Reading id
+			// Read id
 			std::wstring sFootnoteName;
 			while (m_oLightReader.MoveToNextAttribute())
 			{
@@ -1059,12 +1094,12 @@ public:
 
 			std::wstring sFootnoteId = std::to_wstring(nFootnoteId++);
 			m_mFootnotes.insert(std::make_pair(sFootnoteName, sFootnoteId));
-			// Write a footnote
+			// Write footnote
 			oFootnotes += L"<w:footnote w:id=\"";
 			oFootnotes += sFootnoteId;
 			oFootnotes += L"\">";
 
-			// Reading the inside of section
+			// Read section content
 			int nSDepth = m_oLightReader.GetDepth();
 			while (m_oLightReader.ReadNextSiblingNode(nSDepth))
 			{
@@ -1117,14 +1152,14 @@ public:
 		m_bInNote = false;
 	}
 
-	// Reads binary
+	// Read binary
 	void getImage(const std::wstring& sImageId, const std::wstring& sMediaDirectory)
 	{
 		std::wstring sId, sType = L".png";
 		while (m_oLightReader.MoveToNextAttribute())
 		{
 			std::wstring sName = m_oLightReader.GetName();
-			// Reads id
+			// Read id
 			if (sName == L"id")
 				sId = m_oLightReader.GetText();
 			else if (sName == L"content-type")
@@ -1134,7 +1169,7 @@ public:
 		if (sId.empty() || m_oLightReader.IsEmptyNode())
 			return;
 
-		// Writes an image to a file
+		// Write image to file
 		NSFile::CFileBinary oImageWriter;
 		std::wstring sImagePath = sMediaDirectory + L"/image" + sImageId + sType;
 		if (oImageWriter.CreateFileW(sImagePath))
@@ -1148,7 +1183,7 @@ public:
 			RELEASEARRAYOBJECTS(pImageData);
 			oImageWriter.CloseFile();
 
-			// Getting the dimensions of the image
+			// Get image dimensions
 			CBgraFrame oBgraFrame;
 			oBgraFrame.OpenFile(sImagePath);
 			int nHy = oBgraFrame.get_Height();
@@ -1180,7 +1215,7 @@ public:
 			vImage.push_back(std::to_wstring(nHy));
 
 			m_mImages.insert(std::make_pair(sId, vImage));
-			// Writing images to rels
+			// Write images to relationships
 			m_oDocXmlRels += L"<Relationship Id=\"rPic";
 			m_oDocXmlRels += sImageId;
 			m_oDocXmlRels += L"\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/image\" Target=\"media/";
@@ -1189,7 +1224,7 @@ public:
 		}
 	}
 
-	// Reads description
+	// Read description
 	void readDescription(NSStringUtils::CStringBuilder& oBuilder)
 	{
 		if (m_oLightReader.IsEmptyNode())
@@ -1224,7 +1259,7 @@ public:
 		}
 	}
 
-	// Reads custom-info
+	// Read custom-info
 	/*
 	void getCustomInfo()
 	{
@@ -1237,7 +1272,7 @@ public:
 	}
 	*/
 
-	// Reads publish-info
+	// Read publish-info
 	/*
 	void getPublishInfo()
 	{
@@ -1307,7 +1342,7 @@ public:
 	}
 	*/
 
-	// Reads document-info
+	// Read document-info
 	/*
 	void getDocumentInfo()
 	{
@@ -1361,7 +1396,7 @@ public:
 	}
 	*/
 
-	// Reads title-info and src-title-info
+	// Read title-info and src-title-info
 	void getTitleInfo(NSStringUtils::CStringBuilder& oBuilder)
 	{
 		if (m_oLightReader.IsEmptyNode())
@@ -1394,7 +1429,7 @@ public:
 				std::wstring sGenre = content();
 				m_oTitleInfo.m_sGenres += ((m_oTitleInfo.m_sGenres.empty() ? L"" : L", ") + sGenre);
 			}
-			// Reads author's fields
+			// Read author fields
 			else if (sName == L"author")
 			{
 				std::wstring sFirstName, sMiddleName, sLastName, sNickname;
@@ -1481,7 +1516,7 @@ public:
 		}
 	}
 
-	// Returns the contents of a node
+	// Returns node content
 	std::wstring content()
 	{
 		if (!m_oLightReader.IsEmptyNode() && m_oLightReader.ReadNextSiblingNode2(m_oLightReader.GetDepth()))
@@ -1759,21 +1794,41 @@ public:
 				readLi(oXml, false, arPProperties);
 			else if (sName == L"img")
 			{
-				std::wstring sId, sBinary;
+				std::wstring sId;
 				while (m_oLightReader.MoveToNextAttribute())
 				{
 					if (m_oLightReader.GetName() == L"src")
 					{
-						sBinary = m_oLightReader.GetText();
-						sBinary.erase(0, sBinary.find(L',') + 1);
+						const std::wstring sSrc = m_oLightReader.GetText();
+						const size_t nDataStart = sSrc.find(L',');
+
+						if (0 != sSrc.find(L"data:") || std::wstring::npos == nDataStart)
+							continue;
+
 						std::vector<std::wstring> vImage;
-						vImage.push_back(sBinary);
+						vImage.push_back(sSrc.substr(nDataStart + 1));
 						sId = std::to_wstring(m_mImages.size() + 1);
 						m_mImages.insert(std::make_pair(sId, vImage));
 					}
 				}
 				m_oLightReader.MoveToElement();
-				oXml.WriteString(L"<image l:href=\"#img" + sId + L".png\"/>");
+
+				if (!sId.empty())
+					oXml.WriteString(L"<image l:href=\"#img" + sId + L".png\"/>");
+			}
+			else if (sName == L"hr")
+			{
+				bool bIsNoShade = false;
+				while (m_oLightReader.MoveToNextAttribute())
+				{
+					if (m_oLightReader.GetName() == L"noshade" && m_oLightReader.GetText() == L"noshade")
+					{
+						bIsNoShade = true;
+						break;
+					}
+				}
+				m_oLightReader.MoveToElement();
+				WriteText(oXml, bIsNoShade ? L"-----" : L"=====", arPProperties);
 			}
 			else
 				readStream(oXml, arPProperties);
@@ -1934,39 +1989,39 @@ CFb2File::~CFb2File()
 	RELEASEOBJECT(m_internal);
 }
 
-// Checks if the fb2 file matches the format
+// Check if fb2 file matches format
 bool CFb2File::IsFb2File(const std::wstring& sFile)
 {
-	// Opens a file for verification
+	// Opens file for validation
 	if (!m_internal->OpenFromFile(sFile))
 		return false;
-	// Reading FictionBook
+	// Read FictionBook
 	return m_internal->isFictionBook();
 }
 
-// Setting the working folder
+// Set working folder
 void CFb2File::SetTmpDirectory(const std::wstring& sFolder)
 {
 	// m_internal->m_sTmpFolder = sFolder;
 }
 
-// sPath - path to the fb2 file, sDirectory - directory where docx is generated and created
+// sPath - path to fb2 file, sDirectory - directory where docx is formed and created
 HRESULT CFb2File::Open(const std::wstring& sPath, const std::wstring& sDirectory, CFb2Params* oParams)
 {
-	// Copying a template
+	// Copy template
 	if (!ExtractTemplate(sDirectory))
 		return S_FALSE;
 
-	// Start of file
+	// File start
 	NSStringUtils::CStringBuilder oDocument;
 	oDocument += L"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><w:document xmlns:wpc=\"http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas\" xmlns:mc=\"http://schemas.openxmlformats.org/markup-compatibility/2006\" xmlns:o=\"urn:schemas-microsoft-com:office:office\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:m=\"http://schemas.openxmlformats.org/officeDocument/2006/math\" xmlns:v=\"urn:schemas-microsoft-com:vml\" xmlns:wp14=\"http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\" xmlns:w10=\"urn:schemas-microsoft-com:office:word\" xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:w14=\"http://schemas.microsoft.com/office/word/2010/wordml\" xmlns:w15=\"http://schemas.microsoft.com/office/word/2012/wordml\" xmlns:wpg=\"http://schemas.microsoft.com/office/word/2010/wordprocessingGroup\" xmlns:wpi=\"http://schemas.microsoft.com/office/word/2010/wordprocessingInk\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wne=\"http://schemas.microsoft.com/office/word/2006/wordml\" xmlns:wps=\"http://schemas.microsoft.com/office/word/2010/wordprocessingShape\" mc:Ignorable=\"w14 w15 wp14\"><w:body>";
 
-	// Creating footnotes
+	// Create footnotes
 	NSStringUtils::CStringBuilder oFootnotes;
 	oFootnotes += L"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><w:footnotes xmlns:wpc=\"http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas\" xmlns:mc=\"http://schemas.openxmlformats.org/markup-compatibility/2006\" xmlns:o=\"urn:schemas-microsoft-com:office:office\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:m=\"http://schemas.openxmlformats.org/officeDocument/2006/math\" xmlns:v=\"urn:schemas-microsoft-com:vml\" xmlns:wp14=\"http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\" xmlns:w10=\"urn:schemas-microsoft-com:office:word\" xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:w14=\"http://schemas.microsoft.com/office/word/2010/wordml\" xmlns:w15=\"http://schemas.microsoft.com/office/word/2012/wordml\" xmlns:wpg=\"http://schemas.microsoft.com/office/word/2010/wordprocessingGroup\" xmlns:wpi=\"http://schemas.microsoft.com/office/word/2010/wordprocessingInk\" xmlns:wne=\"http://schemas.microsoft.com/office/word/2006/wordml\" xmlns:wps=\"http://schemas.microsoft.com/office/word/2010/wordprocessingShape\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" mc:Ignorable=\"w14 w15 wp14\">";
 	oFootnotes += L"<w:footnote w:type=\"separator\" w:id=\"-1\"><w:p><w:pPr><w:spacing w:lineRule=\"auto\" w:line=\"240\" w:after=\"0\"/></w:pPr><w:r><w:separator/></w:r></w:p></w:footnote><w:footnote w:type=\"continuationSeparator\" w:id=\"0\"><w:p><w:pPr><w:spacing w:lineRule=\"auto\" w:line=\"240\" w:after=\"0\"/></w:pPr><w:r><w:continuationSeparator/></w:r></w:p></w:footnote>";
 
-	// Creating rels
+	// Create relationships
 	m_internal->m_oDocXmlRels  += L"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">";
 	m_internal->m_oDocXmlRels  += L"<Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Target=\"styles.xml\"/>";
 	m_internal->m_oDocXmlRels  += L"<Relationship Id=\"rId2\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings\" Target=\"settings.xml\"/>";
@@ -1976,7 +2031,7 @@ HRESULT CFb2File::Open(const std::wstring& sPath, const std::wstring& sDirectory
 	m_internal->m_oDocXmlRels  += L"<Relationship Id=\"rId6\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes\" Target=\"footnotes.xml\"/>";
 	m_internal->m_oNoteXmlRels += L"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">";
 
-	// Directory of images
+	// Images directory
 	std::wstring sMediaDirectory = sDirectory + L"/word/media";
 	NSDirectory::CreateDirectory(sMediaDirectory);
 
@@ -1984,14 +2039,14 @@ HRESULT CFb2File::Open(const std::wstring& sPath, const std::wstring& sDirectory
 	NSStringUtils::CStringBuilder oDescription;
 	NSStringUtils::CStringBuilder oContents;
 
-	// Read the contents, images, footnotes
+	// Read content, images, footnotes
 	bool bNeedContents = false;
 	if (oParams)
 		bNeedContents = oParams->bNeedContents;
 	if (!m_internal->readText(sPath, sMediaDirectory, oContents, oFootnotes))
 		return S_FALSE;
 
-	// Go to the beginning
+	// Move to the beginning
 	if (!m_internal->m_oLightReader.MoveToStart())
 		return S_FALSE;
 
@@ -2019,7 +2074,7 @@ HRESULT CFb2File::Open(const std::wstring& sPath, const std::wstring& sDirectory
 
 	// End of footnotes
 	oFootnotes += L"</w:footnotes>";
-	// Writing footnotes to a file
+	// Write footnotes to file
 	NSFile::CFileBinary oFootnotesWriter;
 	if (oFootnotesWriter.CreateFileW(sDirectory + L"/word/footnotes.xml"))
 	{
@@ -2029,14 +2084,14 @@ HRESULT CFb2File::Open(const std::wstring& sPath, const std::wstring& sDirectory
 
 	// Insert description
 	oDocument += oDescription.GetData();
-	// Inserting content
+	// Insert table of contents
 	if (bNeedContents)
 		oDocument += oContents.GetData();
-	// Insert the main body
+	// Insert main body
 	oDocument += oBuilder.GetData();
 	// End of document
 	oDocument += L"<w:sectPr><w:footnotePr/><w:type w:val=\"nextPage\"/><w:pgSz w:w=\"11906\" w:h=\"16838\" w:orient=\"portrait\"/><w:pgMar w:top=\"1134\" w:right=\"850\" w:bottom=\"1134\" w:left=\"1701\" w:header=\"709\" w:footer=\"709\" w:gutter=\"0\"/><w:cols w:num=\"1\" w:sep=\"0\" w:space=\"708\" w:equalWidth=\"1\"/><w:docGrid w:linePitch=\"360\"/></w:sectPr></w:body></w:document>";
-	// Writing a document to a file
+	// Write document to file
 	NSFile::CFileBinary oDocumentXmlWriter;
 	if (oDocumentXmlWriter.CreateFileW(sDirectory + L"/word/document.xml"))
 	{
@@ -2044,13 +2099,13 @@ HRESULT CFb2File::Open(const std::wstring& sPath, const std::wstring& sDirectory
 		oDocumentXmlWriter.CloseFile();
 	}
 
-	// App and core directory
+	// Directory for app and core
 	std::wstring sDocPropsDirectory = sDirectory + L"/docProps";
 	NSDirectory::CreateDirectory(sDocPropsDirectory);
 
 	// Create core.xml
 	NSStringUtils::CStringBuilder oCore;
-	// Heading
+	// Header
 	oCore += L"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><cp:coreProperties xmlns:cp=\"http://schemas.openxmlformats.org/package/2006/metadata/core-properties\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:dcterms=\"http://purl.org/dc/terms/\" xmlns:dcmitype=\"http://purl.org/dc/dcmitype/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><dc:title>";
 	oCore.WriteString(EncodeXmlString(m_internal->m_oTitleInfo.m_sBookTitle));
 	// Genres
@@ -2081,9 +2136,9 @@ HRESULT CFb2File::Open(const std::wstring& sPath, const std::wstring& sDirectory
 		oCore.WriteString(EncodeXmlString(m_internal->m_oTitleInfo.m_sAnnotation));
 		oCore.WriteString(L"</dc:description>");
 	}
-	// End core
+	// End of core
 	oCore += L"</cp:coreProperties>";
-	// Write core to a file
+	// Write core to file
 	NSFile::CFileBinary oCoreWriter;
 	if (oCoreWriter.CreateFileW(sDocPropsDirectory + L"/core.xml"))
 	{
@@ -2091,7 +2146,7 @@ HRESULT CFb2File::Open(const std::wstring& sPath, const std::wstring& sDirectory
 		oCoreWriter.CloseFile();
 	}
 
-	// Getting the ONLYOFFICE version
+	// Get ONLYOFFICE version
 	std::wstring sApplication = NSSystemUtils::GetEnvVariable(NSSystemUtils::gc_EnvApplicationName);
 	if (sApplication.empty())
 		sApplication = NSSystemUtils::gc_EnvApplicationNameDefault;
@@ -2105,7 +2160,7 @@ HRESULT CFb2File::Open(const std::wstring& sPath, const std::wstring& sDirectory
 	oApp += L"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Properties xmlns=\"http://schemas.openxmlformats.org/officeDocument/2006/extended-properties\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\"><Application>";
 	oApp += sApplication;
 	oApp += L"</Application><DocSecurity>0</DocSecurity><HyperlinksChanged>false</HyperlinksChanged><LinksUpToDate>false</LinksUpToDate><ScaleCrop>false</ScaleCrop><SharedDoc>false</SharedDoc></Properties>";
-	// Write app to a file
+	// Write app to file
 	NSFile::CFileBinary oAppWriter;
 	if (oAppWriter.CreateFileW(sDocPropsDirectory + L"/app.xml"))
 	{
@@ -2113,9 +2168,9 @@ HRESULT CFb2File::Open(const std::wstring& sPath, const std::wstring& sDirectory
 		oAppWriter.CloseFile();
 	}
 
-	// End of the rels
+	// End of relationships
 	m_internal->m_oDocXmlRels += L"</Relationships>";
-	// Writing the rels to a file
+	// Write relationships to file
 	NSFile::CFileBinary oRelsWriter;
 	if (oRelsWriter.CreateFileW(sDirectory + L"/word/_rels/document.xml.rels"))
 	{
@@ -2129,7 +2184,7 @@ HRESULT CFb2File::Open(const std::wstring& sPath, const std::wstring& sDirectory
 		oRelsWriter.CloseFile();
 	}
 
-	// Archive in docx
+	// Archive to docx
 	bool bNeedDocx = false;
 	if (oParams)
 		bNeedDocx = oParams->bNeedDocx;
@@ -2141,7 +2196,7 @@ HRESULT CFb2File::Open(const std::wstring& sPath, const std::wstring& sDirectory
 	return S_OK;
 }
 
-// sHtmlFile - path to the html file, sDst - path to the resulting fb2 file, sInpTitle - input file title
+// sHtmlFile - path to html file, sDst - path to result fb2 file, sInpTitle - input file title
 HRESULT CFb2File::FromHtml(const std::wstring& sHtmlFile, const std::wstring& sDst, const std::wstring& sInpTitle)
 {
 	std::wstring sTitle = sInpTitle;

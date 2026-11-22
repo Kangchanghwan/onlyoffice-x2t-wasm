@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "logging.h"
@@ -155,7 +165,7 @@ void odf_page_layout_context::process_master_styles(office_element_ptr root )
 		}
 		catch(...)
 		{
-			//why is there no page
+			// for some reason there is no page
 		}
 	}
 }
@@ -249,13 +259,13 @@ void odf_page_layout_context::set_page_gutter(_CP_OPT(length) length_)
 
 }
 void odf_page_layout_context::set_footer_size(_CP_OPT(length) length_, _CP_OPT(odf_types::length) length_min)
-//here it's not the footer itself, but the size after the footer
+// here it's not actually footer but size after the header/footer
 {
 	if (layout_state_list_.size() < 1) return;
 
 	//layout_state_list_.back().footer_size_ = length_;
 	layout_state_list_.back().footer_min_size_ = length_min;
-	//Actually build it into the layout later - based on the presence of at least one header and footer
+	// will actually embed into layout later - when at least one header/footer exists
 	return;
 }
 void odf_page_layout_context::set_header_size(_CP_OPT(length) length_, _CP_OPT(odf_types::length) length_min)
@@ -317,7 +327,7 @@ bool odf_page_layout_context::add_footer(int type)
 	master_state_list_.back().add_footer(root_header_footer_);
 
 /////////////////////////////////////////////////////////////////////
-//needs to be configured once
+// needs to be configured once
 	if (!layout_state_list_.back().footer_size_ && !layout_state_list_.back().footer_min_size_) return true;
 
 	style_header_footer_properties *footer_props = get_footer_properties();
@@ -364,7 +374,7 @@ bool odf_page_layout_context::add_header(int type)
 	
 	master_state_list_.back().add_header(root_header_footer_);
 ////////////////////////////////////////////////////////////////////////
-//needs to be configured once
+// needs to be configured once
 	if (!layout_state_list_.back().header_size_ && !layout_state_list_.back().header_min_size_) return true;
 	
 	style_header_footer_properties *header_props = get_header_properties();
@@ -394,7 +404,7 @@ void odf_page_layout_context::set_header_footer_image(office_element_ptr image)
 	style_header_footer_properties *header_footer_props = get_footer_properties();
 	if (!header_footer_props)return;
 
-	if (!header_footer_props->style_background_image_ )// the image is common for all even, odd, first, there are also no central, left, right
+	if (!header_footer_props->style_background_image_ )// image is common for all even, odd, first, also no center, left, right
 	{
 		header_footer_props->style_background_image_ = image;
 	}
@@ -552,7 +562,7 @@ void odf_page_layout_context::set_page_number_format(_CP_OPT(int) & type, _CP_OP
 		case 62: break;	    //numberformatVietnameseCounting           = 62
 		default:
 			break;
-		}//TODO
+		}//todooo
 	}
 }	
 

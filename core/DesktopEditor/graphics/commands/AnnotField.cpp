@@ -1,26 +1,36 @@
 /*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "./AnnotField.h"
@@ -125,7 +135,7 @@ CAnnotFieldInfo::CActionFieldPr* ReadAction(NSOnlineOfficeBinToPdf::CBufferReade
 	return pRes;
 }
 
-CAnnotFieldInfo::CAnnotFieldInfo() : IAdvancedCommand(AdvancedCommandType::Annotaion)
+CAnnotFieldInfo::CAnnotFieldInfo() : IAdvancedCommand(AdvancedCommandType::Annotation)
 {
 	m_nType = EAnnotType::Unknown;
 
@@ -144,20 +154,22 @@ CAnnotFieldInfo::CAnnotFieldInfo() : IAdvancedCommand(AdvancedCommandType::Annot
 	m_oBorder.nType  = 0;
 	m_oBorder.dWidth = 0.0;
 
-	m_pMarkupPr       = NULL;
-	m_pTextPr         = NULL;
-	m_pInkPr          = NULL;
-	m_pLinePr         = NULL;
-	m_pTextMarkupPr   = NULL;
-	m_pSquareCirclePr = NULL;
-	m_pPolygonLinePr  = NULL;
-	m_pPopupPr        = NULL;
-	m_pFreeTextPr     = NULL;
-	m_pCaretPr        = NULL;
-	m_pStampPr        = NULL;
-	m_pRedactPr       = NULL;
-	m_pLinkPr         = NULL;
-	m_pWidgetPr       = NULL;
+	m_pMarkupPr         = NULL;
+	m_pTextPr           = NULL;
+	m_pInkPr            = NULL;
+	m_pLinePr           = NULL;
+	m_pTextMarkupPr     = NULL;
+	m_pSquareCirclePr   = NULL;
+	m_pPolygonLinePr    = NULL;
+	m_pPopupPr          = NULL;
+	m_pFreeTextPr       = NULL;
+	m_pCaretPr          = NULL;
+	m_pStampPr          = NULL;
+	m_pRedactPr         = NULL;
+	m_pLinkPr           = NULL;
+	m_pFileAttachmentPr = NULL;
+	m_pScreenPr         = NULL;
+	m_pWidgetPr         = NULL;
 }
 CAnnotFieldInfo::~CAnnotFieldInfo()
 {
@@ -174,6 +186,8 @@ CAnnotFieldInfo::~CAnnotFieldInfo()
 	RELEASEOBJECT(m_pStampPr);
 	RELEASEOBJECT(m_pRedactPr);
 	RELEASEOBJECT(m_pLinkPr);
+	RELEASEOBJECT(m_pFileAttachmentPr);
+	RELEASEOBJECT(m_pScreenPr);
 	RELEASEOBJECT(m_pWidgetPr);
 }
 
@@ -265,6 +279,18 @@ void CAnnotFieldInfo::SetType(int nType)
 	{
 		RELEASEOBJECT(m_pPopupPr);
 		m_pPopupPr = new CAnnotFieldInfo::CPopupAnnotPr();
+		break;
+	}
+	case EAnnotType::FileAttachment:
+	{
+		RELEASEOBJECT(m_pFileAttachmentPr);
+		m_pFileAttachmentPr = new CAnnotFieldInfo::CFileAttachmentAnnotPr();
+		break;
+	}
+	case EAnnotType::Screen:
+	{
+		RELEASEOBJECT(m_pScreenPr);
+		m_pScreenPr = new CAnnotFieldInfo::CScreenAnnotPr();
 		break;
 	}
 	case EAnnotType::Redact:
@@ -396,21 +422,31 @@ bool CAnnotFieldInfo::IsLink() const
 {
 	return (m_nType == 1);
 }
+bool CAnnotFieldInfo::IsFileAttachment() const
+{
+	return (m_nType == 16);
+}
+bool CAnnotFieldInfo::IsScreen() const
+{
+	return (m_nType == 20);
+}
 
-CAnnotFieldInfo::CMarkupAnnotPr*       CAnnotFieldInfo::GetMarkupAnnotPr()       { return m_pMarkupPr; }
-CAnnotFieldInfo::CTextAnnotPr*         CAnnotFieldInfo::GetTextAnnotPr()         { return m_pTextPr; }
-CAnnotFieldInfo::CInkAnnotPr*          CAnnotFieldInfo::GetInkAnnotPr()          { return m_pInkPr; }
-CAnnotFieldInfo::CLineAnnotPr*         CAnnotFieldInfo::GetLineAnnotPr()         { return m_pLinePr; }
-CAnnotFieldInfo::CTextMarkupAnnotPr*   CAnnotFieldInfo::GetTextMarkupAnnotPr()   { return m_pTextMarkupPr; }
-CAnnotFieldInfo::CSquareCircleAnnotPr* CAnnotFieldInfo::GetSquareCircleAnnotPr() { return m_pSquareCirclePr; }
-CAnnotFieldInfo::CPolygonLineAnnotPr*  CAnnotFieldInfo::GetPolygonLineAnnotPr()  { return m_pPolygonLinePr; }
-CAnnotFieldInfo::CPopupAnnotPr*        CAnnotFieldInfo::GetPopupAnnotPr()        { return m_pPopupPr; }
-CAnnotFieldInfo::CFreeTextAnnotPr*     CAnnotFieldInfo::GetFreeTextAnnotPr()     { return m_pFreeTextPr; }
-CAnnotFieldInfo::CCaretAnnotPr*        CAnnotFieldInfo::GetCaretAnnotPr()        { return m_pCaretPr; }
-CAnnotFieldInfo::CStampAnnotPr*        CAnnotFieldInfo::GetStampAnnotPr()        { return m_pStampPr; }
-CAnnotFieldInfo::CRedactAnnotPr*       CAnnotFieldInfo::GetRedactAnnotPr()       { return m_pRedactPr; }
-CAnnotFieldInfo::CLinkAnnotPr*         CAnnotFieldInfo::GetLinkAnnotPr()         { return m_pLinkPr; }
-CAnnotFieldInfo::CWidgetAnnotPr*       CAnnotFieldInfo::GetWidgetAnnotPr()       { return m_pWidgetPr; }
+CAnnotFieldInfo::CMarkupAnnotPr*         CAnnotFieldInfo::GetMarkupAnnotPr()         { return m_pMarkupPr; }
+CAnnotFieldInfo::CTextAnnotPr*           CAnnotFieldInfo::GetTextAnnotPr()           { return m_pTextPr; }
+CAnnotFieldInfo::CInkAnnotPr*            CAnnotFieldInfo::GetInkAnnotPr()            { return m_pInkPr; }
+CAnnotFieldInfo::CLineAnnotPr*           CAnnotFieldInfo::GetLineAnnotPr()           { return m_pLinePr; }
+CAnnotFieldInfo::CTextMarkupAnnotPr*     CAnnotFieldInfo::GetTextMarkupAnnotPr()     { return m_pTextMarkupPr; }
+CAnnotFieldInfo::CSquareCircleAnnotPr*   CAnnotFieldInfo::GetSquareCircleAnnotPr()   { return m_pSquareCirclePr; }
+CAnnotFieldInfo::CPolygonLineAnnotPr*    CAnnotFieldInfo::GetPolygonLineAnnotPr()    { return m_pPolygonLinePr; }
+CAnnotFieldInfo::CPopupAnnotPr*          CAnnotFieldInfo::GetPopupAnnotPr()          { return m_pPopupPr; }
+CAnnotFieldInfo::CFreeTextAnnotPr*       CAnnotFieldInfo::GetFreeTextAnnotPr()       { return m_pFreeTextPr; }
+CAnnotFieldInfo::CCaretAnnotPr*          CAnnotFieldInfo::GetCaretAnnotPr()          { return m_pCaretPr; }
+CAnnotFieldInfo::CStampAnnotPr*          CAnnotFieldInfo::GetStampAnnotPr()          { return m_pStampPr; }
+CAnnotFieldInfo::CRedactAnnotPr*         CAnnotFieldInfo::GetRedactAnnotPr()         { return m_pRedactPr; }
+CAnnotFieldInfo::CLinkAnnotPr*           CAnnotFieldInfo::GetLinkAnnotPr()           { return m_pLinkPr; }
+CAnnotFieldInfo::CFileAttachmentAnnotPr* CAnnotFieldInfo::GetFileAttachmentAnnotPr() { return m_pFileAttachmentPr; }
+CAnnotFieldInfo::CScreenAnnotPr*         CAnnotFieldInfo::GetScreenAnnotPr()         { return m_pScreenPr; }
+CAnnotFieldInfo::CWidgetAnnotPr*         CAnnotFieldInfo::GetWidgetAnnotPr()         { return m_pWidgetPr; }
 
 bool CAnnotFieldInfo::Read(NSOnlineOfficeBinToPdf::CBufferReader* pReader, IMetafileToRenderter* pCorrector)
 {
@@ -499,6 +535,8 @@ bool CAnnotFieldInfo::Read(NSOnlineOfficeBinToPdf::CBufferReader* pReader, IMeta
 			m_pStampPr->Read(pReader, nFlags);
 		else if (IsRedact())
 			m_pRedactPr->Read(pReader, nFlags);
+		else if (IsFileAttachment())
+			m_pFileAttachmentPr->Read(pReader, nFlags);
 	}
 	else if (IsPopup())
 		m_pPopupPr->Read(pReader);
@@ -506,6 +544,8 @@ bool CAnnotFieldInfo::Read(NSOnlineOfficeBinToPdf::CBufferReader* pReader, IMeta
 		m_pWidgetPr->Read(pReader, nType);
 	else if (IsLink())
 		m_pLinkPr->Read(pReader);
+	else if (IsScreen())
+		m_pScreenPr->Read(pReader);
 
 	return m_nType != -1;
 }
@@ -827,6 +867,7 @@ CAnnotFieldInfo::CLinkAnnotPr::~CLinkAnnotPr()
 }
 BYTE CAnnotFieldInfo::CLinkAnnotPr::GetH() const { return m_nH; }
 int CAnnotFieldInfo::CLinkAnnotPr::GetFlags() const { return m_nFlags; }
+void CAnnotFieldInfo::CLinkAnnotPr::GetRD(double& dRD1, double& dRD2, double& dRD3, double& dRD4) { dRD1 = m_dRD[0]; dRD2 = m_dRD[1]; dRD3 = m_dRD[2]; dRD4 = m_dRD[3]; }
 const std::vector<double>& CAnnotFieldInfo::CLinkAnnotPr::GetQuadPoints() { return m_arrQuadPoints; }
 CAnnotFieldInfo::CActionFieldPr* CAnnotFieldInfo::CLinkAnnotPr::GetA() { return m_pAction; }
 CAnnotFieldInfo::CActionFieldPr* CAnnotFieldInfo::CLinkAnnotPr::GetPA() { return m_pPA; }
@@ -851,6 +892,126 @@ void CAnnotFieldInfo::CLinkAnnotPr::Read(NSOnlineOfficeBinToPdf::CBufferReader* 
 		m_arrQuadPoints.reserve(n);
 		for (int i = 0; i < n; ++i)
 			m_arrQuadPoints.push_back(pReader->ReadDouble());
+	}
+	if (m_nFlags & (1 << 4))
+	{
+		m_dRD[0] = pReader->ReadDouble();
+		m_dRD[1] = pReader->ReadDouble();
+		m_dRD[2] = pReader->ReadDouble();
+		m_dRD[3] = pReader->ReadDouble();
+	}
+}
+
+CAnnotFieldInfo::CFileAttachmentAnnotPr::CFileAttachmentAnnotPr()
+{
+
+}
+CAnnotFieldInfo::CFileAttachmentAnnotPr::~CFileAttachmentAnnotPr()
+{
+
+}
+int CAnnotFieldInfo::CFileAttachmentAnnotPr::GetFileFlag() const           { return m_nFileFlag; }
+const std::wstring& CAnnotFieldInfo::CFileAttachmentAnnotPr::GetName()     { return m_wsName; }
+const std::wstring& CAnnotFieldInfo::CFileAttachmentAnnotPr::GetFS()       { return m_wsFS; }
+const std::wstring& CAnnotFieldInfo::CFileAttachmentAnnotPr::GetF()        { return m_wsF; }
+const std::wstring& CAnnotFieldInfo::CFileAttachmentAnnotPr::GetUF()       { return m_wsUF; }
+const std::wstring& CAnnotFieldInfo::CFileAttachmentAnnotPr::GetDOS()      { return m_wsDOS; }
+const std::wstring& CAnnotFieldInfo::CFileAttachmentAnnotPr::GetMac()      { return m_wsMac; }
+const std::wstring& CAnnotFieldInfo::CFileAttachmentAnnotPr::GetUnix()     { return m_wsUnix; }
+const std::wstring& CAnnotFieldInfo::CFileAttachmentAnnotPr::GetDesc()     { return m_wsDesc; }
+const std::wstring& CAnnotFieldInfo::CFileAttachmentAnnotPr::GetFileF()    { return m_wsFileF; }
+const std::wstring& CAnnotFieldInfo::CFileAttachmentAnnotPr::GetFileUF()   { return m_wsFileUF; }
+const std::wstring& CAnnotFieldInfo::CFileAttachmentAnnotPr::GetFileDOS()  { return m_wsFileDOS; }
+const std::wstring& CAnnotFieldInfo::CFileAttachmentAnnotPr::GetFileMac()  { return m_wsFileMac; }
+const std::wstring& CAnnotFieldInfo::CFileAttachmentAnnotPr::GetFileUnix() { return m_wsFileUnix; }
+const std::pair<std::wstring, std::wstring>& CAnnotFieldInfo::CFileAttachmentAnnotPr::GetID() { return m_wsID; }
+void CAnnotFieldInfo::CFileAttachmentAnnotPr::Read(NSOnlineOfficeBinToPdf::CBufferReader* pReader, int nFlags)
+{
+	if (nFlags & (1 << 15))
+		m_wsName = pReader->ReadString();
+	if (nFlags & (1 << 16))
+		m_wsFS = pReader->ReadString();
+	if (nFlags & (1 << 17))
+		m_wsF = pReader->ReadString();
+	if (nFlags & (1 << 18))
+		m_wsUF = pReader->ReadString();
+	if (nFlags & (1 << 19))
+		m_wsDOS = pReader->ReadString();
+	if (nFlags & (1 << 20))
+		m_wsMac = pReader->ReadString();
+	if (nFlags & (1 << 21))
+		m_wsUnix = pReader->ReadString();
+	if (nFlags & (1 << 22))
+	{
+		m_wsID.first  = pReader->ReadString();
+		m_wsID.second = pReader->ReadString();
+	}
+	if (nFlags & (1 << 24))
+	{
+		m_nFileFlag = pReader->ReadInt();
+		if (m_nFileFlag & (1 << 0))
+			m_wsFileF = pReader->ReadString();
+		if (m_nFileFlag & (1 << 1))
+			m_wsFileUF = pReader->ReadString();
+		if (m_nFileFlag & (1 << 2))
+			m_wsFileDOS = pReader->ReadString();
+		if (m_nFileFlag & (1 << 3))
+			m_wsFileMac = pReader->ReadString();
+		if (m_nFileFlag & (1 << 4))
+			m_wsFileUnix = pReader->ReadString();
+	}
+	if (nFlags & (1 << 26))
+		m_wsDesc = pReader->ReadString();
+}
+
+CAnnotFieldInfo::CScreenAnnotPr::CScreenAnnotPr()
+{
+
+}
+CAnnotFieldInfo::CScreenAnnotPr::~CScreenAnnotPr()
+{
+
+}
+int CAnnotFieldInfo::CScreenAnnotPr::GetR()     const { return m_nR; }
+int CAnnotFieldInfo::CScreenAnnotPr::GetFlags() const { return m_nFlags; }
+const std::wstring& CAnnotFieldInfo::CScreenAnnotPr::GetT() { return m_wsT; }
+const std::vector<double>& CAnnotFieldInfo::CScreenAnnotPr::GetBC() { return m_arrBC; }
+const std::vector<double>& CAnnotFieldInfo::CScreenAnnotPr::GetBG() { return m_arrBG; }
+const std::vector<CAnnotFieldInfo::CActionFieldPr*>& CAnnotFieldInfo::CScreenAnnotPr::GetActions() { return m_arrAction; }
+void CAnnotFieldInfo::CScreenAnnotPr::Read(NSOnlineOfficeBinToPdf::CBufferReader* pReader)
+{
+	m_nFlags = pReader->ReadInt();
+	if (m_nFlags & (1 << 0))
+		m_wsT = pReader->ReadString();
+	if (m_nFlags & (1 << 1))
+	{
+		int n = pReader->ReadInt();
+		m_arrBC.reserve(n);
+		for (int i = 0; i < n; ++i)
+			m_arrBC.push_back(pReader->ReadDouble());
+	}
+	if (m_nFlags & (1 << 2))
+		m_nR = pReader->ReadInt();
+	if (m_nFlags & (1 << 3))
+	{
+		int n = pReader->ReadInt();
+		m_arrBG.reserve(n);
+		for (int i = 0; i < n; ++i)
+			m_arrBG.push_back(pReader->ReadDouble());
+	}
+	if (m_nFlags & (1 << 4))
+	{
+		int nAction = pReader->ReadInt();
+		for (int i = 0; i < nAction; ++i)
+		{
+			std::wstring wsType = pReader->ReadString();
+			CAnnotFieldInfo::CActionFieldPr* pA = ReadAction(pReader);
+			if (pA)
+			{
+				pA->wsType = wsType;
+				m_arrAction.push_back(pA);
+			}
+		}
 	}
 }
 
@@ -890,6 +1051,7 @@ CAnnotFieldInfo::CWidgetAnnotPr::CButtonWidgetPr*    CAnnotFieldInfo::CWidgetAnn
 CAnnotFieldInfo::CWidgetAnnotPr::CTextWidgetPr*      CAnnotFieldInfo::CWidgetAnnotPr::GetTextWidgetPr()      { return m_pTextPr; }
 CAnnotFieldInfo::CWidgetAnnotPr::CChoiceWidgetPr*    CAnnotFieldInfo::CWidgetAnnotPr::GetChoiceWidgetPr()    { return m_pChoicePr; }
 CAnnotFieldInfo::CWidgetAnnotPr::CSignatureWidgetPr* CAnnotFieldInfo::CWidgetAnnotPr::GetSignatureWidgetPr() { return m_pSignaturePr; }
+void CAnnotFieldInfo::CWidgetAnnotPr::SetFontName(const std::wstring& sName) { m_wsFN = sName; }
 CAnnotFieldInfo::CWidgetAnnotPr::CWidgetAnnotPr(BYTE nType)
 {
 	m_pButtonPr    = NULL;
@@ -1186,6 +1348,7 @@ CWidgetsInfo::~CWidgetsInfo()
 	for (int i = 0; i < m_arrParents.size(); ++i)
 		RELEASEOBJECT(m_arrParents[i]);
 }
+const std::wstring& CWidgetsInfo::GetRoles() { return m_wsRoles; }
 const std::vector< std::pair<int, int> >& CWidgetsInfo::GetCO() { return m_arrCO; }
 const std::vector<std::wstring>& CWidgetsInfo::GetButtonImg() { return m_arrButtonImg; }
 const std::vector<CWidgetsInfo::CParent*>& CWidgetsInfo::GetParents() { return m_arrParents; }
@@ -1195,8 +1358,10 @@ void CWidgetsInfo::ChangeCO(int i, int nNum, int nGen)
 		return;
 	m_arrCO[i] = std::make_pair(nNum, nGen);
 }
-bool CWidgetsInfo::Read(NSOnlineOfficeBinToPdf::CBufferReader* pReader, IMetafileToRenderter* pCorrector)
+bool CWidgetsInfo::Read(NSOnlineOfficeBinToPdf::CBufferReader* pReader, IMetafileToRenderter* pCorrector, int nLen)
 {
+	int nStart = pReader->Tell() - 4;
+
 	int n = pReader->ReadInt();
 	m_arrCO.reserve(n);
 	for (int i = 0; i < n; ++i)
@@ -1280,6 +1445,10 @@ bool CWidgetsInfo::Read(NSOnlineOfficeBinToPdf::CBufferReader* pReader, IMetafil
 		m_arrButtonImg.push_back(sImage);
 	}
 
+	int nEnd = pReader->Tell();
+	if (nEnd - nStart < nLen)
+		m_wsRoles = pReader->ReadString();
+
 	return true;
 }
 
@@ -1323,5 +1492,30 @@ bool CRedact::Read(NSOnlineOfficeBinToPdf::CBufferReader* pReader, IMetafileToRe
 		m_arrRedact.push_back(pRedact);
 	}
 
+	return true;
+}
+
+CRedactAnnot::CRedactAnnot() : IAdvancedCommand(AdvancedCommandType::RedactAnnot) {}
+int CRedactAnnot::GetID() { return m_nID; }
+bool CRedactAnnot::Read(NSOnlineOfficeBinToPdf::CBufferReader* pReader, IMetafileToRenderter* pCorrector)
+{
+	m_nID = pReader->ReadInt();
+	return true;
+}
+
+CRedactMeta::CRedactMeta() : IAdvancedCommand(AdvancedCommandType::RedactMeta) {}
+const std::vector<int>& CRedactMeta::GetWidgetID() { return m_arrWidgetID; }
+const std::vector<std::wstring>& CRedactMeta::GetRedactID() { return m_arrRedactID; }
+bool CRedactMeta::Read(NSOnlineOfficeBinToPdf::CBufferReader* pReader, IMetafileToRenderter* pCorrector)
+{
+	int n = pReader->ReadInt();
+	m_arrWidgetID.reserve(n);
+	for (int i = 0; i < n; ++i)
+		m_arrWidgetID.push_back(pReader->ReadInt());
+
+	n = pReader->ReadInt();
+	m_arrRedactID.reserve(n);
+	for (int i = 0; i < n; ++i)
+		m_arrRedactID.push_back(pReader->ReadString());
 	return true;
 }

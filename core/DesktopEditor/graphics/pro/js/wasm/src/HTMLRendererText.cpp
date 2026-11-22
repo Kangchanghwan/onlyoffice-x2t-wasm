@@ -1,27 +1,38 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
+
 #include "HTMLRendererText.h"
 #include "Text.h"
 
@@ -44,7 +55,7 @@ namespace NSHtmlRenderer
 
 		int* m_pTempUnicodes; // unicode array
 		int  m_nTempUnicodesAlloc; // allocated memory size
-		int  m_nTempUnicodesLen; // size of memory used
+		int  m_nTempUnicodesLen; // used memory size
 
 		bool m_bIsFontsInit;
 
@@ -163,7 +174,7 @@ namespace NSHtmlRenderer
 		return S_OK;
 	}
 
-	//-------- Functions for working with the page --------------------------------------------------
+	//-------- Page functions --------------------------------------------------
 	HRESULT CHTMLRendererText::NewPage() { return S_OK; }
 	HRESULT CHTMLRendererText::get_Height(double* dHeight)
 	{
@@ -319,7 +330,7 @@ namespace NSHtmlRenderer
 		return S_OK;
 	}
 
-	//-------- Functions for text output --------------------------------------------------------
+	//-------- Text output functions --------------------------------------------------------
 	HRESULT CHTMLRendererText::CommandDrawTextCHAR(const LONG& c, const double& x, const double& y, const double& w, const double& h)
 	{
 		int _c = (int)c;
@@ -347,11 +358,22 @@ namespace NSHtmlRenderer
 		return S_OK;
 	}
 
-	//-------- Markers for commands ---------------------------------------------------------------
+	HRESULT CHTMLRendererText::CommandDrawType3CHAR(const std::wstring& wsUnicodeText, const double& x, const double& y, const double& w, const double& h, const double& ascent, const double& descent, const double& unitsPerEm)
+	{
+		m_pInternal->m_oSmartText.m_oFontManager.SetType3Metrics(ascent, descent, unitsPerEm, w);
+
+		m_pInternal->GetUnicodes(wsUnicodeText);
+		m_pInternal->WriteText(m_pInternal->m_pTempUnicodes, NULL, m_pInternal->m_nTempUnicodesLen, x, y);
+
+		m_pInternal->m_oSmartText.m_oFontManager.ClearType3();
+		return S_OK;
+	}
+
+	//-------- Command markers ---------------------------------------------------------------
 	HRESULT CHTMLRendererText::BeginCommand(const DWORD& lType) { return S_OK; }
 	HRESULT CHTMLRendererText::EndCommand(const DWORD& lType) { return S_OK; }
 
-	//-------- Functions for working with Graphics Path -----------------------------------------------
+	//-------- Graphics Path functions -----------------------------------------------
 	HRESULT CHTMLRendererText::PathCommandMoveTo(const double& x, const double& y) { return S_OK; }
 	HRESULT CHTMLRendererText::PathCommandLineTo(const double& x, const double& y) { return S_OK; }
 	HRESULT CHTMLRendererText::PathCommandLinesTo(double* points, const int& count) { return S_OK; }
@@ -368,7 +390,7 @@ namespace NSHtmlRenderer
 	HRESULT CHTMLRendererText::PathCommandTextExCHAR(const LONG& c, const LONG& gid, const double& x, const double& y, const double& w, const double& h) { return S_OK; }
 	HRESULT CHTMLRendererText::PathCommandTextEx(const std::wstring& bsUnicodeText, const unsigned int* pGids, const unsigned int nGidsCount, const double& x, const double& y, const double& w, const double& h) { return S_OK; }
 
-	//-------- Functions for displaying images ------------------------------------------------------------------
+	//-------- Image output functions ---------------------------------------------------
 	HRESULT CHTMLRendererText::DrawImage(IGrObject* pImage, const double& x, const double& y, const double& w, const double& h) { return S_OK; }
 
 	HRESULT CHTMLRendererText::DrawImageFromFile(const std::wstring& sPath, const double& x, const double& y, const double& w, const double& h, const BYTE& lAlpha) { return S_OK; }

@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "FormattedDiskPagePAPX.h"
@@ -54,13 +64,18 @@ namespace DocFileFormat
 		//read the 512 bytes (FKP)
 		unsigned char* bytes = NULL;
 		bytes = new unsigned char[512];
+		memset(bytes, 0, 512);
 
 		WordStream->seek(offset);
 		WordStream->read(bytes, 512);
 
 		//get the count
 		crun = bytes[511];
-
+		if (crun < 1)
+		{
+			RELEASEARRAYOBJECTS(bytes);
+			return;
+		}
 		//create and fill the array with the adresses
 		rgfcSize = crun + 1;
 		rgfc = new int[rgfcSize];
@@ -87,13 +102,16 @@ namespace DocFileFormat
 
 		for (unsigned char i = 0; i < crun; i++)
 		{
+			if (j > 511)
+				break;
 			BX bx;
 			bx.wordOffset = bytes[j];
 			j++;
 
-			if (fComplex || nWordVersion == 0)
+			if (/*fComplex ||*/ nWordVersion == 0)
 			{
-				memcpy(phe, (bytes + j), 12);
+				if (j + 12 <= 512)	memcpy(phe, (bytes + j), 12);
+				else				memset(phe, 0, 12);
 
 				//fill the rgbx array
 				bx.phe = ParagraphHeight(phe, 12, false);
@@ -102,14 +120,18 @@ namespace DocFileFormat
 			}
 			else if (nWordVersion == 2)
 			{
-				memcpy(phe, (bytes + bx.wordOffset * 2 + j + 1), 6);
+				int phePos = bx.wordOffset * 2 + j + 1;
+
+				if (phePos + 6 <= 512)	memcpy(phe, (bytes + phePos), 6);
+				else					memset(phe, 0, 6);
 
 				//fill the rgbx array
 				bx.phe = ParagraphHeight(phe, 6, false);
 			}
 			else
 			{
-				memcpy(phe, (bytes + j), 6);
+				if (j + 6 <= 512)	memcpy(phe, (bytes + j), 6);
+				else				memset(phe, 0, 6);
 
 				//fill the rgbx array
 				bx.phe = ParagraphHeight(phe, 6, false);
@@ -131,14 +153,21 @@ namespace DocFileFormat
 				if (cw != 0)
 				{
 					int sz = cw * 2;
-					//read the bytes for papx
-					unsigned char* papx = new unsigned char[sz];
-					memcpy(papx, (bytes + (bx.wordOffset * 2) + padbyte + 1), sz);
 
-					//parse PAPX and fill grppapx
-					grppapx[i] = new ParagraphPropertyExceptions(papx, sz, dataStream, nWordVersion);
+					int szMax = 512 - (bx.wordOffset * 2 + padbyte + 1);
+					if (sz > szMax) sz = szMax;
 
-					RELEASEARRAYOBJECTS(papx);
+					if (sz > 0)
+					{
+						//read the bytes for papx
+						unsigned char* papx = new unsigned char[sz];
+						memcpy(papx, (bytes + (bx.wordOffset * 2) + padbyte + 1), sz);
+
+						//parse PAPX and fill grppapx
+						grppapx[i] = new ParagraphPropertyExceptions(papx, sz, dataStream, nWordVersion);
+
+						RELEASEARRAYOBJECTS(papx);
+					}
 				}
 
 			}
@@ -172,7 +201,7 @@ namespace DocFileFormat
 
 		//there are n offsets and n-1 fkp's in the bin table
 
-		if (fib->m_nWordVersion > 0 && fib->m_FibBase.fComplex == false)
+		if (fib->m_nWordVersion > 0/* && fib->m_FibBase.fComplex == false*/)
 		{
 			int	n = (((int)fib->m_FibWord97.lcbPlcfBtePapx - 8) / 6) + 1;
 
@@ -182,7 +211,7 @@ namespace DocFileFormat
 			int start_papx = 8;
 			if (fib->m_FibWord97.lcbPlcfBtePapx - 8 > (n - 1) * 4)
 			{
-				start_papx += ((n - 1) * 4); //crun duplication
+				start_papx += ((n - 1) * 4); //crun duplication 
 			}
 
 			int offset = 0;
@@ -218,7 +247,6 @@ namespace DocFileFormat
 				//so starts at:
 				int offset = fkpnr * 512;
 
-				//parse the FKP and add it to the list
 				PAPXlist->push_back(new FormattedDiskPagePAPX(wordStream, offset, dataStream, fib->m_nWordVersion, fib->m_FibBase.fComplex));
 			}
 

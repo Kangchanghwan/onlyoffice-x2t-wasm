@@ -20,45 +20,45 @@ public:
 // aes encryption
 TEST_F(COSignTest, crypt_storage_aes_gcm_random_password)
 {
-	// create a random password 100 characters long
+	// create random password of 100 characters
 	OSign::CStorageBuffer oPassword = OSign::Crypt::GeneratePassword(100);
 	EXPECT_EQ(100, oPassword.GetLength());
 
-	// encryption buffer
+	// buffer for encryption
 	std::string sDataCrypt = "Hello, world!";
 	OSign::CStorageBuffer oBuffer;
 	oBuffer.Add((const unsigned char*)sDataCrypt.c_str(), sDataCrypt.length());
 
-	// encrypt the buffer, the salt is generated randomly and appended to the result
+	// encrypt buffer, salt is generated randomly and appended to result
 	OSign::CStorageBuffer oCryptBuffer = OSign::Crypt::Encrypt(oBuffer, oPassword);
 
-	// decrypt the buffer
+	// decrypt buffer
 	OSign::CStorageBuffer oDecryptBuffer = OSign::Crypt::Decrypt(oCryptBuffer, oPassword);
 
-	// compare with the source
+	// compare with original
 	std::string sDecryptData((char*)oDecryptBuffer.GetData(), oDecryptBuffer.GetLength());
 	EXPECT_EQ(sDecryptData, sDataCrypt);
 }
 
 TEST_F(COSignTest, crypt_storage_aes_gcm_string_password)
 {
-	// create a random password from a string
+	// create random password from string
 	std::string sPassword = "password";
 	OSign::CStorageBuffer oPassword;
 	oPassword.Add((unsigned char*)sPassword.c_str(), sPassword.length());
 
-	// encryption buffer
+	// buffer for encryption
 	std::string sDataCrypt = "Hello, world!";
 	OSign::CStorageBuffer oBuffer;
 	oBuffer.Add((const unsigned char*)sDataCrypt.c_str(), sDataCrypt.length());
 
-	// encrypt the buffer, the salt is generated randomly and appended to the result
+	// encrypt buffer, salt is generated randomly and appended to result
 	OSign::CStorageBuffer oCryptBuffer = OSign::Crypt::Encrypt(oBuffer, oPassword);
 
-	// decrypt the buffer
+	// decrypt buffer
 	OSign::CStorageBuffer oDecryptBuffer = OSign::Crypt::Decrypt(oCryptBuffer, oPassword);
 
-	// compare with the source
+	// compare with original
 	std::string sDecryptData((char*)oDecryptBuffer.GetData(), oDecryptBuffer.GetLength());
 	EXPECT_EQ(sDecryptData, sDataCrypt);
 }
@@ -82,32 +82,32 @@ TEST_F(COSignTest, serialize_buffer_string)
 // signature
 TEST_F(COSignTest, sign_buffer_string)
 {
-	// generate a new certificate
+	// generate new certificate
 	OSign::CCertificate* pCert = new OSign::CCertificate();
 	pCert->Generate();
 
-	// signature buffer
+	// buffer for signing
 	std::string sDataBuffer = "Hello, world!";
 	OSign::CStorageBuffer oBuffer;
 	oBuffer.Add((const unsigned char*)sDataBuffer.c_str(), sDataBuffer.length());
 
 	// sign
 	OSign::CStorageBuffer oBufferSign = pCert->Sign(oBuffer);
-	// checking
+	// verify
 	bool bIsValid = pCert->Verify(oBuffer, oBufferSign);
 	delete pCert;
 
 	EXPECT_EQ(bIsValid, true);
 }
 
-// storage serialization test via signature/verification
+// storage serialization test via sign/verify
 TEST_F(COSignTest, serialize_storage_by_sign)
 {
-	// generate a new certificate
+	// generate new certificate
 	OSign::CCertificate* pCert = new OSign::CCertificate();
 	pCert->Generate();
 
-	// create a storage and add a certificate (the storage itself monitors the removal of the certificate)
+	// create storage and add certificate (storage handles certificate deletion itself)
 	OSign::CStorage oStorage;
 	oStorage.Add(pCert);
 
@@ -118,7 +118,7 @@ TEST_F(COSignTest, serialize_storage_by_sign)
 	OSign::CStorage oStorageLoad;
 	oStorageLoad.Load(&oStorageBuffer);
 
-	// signature buffer
+	// buffer for signing
 	std::string sDataBuffer = "Hello, world!";
 	OSign::CStorageBuffer oBuffer;
 	oBuffer.Add((const unsigned char*)sDataBuffer.c_str(), sDataBuffer.length());
@@ -131,10 +131,10 @@ TEST_F(COSignTest, serialize_storage_by_sign)
 	EXPECT_EQ(bIsValid, true);
 }
 
-// storage serialization test via signature/verification
+// storage serialization test via sign/verify
 TEST_F(COSignTest, serialize_storage_by_property)
 {
-	// generate a new certificate with settings
+	// generate new certificate with settings
 	std::map<std::wstring, std::wstring> properties;
 	properties.insert(std::make_pair(OSign::Properties::Email, L"sign@onlyoffice.com"));
 	properties.insert(std::make_pair(OSign::Properties::Phone, L"+00000000000"));
@@ -145,7 +145,7 @@ TEST_F(COSignTest, serialize_storage_by_property)
 	OSign::CCertificate* pCert = new OSign::CCertificate();
 	pCert->Generate(properties);
 
-	// create a storage and add a certificate (the storage itself monitors the removal of the certificate)
+	// create storage and add certificate (storage handles certificate deletion itself)
 	OSign::CStorage oStorage;
 	oStorage.Add(pCert);
 

@@ -1,32 +1,43 @@
 /*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #ifndef _PDF_WRITER_SRC_REDACT_OUTPUTDEV_H
 #define _PDF_WRITER_SRC_REDACT_OUTPUTDEV_H
 
 #include "../PdfWriter.h"
 #include "../PdfEditor.h"
+#include "OverlapOutputDev.h"
 
 #include "../SrcReader/GfxClip.h"
 
@@ -34,17 +45,33 @@
 #include "../lib/xpdf/OutputDev.h"
 
 #include <stack>
+#include <set>
+#include <map>
 
 namespace PdfWriter
 {
+	bool CheckFullRedact(const std::vector<double>& arrQuadPoints, const std::vector<CPoint>& XObjectPolygon);
+	bool CheckPartialRedact(const std::vector<double>& arrQuadPoints, const std::vector<CPoint>& XObjectPolygon);
+
 	class RedactOutputDev : public OutputDev
 	{
 	public:
-		RedactOutputDev(CPdfWriter* pRenderer, CObjectsManager* pObjMng, int nStartRefID);
+		RedactOutputDev(CPdfWriter* pRenderer, CObjectsManager* pObjMng, int nStartRefID, int nRedactInfo);
 		virtual ~RedactOutputDev();
 
 		void SetRedact(const std::vector<double>& arrQuadPoints);
+		void SetOverlapInfo(const std::set<int>& arrHiddenTextIndices,
+							const std::vector<int>* pFormTextCounts,
+							const std::vector<int>* pFormGraphicsCounts,
+							std::vector<SOverlapGraphicsResult>&& arrGraphicsResults,
+							int nStartTextCounter = 0,
+							int nStartFormCounter = 0,
+							int nStartGraphicsCounter = 0);
+		int  GetTextCounter()    const { return m_nTextCounter; }
+		int  GetFormCounter()    const { return m_nFormCounter; }
+		int GetGraphicsCounter() const { return m_nGraphicsCounter; }
 		void NewPDF(XRef* pXref);
+		void StartOnPage(CPage* pPage, CResourcesDict* pResources = NULL);
 
 		//----- get info about output device
 		virtual GBool upsideDown() override
@@ -138,11 +165,11 @@ namespace PdfWriter
 		// beginActualText
 		// endActualText
 		//----- additional
-		// beginMarkedContent
+		virtual GBool beginMarkedContent(GfxState *state, Object args[], int numArgs) override;
 		// beginMCOShapes
-		// endMarkedContent
+		virtual void endMarkedContent(GfxState *state) override;
 		virtual GBool useNameOp() override;
-		virtual void setExtGState(const char* name) override;
+		virtual void setExtGState(GfxState *pGState, Object* pExtGState, const char* name) override;
 		virtual void setFillColorSpace(const char* name) override;
 		virtual void setFillColor(Object* args, int numArgs) override;
 		virtual void setFillColorN(Object* args, int numArgs) override;
@@ -187,26 +214,42 @@ namespace PdfWriter
 		void DoPathRedact(GfxState* pGState, GfxPath* pPath, double* pCTM, bool bStroke = false, bool bEoFill = false);
 		void DrawPathRedact(Aggplus::CGraphicsPath* oPath, bool bStroke, double& dXEnd, double& dYEnd, const std::vector<CSegment>& arrForStroke = {});
 		void DoPath(GfxState* pGState, GfxPath* pPath, double* pCTM);
+		void DrawDeviceSpacePathRedacted(GfxState* pGState, Aggplus::CGraphicsPath& oPath, double* pCTM);
 		void DoTransform(double* pMatrix, double* pdShiftX, double* pdShiftY, bool bActual = false);
 		void DrawPath(const LONG& lType);
 		void UpdateTransform();
 		void AddClip(GfxState* pGState, GfxRedactState* pState, int nIndex);
 		void DoStateOp();
-		void DrawXObject(const char* name);
+		void DrawXObject(const char* name, const double* pCropMatrix = NULL);
 		CObjectBase* CreateImage(Gfx *gfx, int nWidth, int nHeight, unsigned int nFilter, int nBPC, const char* sCS);
-		CResourcesDict* GetResources(Gfx *gfx);
+		CResourcesDict* GetResources(Gfx *gfx, CDictObject* pNewForm = NULL);
+		const SOverlapGraphicsResult* FindGraphicsResult(int nGraphicsIndex) const;
+		void PropagateOverlapInfoToForm(RedactOutputDev* pChild) const;
 
 		XRef* m_pXref;
 		std::vector<double> m_arrQuadPoints;
 		Aggplus::CGraphicsPath m_oPathRedact;
+		CResourcesDict* m_pResources;
 
 		CPdfWriter* m_pRenderer;
 		CObjectsManager* m_mObjManager;
 		int m_nStartRefID;
+		int m_nRedactInfo;
 		CDocument*  m_pDoc;
 		CPage*      m_pPage;
 		double      m_arrMatrix[6];
 		std::string m_sImageName;
+
+		std::set<int> m_arrHiddenTextIndices;
+		const std::vector<int>* m_pFormTextCounts;
+		const std::vector<int>* m_pFormGraphicsCounts;
+		int m_nTextCounter;
+		int m_nFormCounter;
+		int m_nGraphicsCounter;
+
+		std::vector<SOverlapGraphicsResult> m_arrGraphicsResultsStorage;
+		std::map<int, SOverlapGraphicsResult*> m_mapGraphicsResultsStorage;
+		const std::map<int, SOverlapGraphicsResult*>* m_pGraphicsResultsMap;
 
 		bool m_bUpdateAll;
 		std::deque<GfxRedactState> m_sStates;

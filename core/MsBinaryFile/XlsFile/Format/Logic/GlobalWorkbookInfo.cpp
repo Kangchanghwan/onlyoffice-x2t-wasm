@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "GlobalWorkbookInfo.h"
 
@@ -89,7 +99,7 @@ std::unordered_map<int, std::wstring>				GlobalWorkbookInfo::mapTableNames_stati
 std::unordered_map<int, std::vector<std::wstring>>	GlobalWorkbookInfo::mapTableColumnNames_static;
 std::vector<std::wstring>							GlobalWorkbookInfo::arDefineNames_static;
 std::unordered_map<int, std::vector<int>>			GlobalWorkbookInfo::mapXtiTables_static;
-std::unordered_map<int, std::wstring>				GlobalWorkbookInfo::mapTableRefsStatic;
+std::unordered_map<int, std::tuple<std::wstring, int, int>>				GlobalWorkbookInfo::mapTableRefsStatic;
 
 GlobalWorkbookInfo::GlobalWorkbookInfo(const unsigned short code_page, XlsConverter * converter) :	CodePage(code_page), xls_converter(converter)
 {
@@ -292,7 +302,7 @@ void GlobalWorkbookInfo::RegisterNumFormat(BaseObjectPtr element)
 	}
 	else
 	{
-		//change
+		//changing
 		pFindFormat->second = element;
 	}
 }
@@ -361,7 +371,7 @@ _UINT16 GlobalWorkbookInfo::RegisterNumFormat(_UINT16 ifmt, const std::wstring &
 			}
 			else
 			{
-				// ???? TODO
+				// ???? todooo 
 			}
 		}
 		
@@ -374,7 +384,7 @@ _UINT16 GlobalWorkbookInfo::RegisterNumFormat(_UINT16 ifmt, const std::wstring &
 		std::map<_UINT16, BaseObjectPtr>::iterator pFindFormat = m_mapNumFormats.find(ifmt_used);
 		if (pFindFormat == m_mapNumFormats.end())
 		{
-			// Generate something
+			// generate something at least
 			Format* fmt = new Format();
 			fmt->ifmt = ifmt;
 			fmt->ifmt_used = ifmt_used;
@@ -390,7 +400,7 @@ _UINT16 GlobalWorkbookInfo::RegisterNumFormat(_UINT16 ifmt, const std::wstring &
 }
 const int GlobalWorkbookInfo::RegistrDxfn(const std::wstring & dxfn)
 {
-	if (dxfn.empty() == true) return -1;
+	if (dxfn.empty() || dxfn == L"<dxf/>") return -1;
 
 	std::map<std::wstring, int>::iterator pFind = mapUserDxfs.find(dxfn);
 

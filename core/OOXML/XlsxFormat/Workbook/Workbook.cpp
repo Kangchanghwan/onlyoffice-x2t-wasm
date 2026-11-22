@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #pragma once
 
@@ -58,6 +68,7 @@
 #include "../../../MsBinaryFile/XlsFile/Format/Logic/Biff_records/SXStreamID.h"
 #include "../../../MsBinaryFile/XlsFile/Format/Logic/Biff_records/SXVS.h"
 #include "../../../MsBinaryFile/XlsFile/Format/Logic/Biff_records/DConRef.h"
+#include "../../../MsBinaryFile/XlsFile/Format/Logic/Biff_records/DConName.h"
 #include "../../../MsBinaryFile/XlsFile/Format/Logic/Biff_records/SupBook.h"
 #include "../../../MsBinaryFile/XlsFile/Format/Logic/Biff_records/ExternSheet.h"
 
@@ -461,20 +472,7 @@ namespace OOX
 			auto objectPtr = XLS::BaseObjectPtr(globalsSubstream);
 			if(m_oSheets.IsInit())
 			{
-				std::vector<_UINT16> SheetTypes;
-				for(auto i: m_oSheets->m_arrItems)
-				{
-					_UINT16 type = 0;
-					if(i->m_oRid.IsInit())
-					{
-						RId rid(i->m_oRid->GetValue());
-						auto sheetFile = Get<OOX::File>(rid);
-						if(sheetFile->type() == OOX::Spreadsheet::FileTypes::Chartsheets)
-							type = 2;
-					}
-					SheetTypes.push_back(type);
-				}
-				m_oSheets->toXLS(objectPtr, SheetTypes);
+				m_oSheets->toXLS(objectPtr);
 			}
 			if(m_oDefinedNames.IsInit())
 				m_oDefinedNames->toXLS(objectPtr);
@@ -485,34 +483,39 @@ namespace OOX
 			if(m_oPivotCaches.IsInit())
 			{
 				for(auto i : m_oPivotCaches->m_arrItems)
-				{	auto pivotCacheBin = i->toXLS();
-
+				{
 					if(!i->m_oCacheId.IsInit() || !i->m_oRid.IsInit() ||  !this->IsExist(i->m_oRid->GetValue()))
-					continue;
+						continue;
 					auto cacheFilePtr = this->Find(i->m_oRid->GetValue());
 					auto CachePtr = static_cast<CPivotCacheDefinitionFile*>(cacheFilePtr.GetPointer());
 					if(CachePtr->m_oPivotCashDefinition.IsInit() && CachePtr->m_oPivotCashDefinition->m_oCacheSource.IsInit()
 						&& CachePtr->m_oPivotCashDefinition->m_oCacheSource->m_oType.IsInit()
 						&& CachePtr->m_oPivotCashDefinition->m_oCacheSource->m_oType->GetValue() == SimpleTypes::Spreadsheet::ESourceCacheType::typeSourceWorksheet)
 					{
+						auto pivotCacheBin = i->toXLS();
 						auto source = CachePtr->m_oPivotCashDefinition->m_oCacheSource;
 						auto castedPivotCache = static_cast<XLS::PIVOTCACHEDEFINITION*>(pivotCacheBin.get());
 						auto cacheSourcePtr = new XLS::SXSRC;
 						castedPivotCache->m_SXSRC =XLS::BaseObjectPtr(cacheSourcePtr);
 						auto dref = new XLS::DREF;
-						auto conRef = new XLS::DConRef;
+
 						cacheSourcePtr->m_source = XLS::BaseObjectPtr(dref);
-						dref->m_DCon = XLS::BaseObjectPtr(conRef);
-						if(source->m_oWorksheetSource->m_oRef.IsInit())
+
+						if(source->m_oWorksheetSource->m_oRef.IsInit() && source->m_oWorksheetSource->m_oSheet.IsInit())
 						{
+							auto conRef = new XLS::DConRef;
+							dref->m_DCon = XLS::BaseObjectPtr(conRef);
 							conRef->ref = source->m_oWorksheetSource->m_oRef.get();
-						}
-						if(source->m_oWorksheetSource->m_oSheet.IsInit())
-						{
 							conRef->sheet_name = source->m_oWorksheetSource->m_oSheet.get();
 						}
+						else if(source->m_oWorksheetSource->m_oName.IsInit())
+						{
+							auto conName = new XLS::DConName;
+							dref->m_DCon = XLS::BaseObjectPtr(conName);
+							conName->stName = source->m_oWorksheetSource->m_oName.get();
+						}
+						globalsSubstream->m_arPIVOTCACHEDEFINITION.push_back(pivotCacheBin);
 					}
-					globalsSubstream->m_arPIVOTCACHEDEFINITION.push_back(pivotCacheBin);
 				}
 			}
 			return objectPtr;
@@ -557,7 +560,7 @@ namespace OOX
 				}
 			}
 
-			IFileContainer::Read(oRootPath, oPath); //in this case the reading order is important for xlsb
+			IFileContainer::Read(oRootPath, oPath); //in this case reading order is important for xlsb
 
 			CXlsx* xlsx = dynamic_cast<CXlsx*>(File::m_pMainDocument);
 			if (xlsx)
@@ -746,7 +749,7 @@ xmlns:xr2=\"http://schemas.microsoft.com/office/spreadsheetml/2015/revision2\"\
 			//WorkbookPr
 			if (false == m_oWorkbookPr.IsInit())
 				m_oWorkbookPr.Init();
-			//todo if this parameter is set, then the standard theme is taken, and not from the file.
+			//todo if this parameter is set, then the standard theme is used, not from the file.
 			//if(false == m_oWorkbookPr->m_oDefaultThemeVersion.IsInit())
 			//{
 			//	m_oWorkbookPr->m_oDefaultThemeVersion.Init();
@@ -785,7 +788,7 @@ xmlns:xr2=\"http://schemas.microsoft.com/office/spreadsheetml/2015/revision2\"\
 		LONG CWorkbook::GetActiveSheetIndex()
 		{
 			LONG lActiveSheet = 0;
-			std::wstring sSheetRId = L"Sheet1"; // Read not by rId, but by sheet name
+			std::wstring sSheetRId = L"Sheet1"; // Read by sheet name, not by rId
 												// Get active sheet
 			if (m_oBookViews.IsInit() && !m_oBookViews->m_arrItems.empty())
 			{

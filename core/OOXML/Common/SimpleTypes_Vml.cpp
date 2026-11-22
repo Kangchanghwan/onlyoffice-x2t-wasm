@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "SimpleTypes_Vml.h"
 #include <boost/algorithm/string.hpp>
@@ -30,6 +40,23 @@
 // Here are simple types Vml from spec Office Open Xml Part4 14
 namespace SimpleTypes
 {
+	static void ReplaceAll(std::wstring& str, const std::wstring& from, const std::wstring& to)
+	{
+		size_t start_pos = 0;
+		while ((start_pos = str.find(from, start_pos)) != std::wstring::npos)
+		{
+			str.replace(start_pos, from.length(), to);
+			start_pos += to.length();
+		}
+	}
+	static void CorrectXmlString(std::wstring& strText)
+	{
+		ReplaceAll(strText, L"&apos;", L"'");
+		ReplaceAll(strText, L"&lt;", L"<");
+		ReplaceAll(strText, L"&gt;", L">");
+		ReplaceAll(strText, L"&quot;", L"\"");
+		ReplaceAll(strText, L"&amp;", L"&");
+	}
 	EEditAs CEditAs::FromString(const std::wstring &sValue)
 	{
 		this->m_eValue = editasCanvas;
@@ -1654,7 +1681,7 @@ namespace SimpleTypes
 
 } // SimpleTypes
 
-// Additional simple types not included in the specification
+// Additional simple types not included in specification
 namespace SimpleTypes
 {
 	namespace Vml
@@ -1774,7 +1801,7 @@ namespace SimpleTypes
 
 		std::wstring CVmlPath::FromString(const std::wstring &sValue)
 		{
-			// TO DO: Make a parser for Part4. 14.2.2.3
+			// TO DO: Implement path parser Part4. 14.2.2.3
 			m_sValue = sValue;
 
 			return m_sValue;
@@ -2366,7 +2393,7 @@ namespace SimpleTypes
 					return;
 				}
 
-				// To avoid a lot of string comparisons, check first by the first two characters
+				// To avoid many string comparisons, first check by first two characters
 				int nChar1 = sProperty[ 0 ];
 				int nChar2 = sProperty[ 1 ];
 
@@ -2940,6 +2967,8 @@ namespace SimpleTypes
 			Clear();
 
 			m_sCss = sValue;
+			CorrectXmlString(m_sCss);
+
 			ParseProperties();
 
 			return m_sCss;
@@ -3889,7 +3918,7 @@ namespace SimpleTypes
 
 			std::wstring sValue = sValueInput;
 
-			// Separators can be commas and spaces
+			// Delimiters can be commas and spaces
 			XmlUtils::replace_all(sValue, L"@", L"");
 			boost::algorithm::split(arSplit, sValue, boost::algorithm::is_any_of(L", "), boost::algorithm::token_compress_on);
 

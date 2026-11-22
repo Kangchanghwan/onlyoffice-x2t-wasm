@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #pragma once
 
@@ -41,24 +51,24 @@
 
 // AVSOfficeUniversalConverter 0x0050 - 0x0075
 #define AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_FIRST						(AVS_ERROR_FIRST + 0x0050) 
-#define AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_XML_FORMAT					(AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_FIRST + 0x0001) //Input XML isn't in the correct format
+#define AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_XML_FORMAT					(AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_FIRST + 0x0001) //Input XML has incorrect format
 #define AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_CREATE_TEMP_DIR			(AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_FIRST + 0x0002) //Error creating temp directory
-#define AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_REMOVE_TEMP_DIR			(AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_FIRST + 0x0003) //Error when deleting temp directory
-#define AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_CONVERT_THIS_FORMATS		(AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_FIRST + 0x0004) //Conversion of these file types isn't supported
-#define AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_LOAD_FILE					(AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_FIRST + 0x0004) //Conversion of these file types isn't supported
-#define AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_SAVE_FILE					(AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_FIRST + 0x0004) //Conversion of these file types isn't supported
-#define AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_ADVERTISE					(AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_FIRST + 0x0005) //when adding a watermark
-#define AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_COPY						(AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_FIRST + 0x0006) //error when copying source to destination (copied when their type matches)
-#define AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_CREATE_EXTR_DIR			(AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_FIRST + 0x0007) //error when copying source to destination (copied when their type matches)
+#define AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_REMOVE_TEMP_DIR			(AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_FIRST + 0x0003) //Error removing temp directory
+#define AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_CONVERT_THIS_FORMATS		(AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_FIRST + 0x0004) //Conversion of these file types is not supported
+#define AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_LOAD_FILE					(AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_FIRST + 0x0004) //Conversion of these file types is not supported
+#define AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_SAVE_FILE					(AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_FIRST + 0x0004) //Conversion of these file types is not supported
+#define AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_ADVERTISE					(AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_FIRST + 0x0005) //when adding advertisement
+#define AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_COPY						(AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_FIRST + 0x0006) //error copying source to destination (copied when their types match)
+#define AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_CREATE_EXTR_DIR			(AVS_UNIVERSALDOCUMENTCONVERTER_ERROR_FIRST + 0x0007) //error copying source to destination (copied when their types match)
 
 
 // AVSOfficeFile 0x0075 - 0x00100
 #define AVS_OFFICEFILE_ERROR_FIRST										(AVS_ERROR_FIRST + 0x0075) 
-#define AVS_OFFICEFILE_ERROR_CREATE_TEMP								(AVS_OFFICEFILE_ERROR_FIRST + 0x0001) //Error when creating temp directory or file
-#define AVS_OFFICEFILE_ERROR_UNSUPPORTED_LOAD_FORMAT					(AVS_OFFICEFILE_ERROR_FIRST + 0x0002) //File format not supported
-#define AVS_OFFICEFILE_ERROR_UNSUPPORTED_SAVE_FORMAT					(AVS_OFFICEFILE_ERROR_FIRST + 0x0003) //File format not supported
-#define AVS_OFFICEFILE_ERROR_SAVE_EMPTY									(AVS_OFFICEFILE_ERROR_FIRST + 0x0004) //File format not supported
-#define AVS_OFFICEFILE_ERROR_PRINT_OUT_OF_AREA							(AVS_OFFICEFILE_ERROR_FIRST + 0x0005) //printing outside the print area
+#define AVS_OFFICEFILE_ERROR_CREATE_TEMP								(AVS_OFFICEFILE_ERROR_FIRST + 0x0001) //Error creating temp directory or file
+#define AVS_OFFICEFILE_ERROR_UNSUPPORTED_LOAD_FORMAT					(AVS_OFFICEFILE_ERROR_FIRST + 0x0002) //File format is not supported
+#define AVS_OFFICEFILE_ERROR_UNSUPPORTED_SAVE_FORMAT					(AVS_OFFICEFILE_ERROR_FIRST + 0x0003) //File format is not supported
+#define AVS_OFFICEFILE_ERROR_SAVE_EMPTY									(AVS_OFFICEFILE_ERROR_FIRST + 0x0004) //File format is not supported
+#define AVS_OFFICEFILE_ERROR_PRINT_OUT_OF_AREA							(AVS_OFFICEFILE_ERROR_FIRST + 0x0005) //printing outside of print area
 
 //AVSOfficeMsFile
 #define AVS_MSFILE_ERROR_OLDER			(AVS_ERROR_FIRST + 0x0090)

@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #ifndef _PDF_READER_RENDERER_OUTPUTDEV_H
 #define _PDF_READER_RENDERER_OUTPUTDEV_H
@@ -28,7 +38,6 @@
 #include "../../DesktopEditor/graphics/IRenderer.h"
 #include "../../DesktopEditor/graphics/pro/Fonts.h"
 #include "../../DesktopEditor/graphics/AlphaMask.h"
-#include "../../DesktopEditor/graphics/TemporaryCS.h"
 #include "../../DesktopEditor/graphics/structures.h"
 #include "../lib/xpdf/Gfx.h"
 #include "../lib/xpdf/OutputDev.h"
@@ -38,42 +47,8 @@
 
 namespace PdfReader
 {
-	//-------------------------------------------------------------------------------------------------------------------------------
-	struct TFontEntry
-	{
-		std::wstring wsFilePath;     // Path to the font on disk
-		std::wstring wsFontName;     // Font name, which is written in PDF (branch for cases when the font name isn't specified in the font itself)
-		int*         pCodeToGID;     // Code table - glyph number in the font
-		int*         pCodeToUnicode; // Table code - Unicode value
-		unsigned int unLenGID;
-		unsigned int unLenUnicode;
-		bool         bAvailable;     // Is the font available? Made for multi-threading
-		bool         bFontSubstitution = false;
-		bool         bIsIdentity = false;
-		
-	};
-
-	class CPdfFontList
-	{
-	public:
-		CPdfFontList();
-		~CPdfFontList();
-		bool Find(Ref oRef, TFontEntry* pEntry);
-		bool Find2(Ref oRef, TFontEntry** ppEntry);
-		void Remove(Ref oRef);
-		TFontEntry* Add(Ref oRef, const std::wstring& wsFileName, int* pCodeToGID, int* pCodeToUnicode, unsigned int unLenGID, unsigned int unLenUnicode);
-		void Clear();
-		bool GetFont(Ref* pRef, TFontEntry* pEntry);
-		const std::map<Ref, TFontEntry*>& GetFonts();
-	private:
-		TFontEntry* Lookup(Ref& oRef);
-		void Add(Ref& oRef, TFontEntry* pFontEntry);
-
-	private:
-		std::map<Ref, TFontEntry*>          m_oFontMap;
-		NSCriticalSection::CRITICAL_SECTION m_oCS; // Critical section
-	};
-
+	struct CType3FontMetrics;
+	class CPdfFontList;
 	//-------------------------------------------------------------------------------------------------------------------------------
 	template <typename T>
 	inline static double PDFCoordsToMM(T tX)
@@ -160,7 +135,7 @@ namespace PdfReader
 		//----- Save/Restore GState
 		virtual void saveState(GfxState *pGState) override;
 		virtual void restoreState(GfxState *pGState) override;
-		//----- Changing parameters in GState
+		//----- GState parameter modification
 		virtual void updateCTM(GfxState *pGState, double dMatrix11, double dMatrix12, double dMatrix21, double dMatrix22, double dMatrix31, double dMatrix32) override;
 		virtual void updateLineDash(GfxState *pGState) override;
 		virtual void updateFlatness(GfxState *pGState) override;
@@ -176,9 +151,9 @@ namespace PdfReader
 		virtual void updateStrokeOpacity(GfxState *pGState) override;
 		virtual void updateAll(GfxState *pGState) override;
 		virtual void updateRender(GfxState *pGState) override;
-		//----- Changing text parameters
+		//----- Text parameter modification
 		virtual void updateFont(GfxState *pGState) override;
-		//----- Drawing Path
+		//----- Path drawing
 		virtual void stroke(GfxState *pGState) override;
 		virtual void fill(GfxState *pGState) override;
 		virtual void eoFill(GfxState *pGState) override;
@@ -212,11 +187,11 @@ namespace PdfReader
 		virtual void drawChar(GfxState *pGState, double dX, double dY, double dDx, double dDy, double dOriginX, double dOriginY, CharCode nCode, int nBytesCount, Unicode *pUnicode, int nUnicodeLen) override;
 		GBool beginType3Char(GfxState *state, double x, double y, double dx, double dy, CharCode code, Unicode *u, int uLen) override;
 		void endType3Char(GfxState *pGState) override;
-		//----- Additional features
-		virtual GBool beginMarkedContent(GfxState *state, GString *s) override;
+		//----- Additional functions
+		virtual GBool beginMarkedContent(GfxState *state, Object args[], int numArgs) override;
 		virtual GBool beginMCOShapes(GfxState *state, GString *s, Object *ref) override;
 		virtual void endMarkedContent(GfxState *state) override;
-		//----- Outputting images
+		//----- Image output
 		bool ReadImage(Aggplus::CImage* pImageRes, Object *pRef, Stream *pStream);
 		virtual void drawImageMask(GfxState *pGState, Gfx *gfx, Object *pRef, Stream *pStream, int nWidth, int nHeight, GBool bInvert, GBool bInlineImage, GBool interpolate) override;
 		virtual void setSoftMaskFromImageMask(GfxState *pGState, Gfx *gfx, Object *pRef, Stream *pStream, int nWidth, int nHeight, GBool bInvert, GBool bInlineImage, GBool interpolate) override;
@@ -231,14 +206,20 @@ namespace PdfReader
 		virtual void paintTransparencyGroup(GfxState *pGState, double *pBBox) override;
 		virtual void setSoftMask(GfxState *pGState, double *pBBox, GBool bAlpha, Function *pTransferFunc, GfxColor *pBackdropColor) override;
 		virtual void clearSoftMask(GfxState *pGState) override;
-		//----- Additional features for this device
+		//----- Additional functions for this device
 		void NewPDF(XRef *pXref);
 		void SetBreak(bool* pbBreak)
 		{
 			m_pbBreak = pbBreak;
 		}
-		static NSFonts::CFontInfo* GetFontByParams(XRef* pXref, NSFonts::IFontManager* pFontManager, GfxFont* pFont, std::wstring& wsFontBaseName);
-		static void GetFont(XRef* pXref, NSFonts::IFontManager* pFontManager, CPdfFontList *pFontList, GfxFont* pFont, std::wstring& wsFileName, std::wstring& wsFontName, bool bNotFullName = true);
+		void SetDrawOnlyText(bool bDraw)
+		{
+			m_bDrawOnlyText = bDraw;
+		}
+		void SetUseLayer(bool bUse)
+		{
+			m_bUseLayer = bUse;
+		}
 
 	private:
 		struct GfxOutputState
@@ -269,6 +250,7 @@ namespace PdfReader
 		void AddTextClip(GfxState* pGState, GfxOutputState* pState = NULL);
 		void UpdateAllClip(GfxState *pGState);
 		void DoTransform(double *pMatrix, double *pdShiftX, double *pdShiftY, bool bText = false);
+		CType3FontMetrics* GetType3FontMetrics(GfxFont* pFont);
 	private:
 
 		IRenderer*                    m_pRenderer;
@@ -278,6 +260,7 @@ namespace PdfReader
 
 		XRef*                         m_pXref; // Xref table for this PDF document
 		CPdfFontList*                 m_pFontList;
+		std::map<int, CType3FontMetrics*> m_mapType3Metrics;
 
 		bool                         *m_pbBreak;         // External renderer stop
 
@@ -288,6 +271,7 @@ namespace PdfReader
 		bool                          m_bTiling;
 
         bool                          m_bDrawOnlyText; // Special option for html-renderer
+		bool                          m_bUseLayer; // Draw page on a black transparent layer
 
 	};
 }

@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 
@@ -308,6 +318,7 @@ void odt_conversion_context::end_drawing_context()
 		if (elm)
 		{
 			text_context()->start_element(elm);
+				add_to_root();
 			text_context()->end_element();
 		}
 
@@ -327,7 +338,7 @@ void odt_conversion_context::start_paragraph(bool styled)
 	if (false == current_fields.empty() && current_fields.back().status == 1 && false == current_fields.back().in_span)
 	{
 		current_fields.back().status = 2;
-		//if (!current_fields.empty() && !current_fields.back().result) return;	//Стандартное_составное_письмо.docx
+		//if (!current_fields.empty() && !current_fields.back().result) return;	//Standard_mail_merge.docx
 		switch (current_fields.back().type)
 		{
 		case fieldBibliography:	start_bibliography();		break;
@@ -354,17 +365,17 @@ void odt_conversion_context::add_paragraph_break(int type)
 		//text_p* para	= NULL;
 		//style * style_	= NULL;
 		//http://docs.oasis-open.org/office/v1.2/os/OpenDocument-v1.2-os-part1.html#__RefHeading__1415190_253892949
-		//it doesn't work!! in span, ... the break has to be generated manually!!
+		//doesn't work at all !! in span, ... have to generate break manually !!
 
 		//if (para = dynamic_cast<text_p*>(current_root_elements_.back().elm.get()))
 		//{
-		//	style_ = dynamic_cast<style*>(current_root_elements_.back().style_elm.get());//to transfer paragraph properties
+		//	style_ = dynamic_cast<style*>(current_root_elements_.back().style_elm.get());//for transferring paragraph properties
 		//	end_paragraph();
 		//}	
 		//else/* if (header = dynamic_cast<text_h*>(current_root_elements_.back().elm.get()))*/
 		//{
-			//here it turns out that the break will be written inside the element (not the paragraph) - so we'll write the property manually
-			//in case of a paragraph break, it will be written at the start of the post-break paragraph
+			//here it turns out that the break will be written inside the element (not paragraph) - so we write the property manually
+			//in case of paragraph breaks it will be written at the start of the post-break paragraph
 			//text_context()->set_type_break(type, 0);
 		text_context()->save_property_break();
 		//}
@@ -382,7 +393,7 @@ void odt_conversion_context::add_paragraph_break(int type)
 		//	{
 		//		style_paragraph_properties * new_props = NULL;
 		//		if (styles_context()->last_state())
-		//		{// a copy of the properties is needed since additional properties will be added
+		//		{// need exactly a copy of properties since there will be additional properties
 		//			new_props = styles_context()->last_state()->get_paragraph_properties();				
 		//			if (new_props)new_props->apply_from(style_->content_.get_style_paragraph_properties());
 		//			
@@ -630,7 +641,7 @@ void odt_conversion_context::end_hyperlink()
 	text_context()->level_hyperlink_ = 0;
 	text_context()->end_element(); //hyperlink_element
 
-	text_context()->is_hyperlink_ = false; //label .. for hyperlinks in objects - there will be no span there
+	text_context()->is_hyperlink_ = false; //flag.. for hyperlinks in objects - there won't be span
 }
 void odt_conversion_context::start_drop_down()
 {
@@ -1041,7 +1052,7 @@ void odt_conversion_context::set_field_item	(const std::wstring &value, const st
 void odt_conversion_context::start_field(bool in_span)
 {
 	if (false == current_fields.empty() && current_fields.back().status == 0 && current_fields.back().instrText.empty() )
-		return; //start_field from sdt
+		return; //start_field from sdt 
 
 	_field_state field;
 	current_fields.push_back(field);
@@ -1056,7 +1067,7 @@ void odt_conversion_context::separate_field()
 }
 void odt_conversion_context::set_master_page_name(std::wstring master_name)
 {
-	if (current_root_elements_.empty())// return; - эффект_штурмовика.docx - 1 page!! (and finally -
+	if (current_root_elements_.empty())// return; - stormtrooper_effect.docx - 1 page !! (and actually - 
 	{
 		is_paragraph_in_current_section_ = true;
 		return;
@@ -1169,7 +1180,7 @@ void odt_conversion_context::add_section_column(std::vector<std::pair<double, do
 	{
 		if (width_space[i].first >= 0) 
 		
-			width_all += width_space[i].first + width_space[i].second;
+			width_all += width_space[i].first + (i + 1 < width_space.size() ? width_space[i].second : 0);
 	}
 
 	if (width_all < 1)	return;
@@ -1186,13 +1197,16 @@ void odt_conversion_context::add_section_column(std::vector<std::pair<double, do
 		style_column* col = dynamic_cast<style_column*>(col_elm.get());
 		if (!col) continue;
 
-		int val =  (width_space[i].first)* 65535. / width_all ;
+		double start_indent	= last_space / 2;
+		double end_indent	= (i + 1 < width_space.size()) ? width_space[i].second / 2 : 0;
+
+		int val = (width_space[i].first + start_indent + end_indent) * 65535. / width_all;
 		col->style_rel_width_ = odf_types::percent_rel(val);
-		
-		col->fo_start_indent_ = odf_types::length(last_space / 2, odf_types::length::pt);
-		
-		col->fo_end_indent_ = odf_types::length(width_space[i].second / 2, odf_types::length::pt);
-		
+
+		col->fo_start_indent_ = odf_types::length(start_indent, odf_types::length::pt);
+
+		col->fo_end_indent_ = odf_types::length(end_indent, odf_types::length::pt);
+
 		columns->add_child_element(col_elm);
 
 		last_space = width_space[i].second;
@@ -1252,7 +1266,7 @@ void odt_conversion_context::end_field()
 }
 void odt_conversion_context::end_paragraph()
 {
-	//if (!current_fields.empty() && !current_fields.back().result) return;	//Стандартное_составное_письмо.docx
+	//if (!current_fields.empty() && !current_fields.back().result) return;	//Standard_mail_merge.docx
 	text_context()->end_paragraph();
 	
 	if (false == current_fields.empty() && current_fields.back().status == 3)	//prepare for delete
@@ -1341,12 +1355,12 @@ void odt_conversion_context::flush_section()
 		for (size_t i = 0; i < current_root_elements_.size(); i++)
 		{
 			if ((sections_.back().continuous && i < 2) || !sections_.back().continuous)
-				// When inserting a paragraph, an artificial break in paragraphs is possible - see add_page_break
+				// when inserting paragraph, artificial break in paragraphs is possible - see add_page_break
 			{
 				text_soft_page_break * break_ = dynamic_cast<text_soft_page_break*>(current_root_elements_[i].elm.get());
 				if (break_)
 				{
-					//need to add to the properties of the previous paragraph (if there is one, if not - the next one) that a break isn't needed
+					//need to add to previous paragraph properties (if exists, if not - next one), that break is not needed
 					//int paragraph_break = i-1;
 					//if (paragraph_break < 0) paragraph_break = i+1;
 					//style *style_ = dynamic_cast<style*>(current_root_elements_[paragraph_break].style_elm.get());
@@ -1393,7 +1407,7 @@ void odt_conversion_context::start_run(bool styled)
 			props->apply_from(dynamic_cast<style_text_properties*>(drop_cap_state_.text_properties.get())->content_);
 
 	}
-	if (!current_fields.empty() && current_fields.back().status == 1 && current_fields.back().in_span)//the field starts in span - needed to save the style
+	if (!current_fields.empty() && current_fields.back().status == 1 && current_fields.back().in_span)//field starts in span - needed to preserve style
 	{
 		current_fields.back().status = 2;
 		current_fields.back().elm = text_context()->start_field(current_fields.back().type, current_fields.back().value, current_fields.back().format);
@@ -1434,7 +1448,7 @@ int odt_conversion_context::start_comment(int oox_comm_id)
 			start_paragraph();
 			text_context()->set_KeepNextParagraph(true);
 
-			//annotation can't be added to the top level - no support in open_format
+			//annotation cannot be added to top level - no support in open_format
 		}
 		text_context()->current_level_.back().elm->add_child_element(comm_elm);
 
@@ -1540,15 +1554,15 @@ bool odt_conversion_context::start_change (int id, int type, std::wstring &autho
 //---------------------------------------------------------------------------------
 	office_element_ptr start_elm;
 
-	if (type == 2) create_element(L"text", L"change", start_elm, this); //removal site..
-	else			
-		create_element(L"text", L"change-start", start_elm, this);	//place of change...
+	if (type == 2) create_element(L"text", L"change", start_elm, this); //deletion location..
+	else
+		create_element(L"text", L"change-start", start_elm, this);	//change location.... 
 
 	text_add_change* change = dynamic_cast<text_add_change*>(start_elm.get());
 	if (change) change->text_change_id_ = strId;
 
 	text_context()->start_element(start_elm);
-		add_to_root();//adding/deleting paragraphs, etc.
+		add_to_root();//adding/removing paragraphs etc
 	text_context()->end_element();	
 
 	//text_changes_state_.main_text_context->start_element(start_elm);
@@ -1595,7 +1609,7 @@ bool odt_conversion_context::start_change (int id, int type, std::wstring &autho
 
 	if (type == 3 && !style_name.empty())
 	{
-		//not according to specification!!!
+		//not according to specification !!!
 		text_format_change * format_change = dynamic_cast<text_format_change*> (child_elm.get());
 		if (format_change)
 			format_change->text_style_name_ = style_name;
@@ -1606,7 +1620,7 @@ bool odt_conversion_context::start_change (int id, int type, std::wstring &autho
 	{
 		start_text_context();
 		text_context()->start_element(child_elm);
-		text_context()->start_paragraph();//actually it's not according to the standard .. maybe we're already in the paragraph (for the sake of LibreOffice!)
+		text_context()->start_paragraph();//actually not according to standard.. maybe we're already in paragraph (for LibreOffice! ... hehe)
 	}
 	return true;
 }
@@ -1634,7 +1648,7 @@ void odt_conversion_context::end_change (int id, int type)
 			add_to_root();
 		text_context()->end_element();	
 	}
-	text_changes_state_.current_types.pop_back();//TODO map?? deleting without checking what is being deleted
+	text_changes_state_.current_types.pop_back();//todooo map?? deletion without checking what you're deleting
 }
 //bool odt_conversion_context::is_delete_changes()
 //{
@@ -1654,7 +1668,7 @@ text_format_properties* odt_conversion_context::get_drop_cap_properties()
 void odt_conversion_context::start_drop_cap(paragraph_format_properties *paragraph_properties)
 {
 	if (drop_cap_state_.enabled) 
-		end_drop_cap(); // Is 2 in a row even possible???
+		end_drop_cap(); // 2 in a row even possible ???
 
 	if (paragraph_properties == NULL) return;
 
@@ -1693,7 +1707,7 @@ void odt_conversion_context::end_drop_cap()
 		}
 		if (drop_cap_state_.inline_style == false)
 		{
-			//move the first line so that the entire drop cap (as much as fits) is in the margin
+			//shift first line - so that drop cap entirely (what fits) is on the margin
 			//double indent_pt = 0;
 			//double indent_percent = 0;
 			//if (drop_cap_state_.paragraph_properties->content_.fo_text_indent_)
@@ -1766,7 +1780,7 @@ void odt_conversion_context::add_table_column(double width)
 	table_context()->add_column(elm, true);
 		table_context()->set_column_width(width);
 
-	text_context()->start_element(elm); // for connecting elements
+	text_context()->start_element(elm); // for linking elements
 	text_context()->end_element();
 }
 void odt_conversion_context::end_table_columns()
@@ -1847,7 +1861,7 @@ void odt_conversion_context::end_table_row()
 void odt_conversion_context::add_default_cell()
 {
 	office_element_ptr elm;
-	create_element(L"table", L"covered-table-cell",elm,this);
+	create_element(L"table", L"covered-table-cell", elm, this);
 
 	table_context()->start_cell(elm, false);
 	text_context()->start_element(elm);

@@ -1,26 +1,36 @@
 /*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "SlideLayout.h"
@@ -55,24 +65,43 @@ namespace PPTX
 		XmlUtils::CXmlNode oNode;
 		oNode.FromXmlFile(filename.m_strFilename);
 
-		cSld = oNode.ReadNode(_T("p:cSld"));
+		cSld = oNode.ReadNode(L"p:cSld");
 		cSld.SetParentFilePointer(this);
 
-		clrMapOvr = oNode.ReadNode(_T("p:clrMapOvr"));
+		clrMapOvr = oNode.ReadNode(L"p:clrMapOvr");
 		if(clrMapOvr.is_init())
 			clrMapOvr->SetParentFilePointer(this);
 
-		transition = oNode.ReadNode(_T("p:transition"));
+		transition = oNode.ReadNode(L"p:transition");
 		if(transition.is_init())
 			transition->SetParentFilePointer(this);
 
-		timing = oNode.ReadNode(_T("p:timing"));
+		timing = oNode.ReadNode(L"p:timing");
 		if(timing.is_init())
 			timing->SetParentFilePointer(this);
 
-		hf = oNode.ReadNode(_T("p:hf"));
+		hf = oNode.ReadNode(L"p:hf");
 		if(hf.is_init())
 			hf->SetParentFilePointer(this);
+
+		XmlUtils::CXmlNode oNodeExtLst = oNode.ReadNode(L"p:extLst");
+		if (oNodeExtLst.IsValid())
+		{
+			std::vector<XmlUtils::CXmlNode> oExtLstNodes;
+			if (oNodeExtLst.GetNodes(L"*", oExtLstNodes))
+			{
+				for (auto n : oExtLstNodes)
+				{
+					PPTX::Logic::Ext ext;
+					ext.fromXML(n);
+					if (ext.sldGuideLst.IsInit())
+					{
+						sldGuideLst = ext.sldGuideLst;
+						sldGuideLst->SetParentFilePointer(this);
+					}
+				}
+			}
+		}
 
 		XmlMacroReadAttributeBase(oNode, L"matchingName", matchingName);
 		XmlMacroReadAttributeBase(oNode, L"preserve", preserve);
@@ -126,8 +155,8 @@ namespace PPTX
 			{
 				if (pLayoutShape->nvSpPr.nvPr.ph.is_init())
 				{
-					std::wstring lIdx	= pLayoutShape->nvSpPr.nvPr.ph->idx.get_value_or(_T(""));
-					std::wstring lType	= pLayoutShape->nvSpPr.nvPr.ph->type.get_value_or(_T("body"));
+					std::wstring lIdx	= pLayoutShape->nvSpPr.nvPr.ph->idx.get_value_or(L"");
+					std::wstring lType	= pLayoutShape->nvSpPr.nvPr.ph->type.get_value_or(L"body");
 
 					if (lType == L"ctrTitle") lType = L"title";
 
@@ -210,6 +239,8 @@ namespace PPTX
 		pWriter->WriteRecord2(3, timing);
 		pWriter->WriteRecord2(4, hf);
 
+		pWriter->WriteRecord2(15, sldGuideLst);
+
 		pWriter->EndRecord();
 	}
 	void SlideLayout::fromPPTY(NSBinPptxRW::CBinaryFileReader* pReader)
@@ -232,19 +263,16 @@ namespace PPTX
 			{
 				case 0:
 				{
-					matchingName = pReader->GetString2();
-					break;
-				}
+					matchingName = pReader->GetString2();					
+				}break;
 				case 1:
 				{
-					preserve = pReader->GetBool();
-					break;
-				}
+					preserve = pReader->GetBool();					
+				}break;
 				case 2:
 				{
-					showMasterPhAnim = pReader->GetBool();
-					break;
-				}
+					showMasterPhAnim = pReader->GetBool();					
+				}break;
 				case 3:
 				{
 					showMasterSp = pReader->GetBool();
@@ -252,14 +280,12 @@ namespace PPTX
 				}
 				case 4:
 				{
-					userDrawn = pReader->GetBool();
-					break;
-				}
+					userDrawn = pReader->GetBool();					
+				}break;
 				case 5:
 				{
-					attrType = pReader->GetUChar();
-					break;
-				}
+					attrType = pReader->GetUChar();					
+				}break;
 				default:
 					break;
 			}
@@ -273,26 +299,27 @@ namespace PPTX
 			{
 				case 0:
 				{
-					cSld.fromPPTY(pReader);
-					break;
-				}
+					cSld.fromPPTY(pReader);					
+				}break;
 				case 1:
 				{
 					clrMapOvr = new Logic::ClrMapOvr();
-					clrMapOvr->fromPPTY(pReader);
-					break;
-				}
+					clrMapOvr->fromPPTY(pReader);					
+				}break;
 				case 4:
 				{
 					hf = new Logic::HF();
-					hf->fromPPTY(pReader);
-					break;
-				}
+					hf->fromPPTY(pReader);					
+				}break;
+				case 15:
+				{
+					sldGuideLst = new nsPresentation::ExtendedGuideList();
+					sldGuideLst->fromPPTY(pReader);
+				}break;
 				default:
 				{
-					pReader->SkipRecord();
-					break;
-				}
+					pReader->SkipRecord();					
+				}break;
 			}
 		}
 
@@ -300,21 +327,24 @@ namespace PPTX
 	}
 	void SlideLayout::toXmlWriter(NSBinPptxRW::CXmlWriter* pWriter) const
 	{
-		pWriter->StartNode(_T("p:sldLayout"));
+		pWriter->StartNode(L"p:sldLayout");
 
 		pWriter->StartAttributes();
-		pWriter->WriteAttribute(_T("xmlns:a"), PPTX::g_Namespaces.a.m_strLink);
-		pWriter->WriteAttribute(_T("xmlns:r"), PPTX::g_Namespaces.r.m_strLink);
-		pWriter->WriteAttribute(_T("xmlns:p"), PPTX::g_Namespaces.p.m_strLink);
-		pWriter->WriteAttribute(_T("xmlns:m"), PPTX::g_Namespaces.m.m_strLink);
-		pWriter->WriteAttribute(_T("xmlns:w"), PPTX::g_Namespaces.w.m_strLink);
-
-		pWriter->WriteAttribute(_T("matchingName"), matchingName);
-		pWriter->WriteAttribute(_T("preserve"), preserve);
-		pWriter->WriteAttribute(_T("showMasterPhAnim"), showMasterPhAnim);
-		pWriter->WriteAttribute(_T("showMasterSp"), showMasterSp);
-		pWriter->WriteAttribute(_T("type"), attrType);
-		pWriter->WriteAttribute(_T("userDrawn"), userDrawn);
+			pWriter->WriteAttribute(L"xmlns:a", PPTX::g_Namespaces.a.m_strLink);
+			pWriter->WriteAttribute(L"xmlns:r", PPTX::g_Namespaces.r.m_strLink);
+			pWriter->WriteAttribute(L"xmlns:p", PPTX::g_Namespaces.p.m_strLink);
+			pWriter->WriteAttribute(L"xmlns:m", PPTX::g_Namespaces.m.m_strLink);
+			pWriter->WriteAttribute(L"xmlns:w", PPTX::g_Namespaces.w.m_strLink);
+			if (sldGuideLst.IsInit())
+			{
+				pWriter->WriteAttribute(L"xmlns:p15", PPTX::g_Namespaces.p15.m_strLink);
+			}
+			pWriter->WriteAttribute(L"matchingName", matchingName);
+			pWriter->WriteAttribute(L"preserve", preserve);
+			pWriter->WriteAttribute(L"showMasterPhAnim", showMasterPhAnim);
+			pWriter->WriteAttribute(L"showMasterSp", showMasterSp);
+			pWriter->WriteAttribute(L"type", attrType);
+			pWriter->WriteAttribute(L"userDrawn", userDrawn);
 		pWriter->EndAttributes();
 
 		cSld.toXmlWriter(pWriter);
@@ -322,13 +352,23 @@ namespace PPTX
 		if (clrMapOvr.is_init())
 			pWriter->Write(clrMapOvr);
 		else
-			pWriter->WriteString(_T("<p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>"));
+			pWriter->WriteString(L"<p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>");
 
 		pWriter->Write(transition);
 		pWriter->Write(timing);
 		pWriter->Write(hf);
 
-		pWriter->EndNode(_T("p:sldLayout"));
+		std::vector<Logic::Ext> extLst;
+		if (sldGuideLst.IsInit())
+		{
+			Logic::Ext exp;
+			exp.uri = L"{DCECCB84-F9BA-43D5-87BE-67443E8EF086}";
+			exp.sldGuideLst = sldGuideLst;
+			extLst.push_back(exp);
+		}
+		pWriter->WriteArray(L"p:extLst", extLst);
+
+		pWriter->EndNode(L"p:sldLayout");
 	}
 	void SlideLayout::ApplyRels()
 	{

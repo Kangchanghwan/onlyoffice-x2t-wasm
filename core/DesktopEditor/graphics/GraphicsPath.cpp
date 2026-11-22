@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "GraphicsPath_private.h"
 #include "agg_bounding_rect.h"
@@ -238,7 +248,7 @@ namespace Aggplus
 	
 	Status CGraphicsPath::AddCurve(double* pPoints, int nCount)
 	{
-		// Don't use this. Implement this if it becomes needed.
+		// we don't use this. Will implement if needed.
 		return AddBeziers(pPoints, nCount);
 	}
 
@@ -633,8 +643,8 @@ namespace Aggplus
 
 	double CGraphicsPath::AngToEllPrm(double fAngle, double fXRad, double fYRad)
 	{
-		// Function for converting a real angle into a parametric ellipse specification
-		// i.e. x= a cos(t) y = b sin(t) - parametric specification of the ellipse.
+		// Function to convert real angle to parametric ellipse definition
+		// i.e. x= a cos(t) y = b sin(t) - parametric ellipse definition.
 		// x = r cos(p), y = r sin(p) => t = atan2( sin(p) / b, cos(p) / a );
 		return atan2( sin( fAngle ) / fYRad,  cos( fAngle ) / fXRad );
 	}
@@ -647,12 +657,12 @@ namespace Aggplus
 		double dAngle1 = fAngle1 * 3.141592 / 180;
 		double dAngle2 = fAngle2 * 3.141592 / 180;
 
-		// Find out in which quarters the starting and ending points are located
+		// Determine which quadrants the start and end points are in
 		unsigned int nFirstPointQuard  = int(fAngle1) / 90 + 1; 
 		unsigned int nSecondPointQuard = int(fAngle2) / 90 + 1;
 		nSecondPointQuard = std::min( 4, std::max( 1, (int)nSecondPointQuard ) );
 		nFirstPointQuard  = std::min( 4, std::max( 1, (int)nFirstPointQuard ) );
-		// Draw a line to the starting point of the arc
+		// Draw a line to the arc start point
 		double fStartX = 0.0, fStartY = 0.0, fEndX = 0.0, fEndY = 0.0;
 
 		fStartX = fX + fXRad * cos( AngToEllPrm( dAngle1, fXRad, fYRad ) );
@@ -660,7 +670,7 @@ namespace Aggplus
 
 		LineTo(fStartX, fStartY);
 
-		// Next, draw by quadrants
+		// Continue drawing by quadrants
 
 		double fCurX = fStartX, fCurY = fStartY;
 		double dStartAngle = dAngle1;
@@ -702,7 +712,7 @@ namespace Aggplus
 
 	int CGraphicsPath::EllipseArc3(double fX, double fY, double fXRad, double fYRad, double dAngle1, double dAngle2, double *pfXCur, double *pfYCur, INT bClockDirection)
 	{
-		// Calculate the start, end and control points
+		// Calculate start, end and control points
 		double fX1  = 0.0, fX2  = 0.0, fY1  = 0.0, fY2  = 0.0;
 		double fCX1 = 0.0, fCX2 = 0.0, fCY1 = 0.0, fCY2 = 0.0;
 
@@ -763,7 +773,7 @@ namespace Aggplus
 			double fStartX = fX + fWidth / 2.0 + fWidth / 2 * cos( AngToEllPrm( dStartAngle, fWidth / 2, fHeight / 2 ) );
 			double fStartY = fY + fHeight / 2.0 - fHeight / 2 * sin( AngToEllPrm ( dStartAngle, fWidth / 2, fHeight / 2 ) );
 
-			// In the case when the entire ellipse is drawn, the AppendEllipse command is used, in which the MoveTo command already exists
+			// When drawing a full ellipse, AppendEllipse command is used which already contains MoveTo
 			if ( fSweepAngle < 360 )
 				if ( Ok != MoveTo( fStartX, fStartY ) )
 					return GenericError;
@@ -775,7 +785,7 @@ namespace Aggplus
 		if( fSweepAngle > 0 )
 			bClockDirection = TRUE;
 
-		if( fabs(fSweepAngle) >= 360 ) // Whole ellipse
+		if( fabs(fSweepAngle) >= 360 ) // Full ellipse
 		{
 			return (0 == Ellipse(fX + fWidth / 2, fY + fHeight / 2, fWidth / 2, fHeight / 2)) ? Ok : GenericError;
 		}
@@ -1169,7 +1179,7 @@ namespace Aggplus
 	bool CGraphicsPathSimpleConverter::PathCommandText2(const int* pUnicodes, const int* pGids, const int& nCount, NSFonts::IFontManager* pManager,
 					const double& x, const double& y, const double& w, const double& h)
 	{
-		if (NULL == pGids)
+		if (NULL == pGids || 0 == nCount)
 		{
 			pManager->SetStringGID(FALSE);
 			pManager->LoadString1((const unsigned int*)pUnicodes, (unsigned int)nCount, (float)x, (float)y);
@@ -1185,7 +1195,7 @@ namespace Aggplus
 	bool CGraphicsPathSimpleConverter::PathCommandText2(const std::wstring& sUnicodes, const int* pGids, const int& nCount, NSFonts::IFontManager* pManager,
 					const double& x, const double& y, const double& w, const double& h)
 	{
-		if (NULL == pGids)
+		if (NULL == pGids || 0 == nCount)
 		{
 			pManager->SetStringGID(FALSE);
 			pManager->LoadString1(sUnicodes, (float)x, (float)y);
@@ -1376,8 +1386,8 @@ namespace Aggplus
 
 	double CGraphicsPathSimpleConverter::AngToEllPrm(double fAngle, double fXRad, double fYRad)
 	{
-		// Function for converting a real angle into a parametric ellipse specification
-		// i.e. x= a cos(t) y = b sin(t) - parametric specification of the ellipse.
+		// Function to convert real angle to parametric ellipse definition
+		// i.e. x= a cos(t) y = b sin(t) - parametric ellipse definition.
 		// x = r cos(p), y = r sin(p) => t = atan2( sin(p) / b, cos(p) / a );
 		return atan2( sin( fAngle ) / fYRad,  cos( fAngle ) / fXRad );
 	}
@@ -1390,12 +1400,12 @@ namespace Aggplus
 		double dAngle1 = fAngle1 * 3.141592 / 180;
 		double dAngle2 = fAngle2 * 3.141592 / 180;
 
-		// Find out in which quarters the starting and ending points are located
+		// Determine which quadrants the start and end points are in
 		unsigned int nFirstPointQuard  = int(fAngle1) / 90 + 1; 
 		unsigned int nSecondPointQuard = int(fAngle2) / 90 + 1;
 		nSecondPointQuard = std::min( 4, std::max( 1, (int)nSecondPointQuard ) );
 		nFirstPointQuard  = std::min( 4, std::max( 1, (int)nFirstPointQuard ) );
-		// Draw a line to the starting point of the arc
+		// Draw a line to the arc start point
 		double fStartX = 0.0, fStartY = 0.0, fEndX = 0.0, fEndY = 0.0;
 
 		fStartX = fX + fXRad * cos( AngToEllPrm( dAngle1, fXRad, fYRad ) );
@@ -1403,7 +1413,7 @@ namespace Aggplus
 
 		_LineTo(fStartX, fStartY);
 
-		// Next, draw by quadrants
+		// Continue drawing by quadrants
 
 		double fCurX = fStartX, fCurY = fStartY;
 		double dStartAngle = dAngle1;
@@ -1445,7 +1455,7 @@ namespace Aggplus
 
 	int CGraphicsPathSimpleConverter::EllipseArc3(double fX, double fY, double fXRad, double fYRad, double dAngle1, double dAngle2, double *pfXCur, double *pfYCur, INT bClockDirection)
 	{
-		// Calculate the start, end and control points
+		// Calculate start, end and control points
 		double fX1  = 0.0, fX2  = 0.0, fY1  = 0.0, fY2  = 0.0;
 		double fCX1 = 0.0, fCX2 = 0.0, fCY1 = 0.0, fCY2 = 0.0;
 
@@ -1506,7 +1516,7 @@ namespace Aggplus
 			double fStartX = fX + fWidth / 2.0 + fWidth / 2 * cos( AngToEllPrm( dStartAngle, fWidth / 2, fHeight / 2 ) );
 			double fStartY = fY + fHeight / 2.0 - fHeight / 2 * sin( AngToEllPrm ( dStartAngle, fWidth / 2, fHeight / 2 ) );
 
-			// In the case when the entire ellipse is drawn, the AppendEllipse command is used, in which the MoveTo command already exists
+			// When drawing a full ellipse, AppendEllipse command is used which already contains MoveTo
 			if ( fSweepAngle < 360 )
 				if ( false == _MoveTo( fStartX, fStartY ) )
 					return false;
@@ -1518,7 +1528,7 @@ namespace Aggplus
 		if( fSweepAngle > 0 )
 			bClockDirection = TRUE;
 
-		if( fabs(fSweepAngle) >= 360 ) // Whole ellipse
+		if( fabs(fSweepAngle) >= 360 ) // Full ellipse
 		{
 			return (0 == Ellipse(fX + fWidth / 2, fY + fHeight / 2, fWidth / 2, fHeight / 2)) ? true : false;
 		}

@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "Utils.h"
 #include "../../DesktopEditor/common/StringExt.h"
@@ -68,8 +78,8 @@ namespace XPSEllipse
 {
 	double AngToEllPrm     (double fAngle, double fXRad, double fYRad)
 	{
-		// Function for converting a real angle into a parametric ellipse specification
-		// i.e. x= a cos(t) y = b sin(t) - parametric specification of the ellipse.
+		// Function for converting a real angle to parametric ellipse representation
+		// i.e. x = a cos(t) y = b sin(t) - parametric ellipse representation.
 		// x = r cos(p), y = r sin(p) => t = atan2( sin(p) / b, cos(p) / a );
 		return atan2(sin(fAngle) / fYRad, cos(fAngle) / fXRad);
 	}
@@ -92,7 +102,7 @@ namespace XPSEllipse
 	}
 	void   EllipseArc3     (IRenderer* pRenderer, Aggplus::CMatrix& oTransform, double fX, double fY, double fXRad, double fYRad, double dAngle1, double dAngle2, double *pfXCur, double *pfYCur, bool bClockDirection)
 	{
-		// Calculate the start, end and control points
+		// Calculate start, end and control points
 		double fX1  = 0.0, fX2  = 0.0, fY1  = 0.0, fY2  = 0.0;
 		double fCX1 = 0.0, fCX2 = 0.0, fCY1 = 0.0, fCY2 = 0.0;
 
@@ -129,11 +139,11 @@ namespace XPSEllipse
 	}
 	void   EllipseArc2     (IRenderer* pRenderer, Aggplus::CMatrix& oTransform, double fX, double fY, double fXRad, double fYRad, double fAngle1, double fAngle2, bool bClockDirection)
 	{
-		// convert angles to radians
+		// Convert angles to radians
 		double dAngle1 = fAngle1 * 3.141592 / 180;
 		double dAngle2 = fAngle2 * 3.141592 / 180;
 
-		// Find out in which quarters the starting and ending points are located
+		// Determine in which quadrants the start and end points are located
 		unsigned int nFirstPointQuard  = int(fAngle1) / 90 + 1;
 		unsigned int nSecondPointQuard = int(fAngle2) / 90 + 1;
 		nSecondPointQuard = std::min((unsigned int)4, std::max((unsigned int)1, nSecondPointQuard));
@@ -146,7 +156,7 @@ namespace XPSEllipse
 
 		LineTo(pRenderer, oTransform, fStartX, fStartY);
 
-		// Next, draw by quadrants
+		// Next we draw by quadrants
 
 		double fCurX = fStartX, fCurY = fStartY;
 		double dStartAngle = dAngle1;
@@ -233,7 +243,7 @@ namespace XPSEllipse
 		if (fXRad <= 0 || fYRad <= 0)
 			return;
 
-		if (fabs(fEndAngle - fStartAngle) >= 360) // Whole ellipse
+		if (fabs(fEndAngle - fStartAngle) >= 360) // Full ellipse
 		{
 			Ellipse(pRenderer, oTransform, fX, fY, fXRad, fYRad);
 		}
@@ -248,7 +258,7 @@ namespace XPSEllipse
 		dA1 = -dX1 / dY1 * SQR(dRadY) / SQR(dRadX);
 		dB1 = (SQR(dX1) / SQR(dRadX) + SQR(dY1) / SQR(dRadY)) * SQR(dRadY) / (2 * dY1);
 
-		// Get the quadratic equation A2 * X^2 + B2 * X + C2 = 0 (and A2 != 0 in our situation)
+		// Get the quadratic equation A2 * X^2 + B2 * X + C2 = 0 (where A2 != 0 in our case)
 		dA2 = SQR(dA1) / SQR(dRadY) + 1 / SQR(dRadX);
 		dB2 = 2 * dA1 * dB1 / SQR(dRadY);
 		dC2 = SQR(dB1) / SQR(dRadY) - 1;
@@ -261,12 +271,12 @@ namespace XPSEllipse
 		GetEllipseKoefs(dX1, dY1, dRadX, dRadY, dA1, dB1, dA2, dB2, dC2, dRoot);
 		if (dRoot < 0)
 		{
-			double dK1 = (SQR(dA1) + SQR(dRadY) / SQR(dRadX)); // dK1 is always positive (so we safely divide by it)
+			double dK1 = (SQR(dA1) + SQR(dRadY) / SQR(dRadX)); // dK1 is always positive (so we can safely divide by it)
 			double dK2 = 2 * dA1 * dB1;
 			double dK3 = SQR(dB1);
 			double dK4 = dK3 - SQR(dK2) / (4 * dK1);
 			if (dK4 < 0)
-				return false; // This shouldn't happen
+				return false; // This should not happen
 
 			double dNewRadY = SQRT(dK4);
 			double dKoef = dNewRadY / dRadY;
@@ -280,7 +290,7 @@ namespace XPSEllipse
 
 		if (dRoot < -0.001)
 		{
-			// This shouldn't happen
+			// This should not happen
 			return false;
 		}
 		else if (dRoot < 0)
@@ -303,7 +313,7 @@ namespace XPSEllipse
 		if (abs(dX1) < 0.001)
 			return false;
 
-		// The centers of the required ellipses lie on a vertical line
+		// Centers of the sought ellipses lie on a vertical line
 		dCx1 = dX1 / 2;
 		dCx2 = dCx1;
 
@@ -322,7 +332,7 @@ namespace XPSEllipse
 
 		if (dRoot < -0.001)
 		{
-			// This shouldn't happen
+			// This should not happen
 			return false;
 		}
 		else if (dRoot < 0)
@@ -351,7 +361,7 @@ namespace XPS
 
 	static inline double GetEllipseAngle(const double& dCx, const double& dCy, const double& dRadX, const double dRadY, const double& dX, const double& dY)
 	{
-		// Define a quadrant
+		// Determine the quadrant
 		int nQuarter = -1;
 		if (dX >= dCx)
 		{
@@ -633,7 +643,7 @@ namespace XPS
 			return;
 		}
 
-		// Move the point X0, Y0 to the origin of coordinates and rotate it to the opposite angle so that the required ellipses line up correctly
+		// Move point X0, Y0 to the origin and rotate by the inverse angle so that the sought ellipses are positioned correctly
 		Aggplus::CMatrix oTransform, oInverse;
 		oTransform.Rotate(-dAngle);
 		oTransform.Translate(-dX0, -dY0);
@@ -648,7 +658,7 @@ namespace XPS
 		// Find ellipses whose intersection points are (0, 0) and (dX1, dY1)
 		if (!XPSEllipse::GetEllipses(dX1, dY1, dRadX, dRadY, dCx1, dCy1, dCx2, dCy2))
 		{
-			// This shouldn't happen
+			// This should not happen
 			pRenderer->PathCommandLineTo(_dX1, _dY1);
 			dCurX = _dX1;
 			dCurY = _dY1;
@@ -660,8 +670,8 @@ namespace XPS
 		//double dTest3 = SQR(dCx2) / SQR(dRadX) + SQR(dCy2) / SQR(dRadY);
 		//double dTest4 = SQR(dCx2 - dX1) / SQR(dRadX) + SQR(dCy2 - dY1) / SQR(dRadY);
 
-		// Now there are 2 ellipses; determine the arc that needs to be drawn.
-		// First, find the angles of the starting and ending points for both ellipses.
+		// Now we have 2 ellipses, we need to determine the arc that we need to draw.
+		// First, let's find the angles of the start and end points for both ellipses.
 		double dAngleStart1 = GetEllipseAngle(dCx1, dCy1, dRadX, dRadY, 0, 0);
 		double dAngleEnd1   = GetEllipseAngle(dCx1, dCy1, dRadX, dRadY, dX1, dY1);
 
@@ -691,7 +701,7 @@ namespace XPS
 			dAngleEnd   = dAngleEnd2;
 		}
 
-		// Approximating an ellipse with Bezier curves
+		// Approximate the ellipse with Bezier curves
 		XPSEllipse::AppendEllipseArc(pRenderer, oInverse, dCx, dCy, dRadX, dRadY, dAngleStart, dAngleEnd, bClockwise);
 		dCurX = _dX1;
 		dCurY = _dY1;
@@ -1238,7 +1248,7 @@ namespace XPS
 
 			wChar = LookChar(wsIndices, nIndicesPos);
 			if (')' != wChar)
-				return false; // This shouldn't happen
+				return false; // This should not happen
 
 			nIndicesPos++;
 		}
@@ -1252,8 +1262,8 @@ namespace XPS
 		if (nCodeUnitCount > 0 && nGlyphCount > 0)
 		{
 			oEntry.vRemainUnicodes.clear();
-			// Need to read how many real Unicode values are in
-			// span [pUnicode + nUnicodePos, pUnicode + nUnicodePos + nCodeUnitCount]
+			// We need to read how many real unicode values are in the
+			// range [pUnicode + nUnicodePos, pUnicode + nUnicodePos + nCodeUnitCount]
 			int nUnicodesCount = 0;
 			unsigned int* pUnicodes = NULL;
 			nCodeUnitCount = std::min(nUtf16Len - nUtf16Pos, nCodeUnitCount);
@@ -1275,7 +1285,7 @@ namespace XPS
 					}
 					else if (ushLeading >= 0xDC00)
 					{
-						// This shouldn't happen
+						// This should not happen
 						continue;
 					}
 					else
@@ -1287,7 +1297,7 @@ namespace XPS
 						ushTraling =  pUtf16[nUtf16Pos + nCodeUnitPos++];
 						if (ushTraling < 0xDC00 || ushTraling > 0xDFFF)
 						{
-							// This shouldn't happen
+							// This should not happen
 							continue;
 						}
 						else
@@ -1298,8 +1308,8 @@ namespace XPS
 				}
 			}
 
-			// Distribute Unicodes evenly among the glyphs; ideally, their number should match.
-			// If there are more Unicodes, then delete the extra ones, if there are fewer of them, then fill the missing ones with spaces.
+			// Evenly distribute unicodes across glyphs, ideally their count should match.
+			// If there are more unicodes, we remove the extra ones; if there are fewer, we fill the missing ones with spaces.
 			nUnicodesCount = std::min(nUnicodesCount, nGlyphCount);
 			for (int nIndex = 0; nIndex < nGlyphCount; nIndex++)
 			{
@@ -1318,7 +1328,7 @@ namespace XPS
 		if (oEntry.vRemainUnicodes.size() <= 0)
 			return false;
 
-		// Now read exactly 1 glyph with possible metrics
+		// Now we read exactly 1 glyph with possible metrics
 		oEntry.nUnicode = oEntry.vRemainUnicodes.at(0);
 		oEntry.vRemainUnicodes.erase(oEntry.vRemainUnicodes.begin());
 
@@ -1413,7 +1423,7 @@ namespace XPS
 			return true;
 		}
 		else
-			return false; // This shouldn't happen
+			return false; // This should not happen
 	}
 	void ReadMatrixTransform(XmlUtils::CXmlLiteReader& oReader, CWString& wsTransform, CWString* pwsKey)
 	{
@@ -1500,7 +1510,7 @@ namespace XPS
 	}
 	void ReadPathFigure     (XmlUtils::CXmlLiteReader& oReader, std::wstring& wsData, bool bEvenOdd)
 	{
-		// TODO: Improve string addition and attribute traversal here
+		// TODO: Improve string concatenation and attribute traversal here
 		if (oReader.IsEmptyNode())
 			return;
 

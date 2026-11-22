@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "../FontConverter.h"
 
@@ -65,7 +75,7 @@ bool CFontConverter::ToOTF(std::wstring sFontIn, std::wstring sFontOut, unsigned
 
 	std::string sFontFormat( FT_Get_X11_Font_Format( pFace ) );
 
-	// Check the conversion flag and the original font format
+	// Check conversion flag and source font format
 	bool bNeedConvert = false;
 
 	if ( nFlag == NSFontConverter::c_lFromAll ||
@@ -84,18 +94,18 @@ bool CFontConverter::ToOTF(std::wstring sFontIn, std::wstring sFontOut, unsigned
 			NSFontConverter::CFontFileType1C *pT1C = NULL;
 			if ( "Type 1" == sFontFormat )
 			{
-				// First, convert Type1 to CFF
+				// First convert Type1 to CFF
 				NSFontConverter::CFontFileType1* pT1 = NSFontConverter::CFontFileType1::LoadFromFile( sFontIn.c_str() );
 				pT1->ToCFF( &NSFontConverter::CharBufferWrite, &oCFF );
 				delete pT1;
 
-				// Converting CFF to OpenTypeCFF
+				// Convert CFF to OpenTypeCFF
 				pT1C = NSFontConverter::CFontFileType1C::LoadFromBuffer( oCFF.sBuffer, oCFF.nLen );
 			}
 			else
 			{
-				// FreeType gives the font type CFF in cases where the file is OpenType(CFF).
-				// If so, the file doesn't need to be changed.
+				// FreeType returns CFF font type in cases when the file is actually OpenType(CFF).
+				// If that's the case, we don't need to do anything with the file.
 				pT1C = NSFontConverter::CFontFileType1C::LoadFromFile( sFontIn.c_str() );
 			}
 
@@ -120,7 +130,7 @@ bool CFontConverter::ToOTF(std::wstring sFontIn, std::wstring sFontOut, unsigned
 
 				if ( pSymbols )
 				{
-					// First, build the list of required GIDs
+					// First build the list of required GIDs
 					unsigned int* pUnicode = pSymbols;
 					unsigned short* pGIDs = new unsigned short[nCount];
 					int nCMapIndex = 0;
@@ -147,7 +157,7 @@ bool CFontConverter::ToOTF(std::wstring sFontIn, std::wstring sFontOut, unsigned
 
 					pUseGlyfs = new unsigned char[lGlyfsCount];
 					::memset( pUseGlyfs, 0x00, lGlyfsCount * sizeof(unsigned char) );
-					pUseGlyfs[0] = 1; // always write the zero GID
+					pUseGlyfs[0] = 1; // always write zero GID
 					for ( int nGID = 1; nGID < lGlyfsCount; nGID++ )
 					{
 						if ( 1 != pUseGlyfs[nGID] )
@@ -162,7 +172,7 @@ bool CFontConverter::ToOTF(std::wstring sFontIn, std::wstring sFontOut, unsigned
 								}
 							}
 
-							// If a given symbol is a composite (composite glyph), then we must take into account all its child symbols (subglyphs)
+							// If this glyph is composite (CompositeGlyf), we must account for all its child glyphs (subglyfs)
 							if ( bFound && 0 == FT_Load_Glyph( pFace, nGID, FT_LOAD_NO_SCALE | FT_LOAD_NO_RECURSE ) )
 							{
 								for ( int nSubIndex = 0; nSubIndex < pFace->glyph->num_subglyphs; nSubIndex++ )
@@ -214,7 +224,7 @@ bool CFontConverter::ToOTF(std::wstring sFontIn, std::wstring sFontOut, unsigned
 
 bool CFontConverter::ToOTF2(std::wstring sFontIn, unsigned int* pSymbols, int nCount, std::wstring sNameW, long nFlag, long lFaceIndex, unsigned char*& pDstData, int& nDstLen)
 {
-	// the function was simply copied and slightly modified. it's all due to lack of time.
+	// this function is just copied and slightly modified due to time constraints.
 
 	FT_Library pLibrary = NULL;
 	if ( FT_Init_FreeType( &pLibrary ) )
@@ -247,7 +257,7 @@ bool CFontConverter::ToOTF2(std::wstring sFontIn, unsigned int* pSymbols, int nC
 
 	std::string sFontFormat( FT_Get_X11_Font_Format( pFace ) );
 
-	// Check the conversion flag and the original font format
+	// Check conversion flag and source font format
 	bool bNeedConvert = false;
 
 	if ( nFlag == NSFontConverter::c_lFromAll ||
@@ -269,18 +279,18 @@ bool CFontConverter::ToOTF2(std::wstring sFontIn, unsigned int* pSymbols, int nC
 			NSFontConverter::CFontFileType1C *pT1C = NULL;
 			if ( "Type 1" == sFontFormat )
 			{
-				// First, convert Type1 to CFF
+				// First convert Type1 to CFF
 				NSFontConverter::CFontFileType1* pT1 = NSFontConverter::CFontFileType1::LoadFromFile( sFontIn.c_str() );
 				pT1->ToCFF( &NSFontConverter::CharBufferWrite, &oCFF );
 				delete pT1;
 
-				// Converting CFF to OpenTypeCFF
+				// Convert CFF to OpenTypeCFF
 				pT1C = NSFontConverter::CFontFileType1C::LoadFromBuffer( oCFF.sBuffer, oCFF.nLen );
 			}
 			else
 			{
-				// FreeType gives the font type CFF in cases where the file is OpenType(CFF).
-				// If so, the file doesn't need to be changed.
+				// FreeType returns CFF font type in cases when the file is actually OpenType(CFF).
+				// If that's the case, we don't need to do anything with the file.
 				pT1C = NSFontConverter::CFontFileType1C::LoadFromFile( sFontIn.c_str() );
 			}
 
@@ -302,7 +312,7 @@ bool CFontConverter::ToOTF2(std::wstring sFontIn, unsigned int* pSymbols, int nC
 
 				if ( pSymbols )
 				{
-					// First, build the list of required GIDs
+					// First build the list of required GIDs
 					unsigned int* pUnicode = (unsigned int*)pSymbols;
 					unsigned short* pGIDs = new unsigned short[nCount];
 					int nCMapIndex = 0;
@@ -329,7 +339,7 @@ bool CFontConverter::ToOTF2(std::wstring sFontIn, unsigned int* pSymbols, int nC
 
 					pUseGlyfs = new unsigned char[lGlyfsCount];
 					::memset( pUseGlyfs, 0x00, lGlyfsCount * sizeof(unsigned char) );
-					pUseGlyfs[0] = 1; // always write the zero GID
+					pUseGlyfs[0] = 1; // always write zero GID
 					for ( int nGID = 1; nGID < lGlyfsCount; nGID++ )
 					{
 						if ( 1 != pUseGlyfs[nGID] )
@@ -344,7 +354,7 @@ bool CFontConverter::ToOTF2(std::wstring sFontIn, unsigned int* pSymbols, int nC
 								}
 							}
 
-							// If a given symbol is a composite (composite glyph), then we must take into account all its child symbols (subglyphs)
+							// If this glyph is composite (CompositeGlyf), we must account for all its child glyphs (subglyfs)
 							if ( bFound && 0 == FT_Load_Glyph( pFace, nGID, FT_LOAD_NO_SCALE | FT_LOAD_NO_RECURSE ) )
 							{
 								for ( int nSubIndex = 0; nSubIndex < pFace->glyph->num_subglyphs; nSubIndex++ )

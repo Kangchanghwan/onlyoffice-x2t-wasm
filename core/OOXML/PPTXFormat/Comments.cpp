@@ -1,26 +1,36 @@
 /*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "Comments.h"
@@ -623,10 +633,19 @@ namespace PPTX
 //----------------------------------------------------------------------------------------------------------------------------------------------------
 		void Comment::fromXML(XmlUtils::CXmlNode& node)
 		{
-			XmlMacroReadAttributeBase(node, L"authorId", authorId);
-			if (!bModern)
+			nullable_string sAuthorId;
+			XmlMacroReadAttributeBase(node, L"authorId", sAuthorId);
+
+			if (sAuthorId.IsInit())
 			{
-				authorIdx = XmlUtils::GetInteger(*authorId);
+				if (!bModern)
+				{
+					authorIdx = XmlUtils::GetInteger(*sAuthorId);
+				}
+				else
+				{
+					authorId = *sAuthorId;
+				}
 			}
 			XmlMacroReadAttributeBase(node, L"dt", dt);
 			XmlMacroReadAttributeBase(node, L"idx", idx);
@@ -745,6 +764,19 @@ namespace PPTX
 		{
 			return L"";
 		}
+		static void WriteCommentText(NSBinPptxRW::CXmlWriter* pWriter, const std::wstring& text)
+		{
+			std::wstring s = text;
+
+			XmlUtils::replace_all(s, L"&",	L"&amp;");
+			XmlUtils::replace_all(s, L"'",	L"&apos;");
+			XmlUtils::replace_all(s, L"<",	L"&lt;");
+			XmlUtils::replace_all(s, L">",	L"&gt;");
+			XmlUtils::replace_all(s, L"\"",	L"&quot;");
+			XmlUtils::replace_all(s, L"\r",	L"&#13;");
+
+			pWriter->WriteString(s);
+		}
 		void Comment::toXmlWriter(NSBinPptxRW::CXmlWriter* pWriter) const
 		{
 			std::wstring extAdditional = additional_data.IsInit() ? (L"<p:ext uri=\"{19B8F6BF-5375-455C-9EA6-DF929625EA0E}\">\
@@ -755,10 +787,13 @@ namespace PPTX
 				pWriter->StartNode(L"p188:cm");
 				pWriter->StartAttributes();
 				
-				pWriter->WriteAttribute(L"id", id);
+				if (id.IsInit())
+				{
+					pWriter->WriteAttribute(L"id", id->ToString());
+				}
 				if (authorId.IsInit())
 				{
-					pWriter->WriteAttribute(L"authorId", *authorId);
+					pWriter->WriteAttribute(L"authorId", authorId->ToString());
 				}
 				else
 				{
@@ -795,7 +830,7 @@ namespace PPTX
 				else if (text.is_init())
 				{
 					pWriter->WriteString(L"<p188:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr/><a:t>");
-					pWriter->WriteStringXML(*text);
+					WriteCommentText(pWriter, *text);
 					pWriter->WriteString(L"</a:t></a:r></a:p></p188:txBody>");
 				}
 				if (additional_data.is_init())
@@ -824,7 +859,7 @@ namespace PPTX
 				}
 				else if (id.IsInit())
 				{
-					int int_id = XmlUtils::GetHex(id->c_str());
+					int int_id = id->m_oGUID.a & id->m_oGUID.b & id->m_oGUID.j; // ??? may be new 
 					pWriter->WriteAttribute(L"idx", abs(int_id));
 				}
 				pWriter->EndAttributes();
@@ -842,14 +877,14 @@ namespace PPTX
 				if (text.is_init())
 				{
 					pWriter->WriteString(L"<p:text>");
-					pWriter->WriteStringXML(*text);
+					WriteCommentText(pWriter, *text);
 					pWriter->WriteString(L"</p:text>");
 				}
 				else if (txBody.IsInit())
 				{
 					std::wstring textFrom = txBody->GetText();
 					pWriter->WriteString(L"<p:text>");
-					pWriter->WriteStringXML(textFrom);
+					WriteCommentText(pWriter, textFrom);
 					pWriter->WriteString(L"</p:text>");
 				}
 				bool bIsExtLst = false;
@@ -933,9 +968,15 @@ namespace PPTX
 		
 			pWriter->StartRecord(100);
 				pWriter->WriteBYTE(NSBinPptxRW::g_nodeAttributeStart);
-					pWriter->WriteString2(0, id);
+				if (id.IsInit())
+				{
+					pWriter->WriteString1(0, id->ToString());
+				}
 					pWriter->WriteString2(1, created);
-					pWriter->WriteString2(2, authorId);
+				if (authorId.IsInit())
+				{
+					pWriter->WriteString1(2, authorId->ToString());
+				}
 					pWriter->WriteString2(3, status);
 					pWriter->WriteString2(4, startDate);
 					pWriter->WriteString2(5, dueDate);
@@ -1257,7 +1298,8 @@ namespace PPTX
 				if (true == comm.idx.IsInit() && true == comm.authorIdx.IsInit())
 					break;
 
-				std::map<std::wstring, int>::iterator pFind = authors->mapAuthors.find(*comm.authorId);
+				//std::map<std::wstring, int>::iterator pFind = authors->mapAuthors.find(*comm.authorId);
+				std::map<std::wstring, int>::iterator pFind = authors->mapAuthors.find(comm.authorId->ToString());
 
 				if (pFind != authors->mapAuthors.end())
 				{
@@ -1266,9 +1308,9 @@ namespace PPTX
 				else
 				{
 					comm.authorIdx = authors->mapAuthors.size() + 1;
-					authors->mapAuthors.insert(std::make_pair(*comm.authorId, *comm.authorIdx));
+					authors->mapAuthors.insert(std::make_pair(comm.authorId->ToString(), *comm.authorIdx));
 				}
-				//TODO idx new generate ??? (now id->idx)
+				//todooo idx new generate ??? (now id->idx)
 			}
 		}
 	}

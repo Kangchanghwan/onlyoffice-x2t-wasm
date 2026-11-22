@@ -1,3 +1,38 @@
+/*
+ * Copyright (C) Ascensio System SIA, 2009-2026
+ *
+ * This program is a free software product. You can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License (AGPL)
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
+ *
+ * This program is distributed WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
+ * Section 5 of the GNU AGPL version 3.
+ *
+ * No trademark rights are granted under this License.
+ *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 #include "gtest/gtest.h"
 #include "../../../OdfFile/Reader/Converter/StarMath2OOXML/cooxml2odf.h"
 #include "../../../DesktopEditor/xml/include/xmlutils.h"
@@ -307,8 +342,23 @@ TEST(OOXml2OdfTest,sPre)
 	StMath StCorrect,StResult;
 	StResult.m_wsSemantic = oTest.GetOdf();
 	StResult.m_wsAnnotation = oTest.GetAnnotation();
-	StCorrect.m_wsSemantic = L"<mmultiscripts><mn>10</mn><mprescripts /><mn>9</mn><mn>8</mn></mmultiscripts>";
-	StCorrect.m_wsAnnotation = L"10 lsup { 9 } lsub { 8 } ";
+	StCorrect.m_wsSemantic = L"<mmultiscripts><mn>10</mn><mprescripts /><mn>8</mn><mn>9</mn></mmultiscripts>";
+	StCorrect.m_wsAnnotation = L"10 lsub { 8 } lsup { 9 } ";
+	EXPECT_EQ(StResult,StCorrect);
+}
+TEST(OOXml2OdfTest,sPreWithPlaceholder)
+{
+	XmlUtils::CXmlLiteReader oReader;
+	OOX::WritingElement* pElement = new OOX::Logic::CSPre();
+	if(oReader.FromString(L"<m:sPre> <m:sPrePr> <m:ctrlPr> <w:rPr> <w:rFonts w:ascii=\"Cambria Math\" w:eastAsiaTheme=\"minorEastAsia\" w:hAnsi=\"Cambria Math\"/> <w:i/> </w:rPr> </m:ctrlPr> </m:sPrePr> <m:sub> <m:r> <w:rPr> <w:rFonts w:ascii=\"Cambria Math\" w:eastAsiaTheme=\"minorEastAsia\" w:hAnsi=\"Cambria Math\"/> </w:rPr> <m:t>\u00A0</m:t> </m:r> </m:sub> <m:sup> <m:r> <w:rPr> <w:rFonts w:ascii=\"Cambria Math\" w:eastAsiaTheme=\"minorEastAsia\" w:hAnsi=\"Cambria Math\"/> </w:rPr> <m:t>9</m:t> </m:r> </m:sup> <m:e> <m:r> <w:rPr> <w:rFonts w:ascii=\"Cambria Math\" w:eastAsiaTheme=\"minorEastAsia\" w:hAnsi=\"Cambria Math\"/> </w:rPr> <m:t>1</m:t> </m:r> <m:r> <w:rPr> <w:rFonts w:ascii=\"Cambria Math\" w:eastAsiaTheme=\"minorEastAsia\" w:hAnsi=\"Cambria Math\"/> <w:lang w:val=\"en-US\"/> </w:rPr> <m:t>0</m:t> </m:r> </m:e> </m:sPre>") && oReader.ReadNextNode())
+		pElement->fromXML(oReader);
+	StarMath::COOXml2Odf oTest;
+	oTest.NodeDefinition(pElement);
+	StMath StCorrect,StResult;
+	StResult.m_wsSemantic = oTest.GetOdf();
+	StResult.m_wsAnnotation = oTest.GetAnnotation();
+	StCorrect.m_wsSemantic = L"<mmultiscripts><mn>10</mn><mprescripts /><none /><mn>9</mn></mmultiscripts>";
+	StCorrect.m_wsAnnotation = L"10 lsup { 9 } ";
 	EXPECT_EQ(StResult,StCorrect);
 }
 TEST(OOXml2OdfTest,EqArr)

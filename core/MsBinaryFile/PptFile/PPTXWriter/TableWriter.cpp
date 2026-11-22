@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "TableWriter.h"
 #include "TxBodyConverter.h"
@@ -115,7 +125,7 @@ std::vector<int> ProtoTable::getWidth(const std::vector<CElementPtr>& arrCells, 
         {
             mapLeftWidth.insert(std::make_pair(left, width));
         }
-        // Check: was this a merged cell, and is this the true width of the column?
+        // Here we check qestion: was it merged cell and now is it true width of colum?
         else if (iter->second > width)
         {
             mapLeftWidth.erase(iter);
@@ -154,7 +164,7 @@ std::vector<int> ProtoTable::getHeight(const std::vector<CElementPtr>& arrCells,
         {
             mapTopHeight.insert(std::make_pair(top, height));
         }
-        // Check: was this a merged cell, and is this the true height of the row?
+        // Here we check qestion: was it merged cell and now is it true height of row?
         else if (iter->second > height)
         {
             mapTopHeight.erase(iter);
@@ -443,8 +453,8 @@ void TableWriter::FillRow(PPTX::Logic::TableRow &oRow, ProtoTableRow& arrCells)
 
 std::wstring TableWriter::getXmlForGraphicFrame(int ID, int idx) const
 {
-    //the table may contain links and references to other objects (images???)
-    // yliko_provolis.ppt (+ there are smart arts here)
+    // table may contain links and references to other objects (images???)
+    // yliko_provolis.ppt (+ smart arts are here)
 
     auto& rXml = m_pTableElement->m_xmlRawData;
 
@@ -453,10 +463,10 @@ std::wstring TableWriter::getXmlForGraphicFrame(int ID, int idx) const
 
     if (graphic_frame.nvGraphicFramePr.IsInit())
     {
-        graphic_frame.nvGraphicFramePr->cNvPr.id = ID; // or change in the connection map for animations
+        graphic_frame.nvGraphicFramePr->cNvPr.id = ID; // or change in the relations map for animations
 
         if (graphic_frame.nvGraphicFramePr->nvPr.ph.IsInit() && idx >= 0)
-        {//check
+        {// check
             graphic_frame.nvGraphicFramePr->nvPr.ph->idx = std::to_wstring(idx);
         }
     }

@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "xlsxconversioncontext.h"
@@ -36,6 +46,7 @@
 #include "../Format/odf_document.h"
 #include "../Format/odfcontext.h"
 #include "../Format/calcs_styles.h"
+#include "../Format/style_table_properties.h"
 
 namespace cpdoccore { 
 
@@ -95,9 +106,9 @@ void xlsx_conversion_context::set_mediaitems(mediaitems_ptr &items)
 void xlsx_conversion_context::start_chart(std::wstring name)
 {
 	charts_.push_back(oox_chart_context_ptr(new oox_chart_context(mediaitems_, name)));
-	//adding a new form for the diagram
-	 //it will contain an information part - and it is written each time in its own xml (their number is based on the number of diagrams)
-	//this context must be passed to the file
+	//adding new form for chart
+	 //it will contain info part - and it's written each time to its own xml (count = chart count)
+	//this context needs to be passed to file
 }
 
 void xlsx_conversion_context::end_chart()
@@ -109,8 +120,12 @@ void xlsx_conversion_context::start_document()
     odf_reader::odf_read_context & odfContext = root()->odf_context();
     std::vector<const odf_reader::style_instance *> instances;
     
-	instances.push_back(odfContext.styleContainer().style_default_by_type(odf_types::style_family::TableCell));
-	instances.push_back(odfContext.styleContainer().style_by_name(L"Default", odf_types::style_family::TableCell, false));
+	odf_reader::style_instance *inst = odfContext.styleContainer().style_default_by_type(odf_types::style_family::TableCell);
+	if (inst) instances.push_back(inst);
+
+	inst = odfContext.styleContainer().style_by_name(L"Default", odf_types::style_family::TableCell, false);
+	if (!inst) inst = odfContext.styleContainer().style_by_name(L"Normal", odf_types::style_family::TableCell, false);
+	if (inst) instances.push_back(inst);
 
     odf_reader::text_format_properties_ptr		textFormatProperties	= calc_text_properties_content(instances);
     odf_reader::paragraph_format_properties		parFormatProperties		= calc_paragraph_properties_content(instances);
@@ -207,7 +222,7 @@ void xlsx_conversion_context::end_document()
         {
             CP_XML_NODE(L"sheet")
             {
-                CP_XML_ATTR(L"name",	XmlUtils::EncodeXmlString(sheet->name())); // ms office! name length limit 31!!!
+                CP_XML_ATTR(L"name",	XmlUtils::EncodeXmlString(sheet->name())); // ms office ! name length limit 31!!!
                 CP_XML_ATTR(L"sheetId", i + 1);
 				CP_XML_ATTR(L"state",	sheet->hidden() ? L"hidden" : L"visible");
                 CP_XML_ATTR(L"r:id",	id);            
@@ -827,6 +842,19 @@ int xlsx_conversion_context::get_dxfId_style(const std::wstring &style_name)
 	}
 	return dxfId;
 }
+double xlsx_conversion_context::getDefaultRowHeight()
+{
+	odf_reader::style_instance *rowDefStyle = root()->odf_context().styleContainer().style_default_by_type(odf_types::style_family::TableRow);
+
+	if ((rowDefStyle) && (rowDefStyle->content()))
+	{
+		const odf_reader::style_table_row_properties *prop = rowDefStyle->content()->get_style_table_row_properties();
+
+		if ((prop) && (prop->attlist_.style_row_height_))
+			return prop->attlist_.style_row_height_->get_value_unit(odf_types::length::pt);
+	}
+	return 2 * getMaxDigitSize().second * 72. / 96.;//in point size
+}
 std::pair<double, double> xlsx_conversion_context::getMaxDigitSize()
 {
     if (maxDigitSize_.first <= 0.1)
@@ -876,6 +904,9 @@ std::pair<double, double> xlsx_conversion_context::getMaxDigitSize()
 		if (font_name.empty()) font_name = L"Arial";
 	
         maxDigitSize_ = utils::GetMaxDigitSizePixels(font_name.c_str(), font_size, 96., 0, mediaitems_->applicationFonts());
+
+		maxDigitSize_.first = (int)maxDigitSize_.first;
+		if (maxDigitSize_.first < 1) maxDigitSize_.first = 1;
     }    
     return maxDigitSize_;
 }
@@ -889,7 +920,7 @@ xlsx_table_metrics & xlsx_conversion_context::get_table_metrics()
     return get_table_context().get_table_metrics();
 }
 void xlsx_conversion_context::start_drawing_context()
-{//TODO for multiple nesting -> vector
+{//todooo if making multiple nesting -> vector
 	if (xlsx_drawing_context_) return;
 		
 	xlsx_drawing_context_ = boost::shared_ptr<xlsx_drawing_context>(new xlsx_drawing_context(get_drawing_context_handle(), true));
@@ -950,14 +981,14 @@ void xlsx_conversion_context::end_hyperlink(std::wstring const & href)
 	}
 	else
 	{
-		std::wstring hId = get_table_context().get_drawing_context().add_hyperlink(href); // to an external object
+		std::wstring hId = get_table_context().get_drawing_context().add_hyperlink(href); // to external object
 		xlsx_text_context_.end_hyperlink(hId); 
 		
 		xlsx_text_context_.end_span2();
 	}
 }
 void xlsx_conversion_context::add_pivot_sheet_source (const std::wstring & sheet_name, int index_table_view)
-{//actually, in LibreOffice there is a strict constraint that on one sheet only one pivot can be ..
+{//actually in LibreOffice there's a hard limit that only one pivot table can be on one sheet ..
 	mapPivotsTableView_.insert(std::make_pair(sheet_name, index_table_view));
 }
 void xlsx_conversion_context::add_jsaProject(const std::string &content)

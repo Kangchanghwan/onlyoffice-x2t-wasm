@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #pragma once 
 #include <boost/algorithm/string.hpp>
@@ -120,7 +130,7 @@ class RtfCharPropsCommand
 {
 public:
 	static bool ExecuteCommand(RtfDocument& oDocument, RtfReader& oReader,  std::string sCommand, bool hasParameter, int parameter, RtfCharProperty * props, bool bLookOnBorder = true);
-	//bool bLookOnBorder; Do I need to read the border properties (relevant for ParagraphReader)
+	//bool bLookOnBorder; Whether to read border properties (relevant for ParagraphReader)
 };
 
 class RtfParagraphPropsCommand
@@ -249,7 +259,7 @@ public:
 
 class RtfPictureReader :  public RtfAbstractReader
 {
-	class PLACEABLEMETAHEADER //header for wmf from rtf (in rtf wmf doesn't contain image sizes)
+	class PLACEABLEMETAHEADER //header for wmf from rtf (in rtf wmf doesn't contain image dimensions)
 	{
 	public:
 		DWORD Key;           /* Magic number (always 9AC6CDD7h) */
@@ -276,7 +286,7 @@ public:
 		is_borderCellLeft, is_borderCellTop, is_borderCellRight, is_borderCellBottom, is_borderCellLR, is_borderCellRL,
 		is_borderRowLeft, is_borderRowTop, is_borderRowRight, is_borderRowBottom, is_borderRowVer, is_borderRowHor
 	};
-	//only for border determination
+	//only for border detection
 
 private:
 	_InternalState	m_eInternalState; private:
@@ -322,7 +332,7 @@ private:
 	enum _InternalState{ is_normal,is_charBorder, is_borderTop, is_borderLeft, is_borderBottom, is_borderRight, is_borderBox, is_borderBar,
 						 is_borderCellLeft,is_borderCellTop,is_borderCellRight,is_borderCellBottom,is_borderCellLR,is_borderCellRL,
 						 is_borderRowLeft,is_borderRowTop,is_borderRowRight,is_borderRowBottom,is_borderRowVer,is_borderRowHor} ;
-	//only for identifying borders
+	//only for borders detection
 	
 	_InternalState				m_eInternalState;
 
@@ -387,7 +397,7 @@ class RtfShapeGroupReader : public RtfShapeReader
 {
 public: 
 	RtfShape&	m_oShapeGroup;
-	bool		m_bHeader; //to differentiate the header from nested groups
+	bool		m_bHeader; //to distinguish header from nested groups
 
 	RtfShapeGroupReader( RtfShape& oShape );
 
@@ -508,13 +518,13 @@ public:
 
 class FootnoteReader;
 //Destination has states
-class RtfParagraphPropDestination // todo - the last paragraph isn't processed
+class RtfParagraphPropDestination // todo - last paragraph is not processed
 {
 public:
 	enum _InternalState{ is_normal,is_charBorder, is_borderTop, is_borderLeft, is_borderBottom, is_borderRight, is_borderBox, is_borderBar,
 						 is_borderCellLeft,is_borderCellTop,is_borderCellRight,is_borderCellBottom,is_borderCellLR,is_borderCellRL,
 						 is_borderRowLeft,is_borderRowTop,is_borderRowRight,is_borderRowBottom,is_borderRowVer,is_borderRowHor} ;
-	//only for border determination
+	//only for border detection
 	
 private: 
 	_InternalState	m_eInternalState;
@@ -522,20 +532,20 @@ private:
 
 	//real paragraphs and tables
 	std::vector< ITextItemPtr >		aCellRenderables;
-	std::vector< int >				aItaps;		//nesting of paragraphs
+	std::vector< int >				aItaps;		//nesting level of paragraphs
 	std::vector< RtfTableCellPtr >	aCells;
-	std::vector< int >				aCellItaps; //cell nesting
+	std::vector< int >				aCellItaps; //nesting level of cell
 	std::vector< RtfTableRowPtr >	aRows;
-	std::vector< int >				aRowItaps; //row nesting
+	std::vector< int >				aRowItaps; //nesting level of row
 	RtfRowProperty oCurRowProperty;
 
 	RtfReader* m_oReader;
 
 public: 
-	bool					m_bPar;				// if the last command was par, then there is no need to add a paragraph
-	TextItemContainerPtr	m_oTextItems;		//to split on TextItem
+	bool					m_bPar;				// if last command was par, no need to add paragraph
+	TextItemContainerPtr	m_oTextItems;		//for splitting into TextItem
 	RtfTab					m_oCurTab;
-	int						nTargetItap;		//level that is considered not a table (in order to read paragraphs in tables)
+	int						nTargetItap;		//level considered non-table (to read paragraphs in tables)
 	int						nCurItap;
 
 	RtfParagraphPropDestination( );
@@ -703,7 +713,7 @@ class RtfStyleTableReader: public RtfAbstractReader
 {
 	class RtfStyleReader: public RtfAbstractReader
 	{
-		//only for identifying borders
+		//only for borders detection
 	private:
 		enum _InternalState{ is_normal, is_tsbrdrt, is_tsbrdrb, is_tsbrdrl, is_tsbrdrr, is_tsbrdrh, is_tsbrdrv } InternalState;
 		

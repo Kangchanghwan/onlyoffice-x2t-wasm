@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "../DocxFlat.h"
 #include "Vml.h"
@@ -608,7 +618,7 @@ namespace OOX
 		}
 		void CArc::ReadAttributes(XmlUtils::CXmlLiteReader& oReader)
 			{
-				// Reading the attributes
+				
 				if ( oReader.GetAttributesCount() <= 0 )
 					return;
 
@@ -678,7 +688,7 @@ namespace OOX
 		}
 		void CCurve::ReadAttributes(XmlUtils::CXmlLiteReader& oReader)
 			{
-				// Reading the attributes
+				
 				if ( oReader.GetAttributesCount() <= 0 )
 					return;
 
@@ -768,7 +778,7 @@ namespace OOX
 				}
 				oReader.MoveToElement();
 
-				// TO DO: Make a formula parser (or use an already made parser in OfficeDrawing\Shapes)
+				// TO DO: Implement formula parser (or use already existing parser in OfficeDrawing\Shapes)
 			}
 
 		//--------------------------------------------------------------------------------
@@ -892,7 +902,7 @@ namespace OOX
 				// Set default values
 				m_oPoints.SetDelimiter( ' ' );
 
-				// Reading the attributes
+				
 				if ( oReader.GetAttributesCount() <= 0 )
 					return;
 
@@ -1007,7 +1017,7 @@ namespace OOX
 				// Set default values
 				m_oArcSize.SetPercentage( 20 );
 
-				// Reading the attributes
+				
 				if ( oReader.GetAttributesCount() <= 0 )
 					return;
 
@@ -1209,7 +1219,7 @@ namespace OOX
 			}
 			oReader.MoveToElement();
 
-			// TO DO: Make an Adj parser
+			// TO DO: Implement Adj parser
 		}
 		std::wstring CShape::toXML() const
 		{
@@ -1416,7 +1426,7 @@ namespace OOX
 			}
 			oReader.MoveToElement();
 
-			// TO DO: Make an Adj parser
+			// TO DO: Implement Adj parser
 		}
 		std::wstring CShapeType::toXML() const
 		{
@@ -1848,7 +1858,7 @@ namespace OOX
 			m_oInset.Init();
 			m_oInset->Set(7.2, 3.6, 7.2, 3.6 );
 			
-			// Reading the attributes
+			
 			if ( oReader.GetAttributesCount() <= 0 )
 				return;
 			
@@ -2378,7 +2388,7 @@ namespace OOX
 			}
 			oReader.MoveToElement();
 
-			// TO DO: Make a formula parser (or use an already made parser in OfficeDrawing\Shapes)
+			// TO DO: Implement formula parser (or use already existing parser in OfficeDrawing\Shapes)
 		}
 		std::wstring CStroke::toXML() const
 		{
@@ -2579,7 +2589,7 @@ namespace OOX
 			}
 			oReader.MoveToElement();
 
-			// TO DO: Make a parser for connectangles, connectlocs parameters
+			// TO DO: Implement parser for connectangles, connectlocs parameters
 		}
 		std::wstring CPath::toXML() const
 		{
@@ -2971,7 +2981,7 @@ namespace OOX
 				m_oFrom.SetValue( 0, 0 );
 				m_oTo.SetValue( 10, 10 );
 
-				// Reading the attributes
+				
 				if ( oReader.GetAttributesCount() <= 0 )
 					return;
 

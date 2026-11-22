@@ -2,9 +2,9 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-// General information about the assembly is managed using a
-// set of attributes. Change the values of these attributes to change the
-// assembly-related information.
+// General Information about an assembly is controlled through the following
+// set of attributes. Change these attribute values to modify the information
+// associated with an assembly.
 [assembly: AssemblyTitle("Sha1_C14N")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
@@ -14,23 +14,23 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
-// Setting ComVisible to FALSE makes types in the assembly invisible
-// for COM components.  If you need to access a type in this assembly via
-// COM, set the ComVisible attribute to TRUE for this type.
+// Setting ComVisible to false makes the types in this assembly not visible
+// to COM components. If you need to access a type in this assembly from
+// COM, set the ComVisible attribute to true on that type.
 [assembly: ComVisible(false)]
 
-// The following GUID serves to identify the type library if this project is to be visible to COM
+// The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("a945e071-111a-41e0-8bb0-4f7755ebb77b")]
 
-// Assembly version information consists of the following four values:
+// Version information for an assembly consists of the following four values:
 //
-//      Major version number
-//      Minor version number
-//   Build number
+//      Major Version
+//      Minor Version
+//   Build Number
 //      Revision
 //
-// You can specify all values or accept the default build and revision numbers
-// using "*" as below:
+// You can specify all the values or you can default the Build and Revision Numbers
+// by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]

@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include "style_chart_properties.h"
@@ -46,6 +56,20 @@ void style_chart_properties::add_attributes(const xml::attributes_wc_ptr & Attri
 {
 	content_.add_attributes(Attributes);
 }
+_CP_OPT(int) oox_convert_rotation_angle(const _CP_OPT(unsigned int) & angle)
+{
+	_CP_OPT(int) result;
+
+	if (!angle) return result;
+
+	int degree = (int)(*angle % 360);
+
+	if (degree > 180) degree -= 360;
+
+	result = -degree * 60000;
+
+	return result;
+}
 void chart_format_properties::apply_from(const chart_format_properties & Other)
 {
 	common_rotation_angle_attlist_.apply_from(Other.common_rotation_angle_attlist_);
@@ -57,9 +81,10 @@ void chart_format_properties::apply_from(const chart_format_properties & Other)
 }
 void chart_format_properties::add_attributes( const xml::attributes_wc_ptr & Attributes )
 {
-	_CP_OPT(bool) bVal;//then this division can be removed and the option replaced
+	_CP_OPT(bool) bVal;// later can remove this separation - replace variant
 
 	CP_APPLY_ATTR(L"chart:scale-text",			bVal);		if (bVal) push_back(_property(L"scale-text",			bVal.get()));
+	CP_APPLY_ATTR(L"chart:auto-position",		bVal);		if (bVal) push_back(_property(L"auto-position",			bVal.get()));
     CP_APPLY_ATTR(L"chart:three-dimensional",	bVal);		if (bVal) push_back(_property(L"three-dimensional",		bVal.get()));
     CP_APPLY_ATTR(L"chart:vertical",			bVal);		if (bVal) push_back(_property(L"vertical",				bVal.get()));
     CP_APPLY_ATTR(L"chart:stacked",				bVal);		if (bVal) push_back(_property(L"stacked",				bVal.get()));
@@ -68,6 +93,7 @@ void chart_format_properties::add_attributes( const xml::attributes_wc_ptr & Att
     CP_APPLY_ATTR(L"chart:percentage",			bVal);		if (bVal) push_back(_property(L"percentage",			bVal.get()));
     CP_APPLY_ATTR(L"chart:connect-bars",		bVal);		if (bVal) push_back(_property(L"connect-bars",			bVal.get()));
     CP_APPLY_ATTR(L"chart:deep",				bVal);		if (bVal) push_back(_property(L"deep",					bVal.get()));
+    CP_APPLY_ATTR(L"chart:right-angled-axes",	bVal);		if (bVal) push_back(_property(L"right-angled-axes",		bVal.get()));
     CP_APPLY_ATTR(L"chart:tick-marks-major-inner",bVal);	if (bVal) push_back(_property(L"tick-marks-major-inner",bVal.get()));
     CP_APPLY_ATTR(L"chart:tick-marks-major-outer",bVal);	if (bVal) push_back(_property(L"tick-marks-major-outer",bVal.get()));
     CP_APPLY_ATTR(L"chart:tick-marks-minor-inner",bVal);	if (bVal) push_back(_property(L"tick-marks-minor-inner",bVal.get()));
@@ -98,6 +124,9 @@ void chart_format_properties::add_attributes( const xml::attributes_wc_ptr & Att
 			if (strVal) push_back(_property(L"axis-type", strVal.get()));
 		}
 	}
+
+	CP_APPLY_ATTR(L"chart:treat-empty-cells", strVal);
+	if (strVal) push_back(_property(L"treat-empty-cells", strVal.get()));
 
 	CP_APPLY_ATTR(L"chart:symbol-type",		strVal);	
 	if (strVal) push_back(_property(L"symbol-type",chart_symbol_type(chart_symbol_type::parse(strVal.get())).get_type()));

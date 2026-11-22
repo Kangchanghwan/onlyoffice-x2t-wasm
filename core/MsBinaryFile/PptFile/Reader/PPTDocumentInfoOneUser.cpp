@@ -1,30 +1,42 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include <boost/make_shared.hpp>
 
 #include "PPTDocumentInfo.h"
+#include "RoundTripExtractor.h"
+#include "../../../DesktopEditor/common/Directory.h"
 
 #include "../Records/RecordsIncluder.h"
 
@@ -32,6 +44,8 @@
  //#include "../Records/SoundCollectionContainer.h"
  //#include "../Records/SoundContainer.h"
 #include "../Enums/_includer.h"
+#include "../../../OfficeCryptReader/source/CryptTransform.h"
+#include "../../../Common/MediaFileFormatChecker.h"
 
 using namespace PPT;
 using namespace ODRAW;
@@ -167,17 +181,28 @@ bool CPPTUserInfo::ReadFromStream(CRecordUserEditAtom* pUser, POLE::Stream* pStr
             m_bEncrypt = true;
             m_oEncryptionHeader.ReadFromStream(oHeader, pStream);
 
-            m_pDecryptor = new CRYPT::ECMADecryptor();
-            m_pDecryptor->SetCryptData(m_oEncryptionHeader.crypt_data_aes);
-
-            if (m_strPassword.empty())
+            if (m_oEncryptionHeader.bStandard)
             {
-                if (m_pDecryptor->SetPassword(L"VelvetSweatshop") == false)
+                m_pDecryptor = new CRYPT::RC4Decryptor(m_oEncryptionHeader.crypt_data_rc4,
+                    m_strPassword.empty() ? L"VelvetSweatshop" : m_strPassword);
+                if (!m_pDecryptor->IsVerify())
                     return false;
             }
-            else if (m_pDecryptor->SetPassword(m_strPassword) == false)
+            else
             {
-                return false;
+                CRYPT::ECMADecryptor* ecmaDecryptor = new CRYPT::ECMADecryptor();
+                ecmaDecryptor->SetCryptData(m_oEncryptionHeader.crypt_data_aes);
+                m_pDecryptor = ecmaDecryptor;
+
+                if (m_strPassword.empty())
+                {
+                    if (ecmaDecryptor->SetPassword(L"VelvetSweatshop") == false)
+                        return false;
+                }
+                else if (ecmaDecryptor->SetPassword(m_strPassword) == false)
+                {
+                    return false;
+                }
             }
             std::wstring sTemp = m_pDocumentInfo->m_pCommonInfo->tempPath + FILE_SEPARATOR_STR + L"~tempFile.ppt";
 
@@ -408,7 +433,7 @@ bool CPPTUserInfo::ReadDocumentPersists(POLE::Stream* pStream)
 //--------------------------------------------------------------------------------------------
 void CPPTUserInfo::ReadExtenalObjects()
 {
-    // so... now let's take all the information about ExObject -----------------------------
+    // so... now we get all info about ExObject -----------------------------
     m_oExMedia.m_strPresentationDirectory = m_pDocumentInfo->m_pCommonInfo->tempPath;
 
     PPT::CExFilesInfo oInfo;
@@ -427,14 +452,14 @@ void CPPTUserInfo::ReadExtenalObjects()
     }
     else
     {
-        // still need to read it, because there may be
+        // we still need to read, as there can be
         // transition
         LoadExternal(NULL);
     }
 
     // -------------------------------------------------------------------
 
-    // and now let's take all the information about the fonts
+    // and now let's get all the font information
     std::vector<CRecordFontEntityAtom*> oArrayFonts;
     m_oDocument.GetRecordsByType(&oArrayFonts, true);
 
@@ -575,7 +600,7 @@ void CPPTUserInfo::FromDocument()
 
         m_arSlides.push_back(new CSlide());
 
-        // if there are animations on the slide
+        // if the slide has animations
         //		std::map <_UINT32, Animations::CSlideTimeLine*>::iterator pTimeLine =	m_mapAnimations.find( pPair->first);
 
         //		if ( m_mapAnimations.end() != pTimeLine )
@@ -666,7 +691,7 @@ void CPPTUserInfo::LoadNotes(_UINT32 dwNoteID, CSlide* pNotes)
 
     if (pPairSlide == m_mapSlides.end())
     {
-        //????? Notes don't have a slide!!!
+        //????? notes have no slide !!!
     }
     //-----------------------------------------------------
     size_t index = pPairSlide->second->m_Index;
@@ -685,7 +710,7 @@ void CPPTUserInfo::LoadNotes(_UINT32 dwNoteID, CSlide* pNotes)
     //-----------------------------------------------------
     std::vector<ODRAW::CColor>* pArrayColorScheme = pTheme ? &pTheme->m_arColorScheme : NULL;
 
-    // read the color scheme -------------------------------------------------------------
+    // reading color scheme -----------------------------------------------------------
     pNotes->m_bUseLayoutColorScheme = true;
     if (!bMasterColorScheme)
     {
@@ -699,8 +724,9 @@ void CPPTUserInfo::LoadNotes(_UINT32 dwNoteID, CSlide* pNotes)
                 pNotes->m_bUseLayoutColorScheme = false;
                 oArrayColors[i]->ToArray(&pNotes->m_arColorScheme);
                 CorrectColorScheme(pNotes->m_arColorScheme);
+                CorrectColorSchemeByRoundTrip(pRecordSlide, pNotes->m_arColorScheme, pArrayColorScheme);
 
-                // check for a match
+                // check for match
                 size_t nCountC = pNotes->m_arColorScheme.size();
                 size_t nIndexC = 0;
                 if (pArrayColorScheme && nCountC == pArrayColorScheme->size())
@@ -843,7 +869,7 @@ void CPPTUserInfo::LoadSlide(_UINT32 dwSlideID, CSlide* pSlide)
         pTransition->m_bLoopSound = pAtom->m_bLoopSound;
         pTransition->m_bStopSound = pAtom->m_bStopSound;
         pTransition->m_nEffectDirection = pAtom->m_nEffectDirection;
-        pTransition->m_nEffectType = pAtom->m_nEffectType;  // here convert the type // converted to Converter.cpp
+        pTransition->m_nEffectType = pAtom->m_nEffectType;  // need to convert the type here // converted in Converter.cpp
         pTransition->m_nSpeed = pAtom->m_nSpeed;
 
         pSlide->m_oSlideShow.m_dSlideDuration = pAtom->m_nSlideTime;
@@ -884,7 +910,7 @@ void CPPTUserInfo::LoadSlide(_UINT32 dwSlideID, CSlide* pSlide)
         if (pTextAttr)
             pSlideWrapper->m_arTextPlaceHolders.push_back(*pTextAttr);
 
-    // write down fonts
+    // writing fonts
     std::vector<CRecordSlideAtom*> oArraySlideAtoms;
     pRecordSlide->GetRecordsByType(&oArraySlideAtoms, false, true);
     if (0 == oArraySlideAtoms.size())
@@ -900,7 +926,7 @@ void CPPTUserInfo::LoadSlide(_UINT32 dwSlideID, CSlide* pSlide)
 
     if (pPairTheme == m_mapMasterToTheme.end())
     {
-        //????? The slide hasn't been assigned a theme!!!
+        //????? slide is not assigned a theme !!!
         if (false == m_mapMasterToTheme.empty())
             pPairTheme = m_mapMasterToTheme.begin();
         else
@@ -919,7 +945,7 @@ void CPPTUserInfo::LoadSlide(_UINT32 dwSlideID, CSlide* pSlide)
     std::map<_UINT32, LONG>::iterator		pPairLayoutTitle = pTheme->m_mapTitleLayout.find(oArraySlideAtoms[0]->m_nMasterIDRef);
     if (pPairLayoutTitle != pTheme->m_mapTitleLayout.end())
     {
-        //based on header template
+        // based on a header template
         pSlide->m_bShowMasterShapes = bMasterObjects;
         pSlide->m_lLayoutID = pPairLayoutTitle->second;
         pLayout = pTheme->m_arLayouts[pSlide->m_lLayoutID].get();
@@ -927,7 +953,7 @@ void CPPTUserInfo::LoadSlide(_UINT32 dwSlideID, CSlide* pSlide)
     else
     {
         pSlide->m_bShowMasterShapes = true; //???
-        //based on a standard template
+        // based on a standard template
         std::map<_UINT64, LONG>::iterator	pPairLayoutGeom = pTheme->m_mapGeomToLayout.find(oArraySlideAtoms[0]->m_oLayout.m_hash);
 
         if (pPairLayoutGeom == pTheme->m_mapGeomToLayout.end())
@@ -948,7 +974,7 @@ void CPPTUserInfo::LoadSlide(_UINT32 dwSlideID, CSlide* pSlide)
     if (!pLayout->m_bUseThemeColorScheme)
         pArrayColorScheme = &pLayout->m_arColorScheme;
 
-    // read the color scheme -------------------------------------------------------------
+    // reading color scheme -----------------------------------------------------------
     pSlide->m_bUseLayoutColorScheme = true;
     if (!bMasterColorScheme)
     {
@@ -962,8 +988,9 @@ void CPPTUserInfo::LoadSlide(_UINT32 dwSlideID, CSlide* pSlide)
                 pSlide->m_bUseLayoutColorScheme = false;
                 oArrayColors[i]->ToArray(&pSlide->m_arColorScheme);
                 CorrectColorScheme(pSlide->m_arColorScheme);
+                CorrectColorSchemeByRoundTrip(pRecordSlide, pSlide->m_arColorScheme, pArrayColorScheme);
 
-                // check for a match
+                // check for match
                 size_t nCountC = pSlide->m_arColorScheme.size();
                 size_t nIndexC = 0;
                 if (pArrayColorScheme && nCountC == pArrayColorScheme->size())
@@ -1236,7 +1263,7 @@ CElementPtr  CPPTUserInfo::AddThemeLayoutPlaceholder(CLayout* pLayout, int place
             pElement->m_bPlaceholderSet = true;
 
             if (pElement->m_lPlaceholderType == 14)
-                pElement->m_lPlaceholderType = PT_Body_Empty; // to add different types of objects
+                pElement->m_lPlaceholderType = PT_Body_Empty; // for adding different types of objects
 
             pLayout->m_arElements.push_back(pElement);
             pLayout->m_mapPlaceholders.insert(std::make_pair(placeholderType, pElement));
@@ -1296,7 +1323,7 @@ int CPPTUserInfo::AddNewLayout(CTheme* pTheme, CRecordSlide* pRecordSlide, bool 
     pRecordSlide->GetRecordsByType(&oArrayStrings, false, false);
 
     if (false == addShapes && false == bMasterObjects) return ind;
-    //further only for standard templates
+    // further only for standard templates
     pTheme->m_mapGeomToLayout.insert(std::pair<_UINT64, LONG>(layoutRecord.m_hash, ind));
 
     int defObjSize = -1;
@@ -1364,7 +1391,7 @@ int CPPTUserInfo::AddNewLayout(CTheme* pTheme, CRecordSlide* pRecordSlide, bool 
     //if (layoutRecord.m_nGeom==0x0F) return ind; // big object only !!!
     if (false == addShapes) return ind;
 
-    //copy all elements without idx that weren't specified explicitly
+    // copy all elements without idx that were not explicitly specified
     for (std::multimap<int, CElementPtr>::iterator it = pTheme->m_mapPlaceholders.begin(); it != pTheme->m_mapPlaceholders.end(); ++it)
     {
         CElementPtr pElemTheme = it->second;
@@ -1434,7 +1461,7 @@ void CPPTUserInfo::LoadMainMaster(_UINT32 dwMasterID, bool alwaysLoad)
     std::map<_UINT32, LONG>::iterator pPair = m_mapMasterToTheme.find(dwMasterID);
     if (pPair != m_mapMasterToTheme.end())
     {
-        // the master is already loaded
+        // master already loaded
         return;
     }
 
@@ -1442,12 +1469,12 @@ void CPPTUserInfo::LoadMainMaster(_UINT32 dwMasterID, bool alwaysLoad)
 
     std::map<_UINT32, CRecordSlide*>::iterator pPairMaster = m_mapMasters.find(dwMasterID);
 
-    if (m_mapMasters.end() == pPairMaster)//??? can't be
+    if (m_mapMasters.end() == pPairMaster)//??? cannot happen
         return;
 
     CRecordSlide* pMaster = pPairMaster->second;
 
-    if (pMaster == NULL)//??? can't be
+    if (pMaster == NULL)//??? cannot happen
         return;
 
     std::vector<CRecordSlideAtom*> oArraySlideAtoms;
@@ -1458,18 +1485,18 @@ void CPPTUserInfo::LoadMainMaster(_UINT32 dwMasterID, bool alwaysLoad)
     _UINT32 dwID = (_UINT32)oArraySlideAtoms[0]->m_nMasterIDRef;
     if (0 != dwID)
     {
-        // this master isn't main!!!
-        // First, load all the main ones, and then the title
-        // title should be loaded like a regular slide.
+        // this master is not main!!!
+        // first load all main, then - title
+        // title needs to be loaded as a regular slide.
         return;
     }
     std::vector<RoundTripCompositeMasterId12Atom*> oArrayCompId;
     pMaster->GetRecordsByType(&oArrayCompId, false, true);
     if (0 != oArrayCompId.size() && !alwaysLoad)
     {
-        // this master isn't main!!!
-        // First, load all the main ones, and then the title
-        // title should be loaded like a regular slide.
+        // this master is not main!!!
+        // first load all main, then - title
+        // title needs to be loaded as a regular slide.
         // 第58课时 绘制频数直方图.ppt
         return; 
     }
@@ -1531,14 +1558,14 @@ void CPPTUserInfo::LoadMainMaster(_UINT32 dwMasterID, bool alwaysLoad)
     m_arMasterWrapper.push_back(slide_info);
     CSlideInfo* pMasterWrapper = &m_arMasterWrapper[lIndexTheme];
 
-    // write down fonts -----------------------------------------------------------------
+    // writing fonts ---------------------------------------------------------------
     for (size_t i = 0; i < m_arrFonts.size(); ++i)
     {
         pTheme->m_arFonts.push_back(m_arrFonts[i]);
     }
     // ---------------------------------------------------------------------------------
 
-    // read the color scheme -------------------------------------------------------------
+    // reading color scheme -----------------------------------------------------------
     std::vector<CRecordColorSchemeAtom*> oArrayColors;
     pMaster->GetRecordsByType(&oArrayColors, false);
 
@@ -1556,6 +1583,7 @@ void CPPTUserInfo::LoadMainMaster(_UINT32 dwMasterID, bool alwaysLoad)
             {
                 oArrayColors[i]->ToArray(&pTheme->m_arColorScheme);
                 CorrectColorScheme(pTheme->m_arColorScheme);
+                CorrectColorSchemeByRoundTrip(pMaster, pTheme->m_arColorScheme);
             }
         }
 
@@ -1572,6 +1600,7 @@ void CPPTUserInfo::LoadMainMaster(_UINT32 dwMasterID, bool alwaysLoad)
     {
         pTheme->m_arColorScheme = pTheme->m_arExtraColorScheme[0];
     }
+    LoadFontSchemeByRoundTrip(pMaster, pTheme);
 
     // ---------------------------------------------------------------------------------
     std::map<_UINT32, CRecordSlide*>::iterator pPairMaster1 = m_mapMasters.find(dwMasterID);
@@ -1593,7 +1622,7 @@ void CPPTUserInfo::LoadMainMaster(_UINT32 dwMasterID, bool alwaysLoad)
 
     pMasterWrapper->m_mapFilePictures = &m_pDocumentInfo->m_mapStoreImageFile;
 
-    // read the text style settings -----------------------------------------------
+    // reading text style settings -----------------------------------------------
     std::vector<CRecordTextMasterStyleAtom*> oArrayTextMasters;
     pMaster->GetRecordsByType(&oArrayTextMasters, true, false);
 
@@ -1617,7 +1646,7 @@ void CPPTUserInfo::LoadMainMaster(_UINT32 dwMasterID, bool alwaysLoad)
     CreateDefaultStyle(oPPTDefaultStyle, pTheme);
     oPPTDefaultStyle.ApplyAfter(m_oDefaultTextStyle);
 
-    // set the theme styles
+    // set styles for the theme
     pTheme->m_pStyles[0] = oPPTDefaultStyle;
     pTheme->m_pStyles[1] = oPPTDefaultStyle;
     pTheme->m_pStyles[2] = oPPTDefaultStyle;
@@ -1632,7 +1661,7 @@ void CPPTUserInfo::LoadMainMaster(_UINT32 dwMasterID, bool alwaysLoad)
 
     pTheme->CalculateStyles();
 
-    CLayout* pLayout = NULL; // There are no markers here...!!
+    CLayout* pLayout = NULL; // well, there are no layouts here...!!
     // ---------------------------------------------------------------------------------
 
     std::vector<CRecordDrawingContainer*> oArrayDrawing;
@@ -1799,14 +1828,14 @@ void CPPTUserInfo::LoadMaster(_typeMaster type, CRecordSlide* pMaster, CSlideInf
 
     pMasterWrapper = new CSlideInfo();
 
-    // write down fonts -----------------------------------------------------------------
+    // writing fonts ---------------------------------------------------------------
     for (size_t i = 0; i < m_arrFonts.size(); ++i)
     {
         pTheme->m_arFonts.push_back(m_arrFonts[i]);
     }
     // ---------------------------------------------------------------------------------
 
-    // read the color scheme -------------------------------------------------------------
+    // reading color scheme -----------------------------------------------------------
     std::vector<CRecordColorSchemeAtom*> oArrayColors;
     pMaster->GetRecordsByType(&oArrayColors, false);
 
@@ -1824,6 +1853,7 @@ void CPPTUserInfo::LoadMaster(_typeMaster type, CRecordSlide* pMaster, CSlideInf
             {
                 oArrayColors[i]->ToArray(&pTheme->m_arColorScheme);
                 CorrectColorScheme(pTheme->m_arColorScheme);
+                CorrectColorSchemeByRoundTrip(pMaster, pTheme->m_arColorScheme);
             }
         }
 
@@ -1840,6 +1870,7 @@ void CPPTUserInfo::LoadMaster(_typeMaster type, CRecordSlide* pMaster, CSlideInf
     {
         pTheme->m_arColorScheme = pTheme->m_arExtraColorScheme[0];
     }
+    LoadFontSchemeByRoundTrip(pMaster, pTheme.get());
 
     // ---------------------------------------------------------------------------------
     int indexUser = 0;
@@ -1852,14 +1883,14 @@ void CPPTUserInfo::LoadMaster(_typeMaster type, CRecordSlide* pMaster, CSlideInf
     pMasterWrapper->m_parEmptyPictures = &m_pDocumentInfo->m_arUsers[indexUser]->m_arOffsetPictures;
     pMasterWrapper->m_mapFilePictures = &m_pDocumentInfo->m_mapStoreImageFile;
 
-    //text style settings -------------------------------------------------
+    // text style settings -----------------------------------------------
 
     for (size_t i = 0; i < 9 && false == m_arMasterWrapper.empty(); ++i)
     {
         pMasterWrapper->m_pStyles[i] = m_arMasterWrapper[0].m_pStyles[i]; //main master
     }
 
-    CLayout* pLayout = NULL; // There are no markers here...!!
+    CLayout* pLayout = NULL; // well, there are no layouts here...!!
 
     //-------------------------------------------------------------------------------------------------------
     std::vector<CRecordDrawingContainer*> oArrayDrawing;
@@ -1937,14 +1968,14 @@ void CPPTUserInfo::LoadNoMainMaster(_UINT32 dwMasterID)
         }
     }
 
-    // check, if it is MainMaster, then we load it as a master
+    // checking if this is MainMaster - then load it as master
     if (0 == dwID)
     {
-        // it's already loaded as a theme!!!
+        // it is already loaded as theme !!!
         return;
     }
 
-    // now an analogue of the LoadSlide function
+    // now the equivalent of the LoadSlide function
     CSlideInfo elm;
     m_arMasterWrapper.push_back(elm);
 
@@ -1987,7 +2018,7 @@ void CPPTUserInfo::LoadNoMainMaster(_UINT32 dwMasterID)
     pTheme->m_mapTitleLayout[dwMasterID] = lLayoutID;
 
     std::vector<ODRAW::CColor>* pArrayColorScheme = &pTheme->m_arColorScheme;
-    // read the color scheme -------------------------------------------------------------
+    // reading color scheme -----------------------------------------------------------
     if (!bMasterColorScheme)
     {
         std::vector<CRecordColorSchemeAtom*> oArrayColors;
@@ -2001,8 +2032,9 @@ void CPPTUserInfo::LoadNoMainMaster(_UINT32 dwMasterID)
                 oArrayColors[i]->ToArray(&pLayout->m_arColorScheme);
                 pLayout->m_bUseThemeColorScheme = false;
                 CorrectColorScheme(pLayout->m_arColorScheme);
+                CorrectColorSchemeByRoundTrip(pCurMaster, pLayout->m_arColorScheme, pArrayColorScheme);
 
-                // check for a match
+                // check for match
                 size_t nCountC = pLayout->m_arColorScheme.size();
                 size_t nIndexC = 0;
                 if (pArrayColorScheme && nCountC == pArrayColorScheme->size())
@@ -2133,7 +2165,7 @@ void CPPTUserInfo::LoadSlideFromPrevUsers(_UINT32 dwSlideID)
     std::map<_UINT32, CRecordSlide*>::iterator pPairSlide = m_mapSlides.find(dwSlideID);
 
     if (pPairSlide != m_mapSlides.end() && pPairSlide->second)
-        return; //yes
+        return; // exists
 
     size_t lUsersCount = m_pDocumentInfo->m_arUsers.size();
 
@@ -2171,7 +2203,7 @@ void CPPTUserInfo::LoadMasterFromPrevUsers(_UINT32 dwMasterID)
     std::map<_UINT32, CRecordSlide*>::iterator pPairMaster = m_mapMasters.find(dwMasterID);
 
     if (pPairMaster != m_mapMasters.end() && pPairMaster->second)
-        return;//yes
+        return;// exists
 
     size_t lUsersCount = m_pDocumentInfo->m_arUsers.size();
 
@@ -2187,12 +2219,12 @@ void CPPTUserInfo::LoadMasterFromPrevUsers(_UINT32 dwMasterID)
         {
             pSlideCur->AddRef();
 
-            //Each user has OWN active images!!!
+            // each user has their OWN active images !!!
             pSlideCur->m_IndexUser = lIndexUser;
 
             if (pPairMaster != m_mapMasters.end())
             {
-                //was previously found to be null
+                // was found as null earlier
                 pPairMaster->second = pSlideCur;
             }
             else
@@ -2212,7 +2244,7 @@ void CPPTUserInfo::LoadNotesFromPrevUsers(_UINT32 dwSlideID)
     std::map<_UINT32, CRecordSlide*>::iterator pPairSlide = m_mapNotes.find(dwSlideID);
 
     if (pPairSlide != m_mapNotes.end() && pPairSlide->second)
-        return; //yes
+        return; // exists
 
     size_t lUsersCount = m_pDocumentInfo->m_arUsers.size();
 
@@ -2251,7 +2283,7 @@ void CPPTUserInfo::LoadNotesMasterFromPrevUsers(_UINT32 dwMasterID)
     std::map<_UINT32, CRecordSlide*>::iterator pPairMaster = m_mapNotesMasters.find(dwMasterID);
 
     if (pPairMaster != m_mapNotesMasters.end() && pPairMaster->second)
-        return;//yes
+        return;// exists
 
     size_t lUsersCount = m_pDocumentInfo->m_arUsers.size();
 
@@ -2267,12 +2299,12 @@ void CPPTUserInfo::LoadNotesMasterFromPrevUsers(_UINT32 dwMasterID)
         {
             pSlideCur->AddRef();
 
-            //Each user has OWN active images!!!
+            // each user has their OWN active images !!!
             pSlideCur->m_IndexUser = lIndexUser;
 
             if (pPairMaster != m_mapNotesMasters.end())
             {
-                //was previously found to be null
+                // was found as null earlier
                 pPairMaster->second = pSlideCur;
             }
             else
@@ -2291,7 +2323,7 @@ void CPPTUserInfo::LoadHandoutMasterFromPrevUsers(_UINT32 dwMasterID)
     std::map<_UINT32, CRecordSlide*>::iterator pPairMaster = m_mapHandoutMasters.find(dwMasterID);
 
     if (pPairMaster != m_mapHandoutMasters.end() && pPairMaster->second)
-        return;//yes
+        return;// exists
 
     size_t lUsersCount = m_pDocumentInfo->m_arUsers.size();
 
@@ -2307,12 +2339,12 @@ void CPPTUserInfo::LoadHandoutMasterFromPrevUsers(_UINT32 dwMasterID)
         {
             pSlideCur->AddRef();
 
-            //Each user has OWN active images!!!
+            // each user has their OWN active images !!!
             pSlideCur->m_IndexUser = lIndexUser;
 
             if (pPairMaster != m_mapHandoutMasters.end())
             {
-                //was previously found to be null
+                // was found as null earlier
                 pPairMaster->second = pSlideCur;
             }
             else
@@ -2325,7 +2357,7 @@ void CPPTUserInfo::LoadHandoutMasterFromPrevUsers(_UINT32 dwMasterID)
 }
 void CPPTUserInfo::LoadExternal(CRecordExObjListContainer* pExObjects)
 {
-    // read SoundCollection
+    // reading SoundCollection
     std::vector<CRecordSoundCollectionContainer*> oArrayCollection;
     m_oDocument.GetRecordsByType(&oArrayCollection, false, true);
 
@@ -2348,21 +2380,28 @@ void CPPTUserInfo::LoadExternal(CRecordExObjListContainer* pExObjects)
             {
                 PPT::CExFilesInfo oInfo;
 
-                oInfo.m_strFilePath = m_oExMedia.m_strPresentationDirectory + FILE_SEPARATOR_STR + L"audio" + std::to_wstring(m_oExMedia.m_arAudioCollection.size() + 1) + L".audio";
                 oInfo.m_dwID = (_UINT32)XmlUtils::GetInteger(oArrayStrings[2]->m_strText.c_str());
                 oInfo.m_name = oArrayStrings[0]->m_strText;
-                oInfo.m_strFileExt = oArrayStrings[1]->m_strText;
+                oInfo.m_strFileExt = XmlUtils::GetLower(oArrayStrings[1]->m_strText);
+               
+                CMediaFileFormatChecker checker;
+                std::wstring sExtDetect = checker.DetectFormatByData(oArrayData[0]->GetData(), oArrayData[0]->GetDataSize());
+
+                if (false == sExtDetect.empty()) oInfo.m_strFileExt = L"." + sExtDetect;
+                else if (false == oInfo.m_strFileExt.empty() && L'.' != oInfo.m_strFileExt[0]) oInfo.m_strFileExt = L"." + oInfo.m_strFileExt;
+
+                oInfo.m_strFilePath = m_oExMedia.m_strPresentationDirectory + FILE_SEPARATOR_STR + L"audio" + std::to_wstring(m_oExMedia.m_arAudioCollection.size() + 1)
+                    + (oInfo.m_strFileExt.empty() ? L".audio" : oInfo.m_strFileExt);
 
                 m_oExMedia.m_arAudioCollection.push_back(oInfo);
                 oArrayData[0]->SaveToFile(oInfo.m_strFilePath);
             }
         }
     }
-
     if (NULL == pExObjects)
         return;
 
-    // read the video ------------------------------------------------
+    // reading video ----------------------------------------------
     std::vector<CRecordExVideoContainer*> oArrayVideo;
     pExObjects->GetRecordsByType(&oArrayVideo, true);
 
@@ -2370,7 +2409,7 @@ void CPPTUserInfo::LoadExternal(CRecordExObjListContainer* pExObjects)
     {
         LoadExVideo(oArrayVideo[nIndex]);
     }
-    // read ole ----------------------------------------------
+    // reading ole ----------------------------------------------
     std::vector<CRecordExOleEmbedContainer*> oArrayObj;
     pExObjects->GetRecordsByType(&oArrayObj, true);
 
@@ -2381,7 +2420,7 @@ void CPPTUserInfo::LoadExternal(CRecordExObjListContainer* pExObjects)
     oArrayObj.clear();
     // -----------------------------------------------------------
 
-    // read audio ------------------------------------------------
+    // reading audio ----------------------------------------------
     std::vector<CRecordExCDAudioContainer*>			oArrayAudioCD;
     std::vector<CRecordExMIDIAudioContainer*>		oArrayAudioMIDI;
     std::vector<CRecordWAVAudioLinkContainer*>		oArrayWAVLink;
@@ -2656,7 +2695,7 @@ void CPPTUserInfo::AddAudioTransition(_UINT32 refID, CTransition* pTransition, c
     if (strRecord)
         pTransition->m_oAudio.m_sImageName = audioName;
 
-    // ??? defect???
+    // ??? unfinished ???
 }
 
 void CPPTUserInfo::CreateDefaultStyle(PPT::CTextStyles& pStyle, PPT::CTheme* pTheme)
@@ -2710,6 +2749,99 @@ void CPPTUserInfo::CorrectColorScheme(std::vector<CColor>& oScheme)
     //0x07 //Accent 3 color
 
     oScheme = oArrayMem;
+}
+
+bool CPPTUserInfo::GetRoundTripTheme(CRecordSlide* pRecordSlide, std::string& strTheme)
+{
+    strTheme.clear();
+
+    std::vector<RoundTripTheme12Atom*> arrRTTheme;
+    if (pRecordSlide)
+        pRecordSlide->GetRecordsByType(&arrRTTheme, false, true);
+
+    if (arrRTTheme.empty() || !m_pDocumentInfo || !m_pDocumentInfo->m_pCommonInfo)
+        return false;
+
+    RoundTripExtractor extractor(arrRTTheme[0], m_pDocumentInfo->m_pCommonInfo->tempPath);
+    std::wstring strThemePath = extractor.getOneFile(std::wstring(L"theme") + FILE_SEPARATOR_STR + L"theme" + FILE_SEPARATOR_STR + L"theme1.xml");
+
+    BYTE* pData = NULL;
+    DWORD nDataSize = 0;
+    if (!strThemePath.empty() && NSFile::CFileBinary::ReadAllBytes(strThemePath, &pData, nDataSize) && pData)
+    {
+        strTheme = std::string((char*)pData, nDataSize);
+        RELEASEARRAYOBJECTS(pData);
+    }
+    NSDirectory::DeleteDirectory(extractor.extractedFolderPath());
+
+    return !strTheme.empty();
+}
+
+// major/minor fonts from round trip theme
+void CPPTUserInfo::LoadFontSchemeByRoundTrip(CRecordSlide* pRecordSlide, CTheme* pTheme)
+{
+    if (!pTheme) return;
+
+    std::string strTheme;
+    if (!GetRoundTripTheme(pRecordSlide, strTheme)) return;
+
+    size_t nSchemeStart = strTheme.find("<a:fontScheme");
+    size_t nSchemeEnd = strTheme.find("</a:fontScheme>", nSchemeStart);
+
+    if (nSchemeStart == std::string::npos || nSchemeEnd == std::string::npos) return;
+
+    nSchemeEnd += strlen("</a:fontScheme>");
+    pTheme->m_sRoundTripFontScheme = NSFile::CUtf8Converter::GetUnicodeStringFromUTF8(
+                (BYTE*)strTheme.c_str() + nSchemeStart, (LONG)(nSchemeEnd - nSchemeStart));
+}
+
+// accent3 - accent6 from round trip theme
+void CPPTUserInfo::CorrectColorSchemeByRoundTrip(CRecordSlide* pRecordSlide, std::vector<CColor>& oScheme, const std::vector<CColor>* pParentScheme)
+{
+    if (oScheme.size() < 11) return;
+
+    std::string strTheme;
+    if (!GetRoundTripTheme(pRecordSlide, strTheme))
+    {
+        if (pParentScheme && pParentScheme->size() == oScheme.size())
+        {
+            for (size_t i = 7; i <= 10; ++i)
+                oScheme[i] = pParentScheme->at(i);
+        }
+        return;
+    }
+
+    {
+        size_t nSchemeStart = strTheme.find("<a:clrScheme");
+        size_t nSchemeEnd = strTheme.find("</a:clrScheme>", nSchemeStart);
+
+        if (nSchemeStart != std::string::npos && nSchemeEnd != std::string::npos)
+        {
+            for (int nAccent = 3; nAccent <= 6; ++nAccent)
+            {
+                size_t nPos = strTheme.find("<a:accent" + std::to_string(nAccent) + ">", nSchemeStart);
+                if (nPos == std::string::npos || nPos > nSchemeEnd) continue;
+
+                nPos = strTheme.find('<', nPos + 1);
+                if (nPos == std::string::npos) continue;
+
+                std::string strAttr;
+                if (0 == strTheme.compare(nPos, 11, "<a:srgbClr "))		strAttr = "val=\"";
+                else if (0 == strTheme.compare(nPos, 10, "<a:sysClr "))	strAttr = "lastClr=\"";
+                else continue;
+
+                size_t nTagEnd = strTheme.find('>', nPos);
+                size_t nVal = strTheme.find(strAttr, nPos);
+                if (nVal == std::string::npos || nVal > nTagEnd) continue;
+
+                nVal += strAttr.length();
+                std::string strVal = strTheme.substr(nVal, 6);
+                if (strVal.length() != 6 || strVal.find_first_not_of("0123456789abcdefABCDEF") != std::string::npos) continue;
+
+                oScheme[nAccent + 4] = CColor((_UINT32)strtoul(strVal.c_str(), NULL, 16));
+            }
+        }
+    }
 }
 
 void CPPTUserInfo::ConvertLayoutType(SSlideLayoutAtom& layoutRecord, std::wstring& type, std::wstring& name)

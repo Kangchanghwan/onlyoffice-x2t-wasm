@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #ifndef _PDF_WRITER_SRC_ANNOTATION_H
 #define _PDF_WRITER_SRC_ANNOTATION_H
@@ -187,8 +197,8 @@ namespace PdfWriter
 		void SetOMetadata(const std::wstring& wsOMetadata);
 		void SetC(const std::vector<double>& arrC);
 
-		void RemoveAP();
-		void APFromFakePage();
+		virtual void RemoveAP();
+		void APFromFakePage(CAnnotAppearanceObject* pN);
 		virtual CAnnotAppearanceObject* StartAP(int nRotate);
 		TRect& GetRect() { return m_oRect; }
 		void SetXref(CXref* pXref) { m_pXref = pXref; }
@@ -228,9 +238,29 @@ namespace PdfWriter
 		}
 
 		void SetH(BYTE nH);
+		void SetRD(const double& dRD1, const double& dRD2, const double& dRD3, const double& dRD4);
 		void SetQuadPoints(const std::vector<double>& arrQuadPoints);
 		void SetA(CAction* pAction);
 		void SetPA(CAction* pAction);
+	};
+	class CScreenAnnotation : public CAnnotation
+	{
+	private:
+		CDictObject* m_pMK;
+
+		void CheckMK();
+	public:
+		CScreenAnnotation(CXref* pXref);
+		EAnnotType GetAnnotationType() const override
+		{
+			return AnnotScreen;
+		}
+
+		void SetR(const int& nR);
+		void SetT(const std::wstring& wsT);
+		void SetBC(const std::vector<double>& arrBC);
+		void SetBG(const std::vector<double>& arrBG);
+		void AddAction(CAction* pAction);
 	};
 	class CMarkupAnnotation : public CAnnotation
 	{
@@ -399,6 +429,8 @@ namespace PdfWriter
 			return AnnotStamp;
 		}
 
+		virtual CAnnotAppearanceObject* StartAP(int nRotate) override;
+
 		void SetRotate(double nRotate);
 		void SetName(const std::wstring& wsName);
 		void SetAPStream(CDictObject* pStream, bool bCopy = false);
@@ -422,6 +454,35 @@ namespace PdfWriter
 		void SetIC(const std::vector<double>& arrIC);
 		void SetOC(const std::vector<double>& arrOC);
 		void SetQuadPoints(const std::vector<double>& arrQuadPoints);
+	};
+	class CFileAttachmentAnnotation : public CMarkupAnnotation
+	{
+	private:
+		void CheckFS();
+		CDictObject* m_pFS;
+
+	public:
+		CFileAttachmentAnnotation(CXref* pXref);
+		EAnnotType GetAnnotationType() const override
+		{
+			return AnnotFileAttachment;
+		}
+
+		void SetV(bool bV);
+		void SetName(const std::wstring& wsName);
+		void SetFS(const std::wstring& wsFS);
+		void SetF(const std::wstring& wsF);
+		void SetUF(const std::wstring& wsUF);
+		void SetDOS(const std::wstring& wsDOS);
+		void SetMac(const std::wstring& wsMac);
+		void SetUnix(const std::wstring& wsUnix);
+		void SetDesc(const std::wstring& wsDesc);
+		void SetFileF(const std::wstring& wsFileF);
+		void SetFileUF(const std::wstring& wsFileUF);
+		void SetFileDOS(const std::wstring& wsFileDOS);
+		void SetFileMac(const std::wstring& wsFileMac);
+		void SetFileUnix(const std::wstring& wsFileUnix);
+		void SetID(const std::pair<std::wstring, std::wstring>& wsID);
 	};
 	class CWidgetAnnotation : public CAnnotation
 	{
@@ -456,6 +517,7 @@ namespace PdfWriter
 
 		void SetSubtype(BYTE nSubtype);
 		void SetDA(CFontDict* pFont, const double& dFontSize, const double& dFontSizeAP, const std::vector<double>& arrTC);
+		void SetTC(const std::vector<double>& arrTC);
 		void SetFont(CFontCidTrueType* pFont, double dFontSize, bool bBold, bool bItalic);
 		CDictObject* GetObjOwnValue(const std::string& sV);
 		CObjectBase* GetObjValue(const std::string& sV);
@@ -555,9 +617,11 @@ namespace PdfWriter
 		void SetAP_N_Yes(const std::wstring& wsAP_N_Yes);
 		std::string GetAP_N_Yes() { return m_sAP_N_Yes; }
 		bool NeedAP_N_Yes();
+		std::string GetAPOnState();
 		void RenameAP_N_Yes(const std::wstring& wsAP_N_Yes);
 		virtual void SetFlag (const int& nFlag);
 		void SetAP(int nRotate);
+		virtual void RemoveAP() override;
 		void SwitchAP(const std::string& sV, int nI = -1);
 		std::string GetTC(bool bCAPS);
 

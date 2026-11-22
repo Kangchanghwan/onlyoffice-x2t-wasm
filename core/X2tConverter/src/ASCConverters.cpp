@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 #include "lib/crypt.h"
 
@@ -177,8 +187,10 @@ namespace NExtractTools
 		if (recordTo > *oMailMergeSend.recordTo)
 			recordTo = *oMailMergeSend.recordTo;
 		NSDoctRenderer::CDoctrenderer oDoctRenderer(NULL != params.m_sAllFontsPath ? *params.m_sAllFontsPath : _T(""));
+		convertParams.InitDoctRenderer(&oDoctRenderer);
+
 		std::wstring sMailMergeXml = getMailMergeXml(sJsonPath, *oMailMergeSend.recordFrom, recordTo, *oMailMergeSend.to);
-		// pass the output folder sFileFromDir so that the files are on the same level as the media folder, important for further conversion to docx, pdf
+		// send output folder sFileFromDir so that files are at the same level as the media folder, important for further conversion to docx, pdf
 		std::wstring sXml = getDoctXml(NSDoctRenderer::DoctRendererFormat::FormatFile::DOCT, eTypeTo, sFrom, sFileFromDir, sImagesDirectory, convertParams.m_sThemesDir, -1, sMailMergeXml, params);
 		std::wstring sResult;
 		oDoctRenderer.Execute(sXml, sResult);
@@ -284,7 +296,7 @@ namespace NExtractTools
 		bool bIsNeedDoct = false;
 		switch (nFormatTo)
 		{
-		// list all "document" formats that need conversion via doct
+		// list all "document" formats that need conversion through doct
 		case AVS_OFFICESTUDIO_FILE_DOCUMENT_HTML:
 		case AVS_OFFICESTUDIO_FILE_DOCUMENT_HTML_IN_CONTAINER:
 		case AVS_OFFICESTUDIO_FILE_DOCUMENT_FB2:
@@ -595,6 +607,63 @@ namespace NExtractTools
 				}
 			}
 		}
+		else if (AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT == nFormatFrom || AVS_OFFICESTUDIO_FILE_DOCUMENT_XML == nFormatFrom)
+		{
+			if (AVS_OFFICESTUDIO_FILE_CANVAS_WORD == nFormatTo)
+			{
+				nRes = txt2doct_bin(sFrom, sTo, params, convertParams);
+			}
+			else if (AVS_OFFICESTUDIO_FILE_TEAMLAB_DOCY == nFormatTo)
+			{
+				nRes = txt2doct(sFrom, sTo, params, convertParams);
+			}
+			else if (	AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCX == nFormatTo ||
+						AVS_OFFICESTUDIO_FILE_DOCUMENT_DOCM == nFormatTo ||
+						AVS_OFFICESTUDIO_FILE_OTHER_OOXML == nFormatTo)
+			{
+				nRes = txt2docx(sFrom, sTo, params, convertParams);
+			}
+			else if (	AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT == nFormatTo || 
+						AVS_OFFICESTUDIO_FILE_DOCUMENT_RTF == nFormatTo || 
+						AVS_OFFICESTUDIO_FILE_DOCUMENT_ODT == nFormatTo)
+			//{//copy | change settings
+			//	//nRes = txt2txt(sFrom, sTo, params, convertParams);
+			//}
+			//else if (AVS_OFFICESTUDIO_FILE_DOCUMENT_ODT == nFormatTo)
+			//{
+			//	//nRes = txt2odt(sFrom, sTo, params, convertParams);
+			//}			
+			//else if (AVS_OFFICESTUDIO_FILE_DOCUMENT_RTF == nFormatTo)
+			{
+				//nRes = txt2rtf(sFrom, sTo, params, convertParams);
+				std::wstring sDocxDir = combinePath(convertParams.m_sTempDir, L"docx_unpacked");
+				NSDirectory::CreateDirectory(sDocxDir);
+				nRes = txt2docx_dir(sFrom, sDocxDir, params, convertParams);
+				if (SUCCEEDED_X2T(nRes))
+				{
+					std::wstring sFileToCurrent = *params.m_sFileTo;
+					params.changeFormatFromPost(*params.m_nFormatFrom, params.m_bMacro);
+
+					if (NULL != params.m_nFormatTo)
+						nFormatTo = *params.m_nFormatTo;
+
+					nRes = fromDocxDir(sDocxDir, *params.m_sFileTo, nFormatTo, params, convertParams);
+				}
+			}
+			else
+			{//image, pdf ... 
+				std::wstring sDoctDir = combinePath(convertParams.m_sTempDir, L"doct_unpacked");
+				NSDirectory::CreateDirectory(sDoctDir);
+				std::wstring sTFile = combinePath(sDoctDir, L"Editor.bin");
+
+				nRes = txt2doct_bin(sFrom, sTFile, params, convertParams);
+
+				if (SUCCEEDED_X2T(nRes))
+				{
+					nRes = fromDoctBin(sTFile, sTo, nFormatTo, params, convertParams);
+				}
+			}
+		}
 		else if (AVS_OFFICESTUDIO_FILE_DOCUMENT_PAGES == nFormatFrom)
 		{
 			std::wstring wsTempFile{combinePath(convertParams.m_sTempDir, L"IntermediateFile.odf")};
@@ -737,10 +806,6 @@ namespace NExtractTools
 			else if (AVS_OFFICESTUDIO_FILE_DOCUMENT_RTF == nFormatFrom)
 			{
 				nRes = rtf2docx_dir(sFrom, sDocxDir, params, convertParams);
-			}
-			else if (AVS_OFFICESTUDIO_FILE_DOCUMENT_TXT == nFormatFrom || AVS_OFFICESTUDIO_FILE_DOCUMENT_XML == nFormatFrom)
-			{
-				nRes = txt2docx_dir(sFrom, sDocxDir, params, convertParams);
 			}
 			else if (AVS_OFFICESTUDIO_FILE_DOCUMENT_FB2 == nFormatFrom)
 			{
@@ -935,6 +1000,10 @@ namespace NExtractTools
 			else if (AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLSB == nFormatTo)
 			{
 				nRes = xlsx_dir2xlsb(sFrom, sTo, params, convertParams);
+			}
+			else if (AVS_OFFICESTUDIO_FILE_SPREADSHEET_XLS == nFormatTo)
+			{
+				nRes = xlsx_dir2xls(sFrom, sTo, params, convertParams);
 			}
 			// else if (AVS_OFFICESTUDIO_FILE_SPREADSHEET_CSV == nFormatTo)
 			//{
@@ -1734,6 +1803,9 @@ namespace NExtractTools
 			std::cerr << "Couldn't create temp folder" << std::endl;
 			return AVS_FILEUTILS_ERROR_UNKNOWN;
 		}
+
+		if (NULL != oInputParams.m_sOverrideSdkJsPath)
+			oConvertParams.m_sOverrideSdkJsPath = *oInputParams.m_sOverrideSdkJsPath;
 
 		std::wstring sGlobalTempDir = L"";
 		if (NSFile::CFileBinary::IsGlobalTempPathUse())

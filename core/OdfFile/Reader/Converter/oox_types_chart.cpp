@@ -1,26 +1,36 @@
 ﻿/*
- * (c) Copyright Ascensio System SIA 2010-2023
+ * Copyright (C) Ascensio System SIA, 2009-2026
  *
  * This program is a free software product. You can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License (AGPL)
- * version 3 as published by the Free Software Foundation. In accordance with
- * Section 7(a) of the GNU AGPL its Section 15 shall be amended to the effect
- * that Ascensio System SIA expressly excludes the warranty of non-infringement
- * of any third-party rights.
+ * version 3 as published by the Free Software Foundation, together with the
+ * additional terms provided in the LICENSE file.
  *
  * This program is distributed WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR  PURPOSE. For
- * details, see the GNU AGPL at: http://www.gnu.org/licenses/agpl-3.0.html
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. For
+ * details, see the GNU AGPL at: https://www.gnu.org/licenses/agpl-3.0.html
  *
- * The  interactive user interfaces in modified source and object code versions
- * of the Program must display Appropriate Legal Notices, as required under
+ * You can contact Ascensio System SIA by email at info@onlyoffice.com
+ * or by postal mail at 20A-6 Ernesta Birznieka-Upisha Street, Riga,
+ * LV-1050, Latvia, European Union.
+ *
+ * The interactive user interfaces in modified versions of the Program
+ * are required to display Appropriate Legal Notices in accordance with
  * Section 5 of the GNU AGPL version 3.
  *
- * All the Product's GUI elements, including illustrations and icon sets, as
- * well as technical writing content are licensed under the terms of the
- * Creative Commons Attribution-ShareAlike 4.0 International. See the License
- * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
+ * No trademark rights are granted under this License.
  *
+ * All non-code elements of the Product, including illustrations,
+ * icon sets, and technical writing content, are licensed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License:
+ * https://creativecommons.org/licenses/by-sa/4.0/legalcode
+ *
+ * This license applies only to such non-code elements and does not
+ * modify or replace the licensing terms applicable to the Program's
+ * source code, which remains licensed under the GNU Affero General
+ * Public License v3.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 #include <xml/simple_xml_writer.h>
@@ -62,6 +72,13 @@ void oox_chart::set_values_series(int ind, std::vector<std::wstring> & val)
 	oox_series_ptr & current_ptr = series_.back();
 	current_ptr->setValues (ind, val);
 }
+void oox_chart::set_levels_series(const std::vector<std::vector<std::wstring> > & levels)
+{
+	if (levels.size() < 2) return;
+
+	oox_series_ptr & current_ptr = series_.back();
+	current_ptr->setLevels (levels);
+}
 void oox_chart::set_label_series(const std::wstring& formula, std::vector<std::wstring> & cash)
 {
 	if (formula.empty() && cash.empty()) return;
@@ -75,11 +92,11 @@ void oox_chart::set_properties(odf_reader::chart_format_properties_ptr & prop)
 
 	_CP_OPT(bool) bStacked;
 	_CP_OPT(bool) bPercent;
-	_CP_OPT(int) iGapWidth;
+	_CP_OPT(std::wstring) strTreatEmptyCells;
 
 	odf_reader::GetProperty(prop, L"stacked", bStacked);
 	odf_reader::GetProperty(prop, L"percentage", bPercent);
-	odf_reader::GetProperty(prop, L"gap-width", iGapWidth);
+	odf_reader::GetProperty(prop, L"treat-empty-cells", strTreatEmptyCells);
 
 	if ( (bStacked) && (bStacked.get()))
 	{
@@ -90,13 +107,15 @@ void oox_chart::set_properties(odf_reader::chart_format_properties_ptr & prop)
 	{
 		grouping_ = L"percentStacked";	
 	}
-	if (iGapWidth)
+	if (strTreatEmptyCells)
 	{
-		dispBlanksAs_ = L"gap";
+		if		(*strTreatEmptyCells == L"use-zero")	dispBlanksAs_ = L"zero";
+		else if (*strTreatEmptyCells == L"ignore")	dispBlanksAs_ = L"span";
+		else										dispBlanksAs_ = L"gap";
 	}
-	//solid-type - three-dimensional
+	//solid-type - 3D
 }
-void oox_chart::oox_serialize_common(std::wostream & _Wostream)
+void oox_chart::oox_serialize_grouping(std::wostream & _Wostream)
 {
     CP_XML_WRITER(_Wostream)
     {
@@ -107,6 +126,22 @@ void oox_chart::oox_serialize_common(std::wostream & _Wostream)
 				CP_XML_ATTR(L"val", grouping_);
 			}
 		}
+	}
+}
+void oox_chart::oox_serialize_varyColors(std::wostream & _Wostream)
+{
+    CP_XML_WRITER(_Wostream)
+    {
+		CP_XML_NODE(L"c:varyColors")
+		{
+			CP_XML_ATTR(L"val", varyColors_ ? L"1" : L"0");
+		}
+	}
+}
+void oox_chart::oox_serialize_series(std::wostream & _Wostream)
+{
+    CP_XML_WRITER(_Wostream)
+    {
 		for (size_t i = 0; i < series_.size(); i++)
 		{
 			if (is3D_ || type_ == CHART_TYPE_AREA || type_ == CHART_TYPE_DOUGHNUT || type_ == CHART_TYPE_RADAR)
@@ -115,6 +150,16 @@ void oox_chart::oox_serialize_common(std::wostream & _Wostream)
 			}
 			series_[i]->oox_serialize(_Wostream);
 		}
+		if (false == data_labels_.get_general_dLbls_status())
+		{
+			data_labels_.oox_serialize(_Wostream);
+		}
+	}
+}
+void oox_chart::oox_serialize_axIds(std::wostream & _Wostream)
+{
+    CP_XML_WRITER(_Wostream)
+    {
 		for (size_t i = 0; i < axisId_.size(); i++)
 		{
 			CP_XML_NODE(L"c:axId")
@@ -122,11 +167,13 @@ void oox_chart::oox_serialize_common(std::wostream & _Wostream)
 				CP_XML_ATTR(L"val", axisId_[i]);
 			}
 		}	
-		if( false == data_labels_.get_general_dLbls_status() )
-		{
-			data_labels_.oox_serialize(_Wostream);
-		}
 	}
+}
+void oox_chart::oox_serialize_common(std::wostream & _Wostream)
+{
+	oox_serialize_grouping	(_Wostream);
+	oox_serialize_series	(_Wostream);
+	oox_serialize_axIds		(_Wostream);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void oox_bar_chart::add_series(int id)
@@ -144,10 +191,25 @@ void oox_bar_chart::set_properties(odf_reader::chart_format_properties_ptr & pro
 	odf_reader::GetProperty(prop, L"gap-width", iGapWidth);
 	odf_reader::GetProperty(prop, L"overlap", iOverlap);
 	odf_reader::GetProperty(prop, L"solid-type", iSolidType);
+
+	_CP_OPT(bool) bDeep;
+	odf_reader::GetProperty(prop, L"deep", bDeep);
+
+	if ((bDeep) && (bDeep.get()) && grouping_ == L"clustered")
+	{
+		grouping_ = L"standard";
+	}
 }
 
 void oox_bar_chart::set_graphic_properties(odf_reader::graphic_format_properties_ptr & g)
 {
+}
+void oox_bar_chart::set_axis_properties(odf_reader::chart_format_properties_ptr & prop)
+{
+	_CP_OPT(int) iVal;
+
+	odf_reader::GetProperty(prop, L"gap-width", iVal);	if (iVal) iGapWidth = iVal;
+	odf_reader::GetProperty(prop, L"overlap", iVal);	if (iVal) iOverlap = iVal;
 }
 
 void oox_bar_chart::oox_serialize(std::wostream & _Wostream)
@@ -166,33 +228,14 @@ void oox_bar_chart::oox_serialize(std::wostream & _Wostream)
 				else
 					CP_XML_ATTR(L"val", L"col"); 
 			}
-			int res = 0;
-			int Overlap =0;
-			if ((res = grouping_.find(L"tacked"))>=0)
-			{
-				Overlap =100;
-			}
-			if (iOverlap)
-			{
-				Overlap = iOverlap.get();
-			}
-			CP_XML_NODE(L"c:overlap")//-100 to 100
-			{
-				CP_XML_ATTR(L"val", Overlap); 
-			}
-			if (iGapWidth)
-			{
-				CP_XML_NODE(L"c:gapWidth")
-				{
-					CP_XML_ATTR(L"val", iGapWidth.get()); 
-				}
-			}
-			CP_XML_NODE(L"c:varyColors")
-			{
-				CP_XML_ATTR(L"val", varyColors_ ? L"1" : L"0");
-			}
-			oox_serialize_common(CP_XML_STREAM());
+			oox_serialize_grouping	(CP_XML_STREAM());
+			oox_serialize_varyColors(CP_XML_STREAM());
+			oox_serialize_series	(CP_XML_STREAM());
 
+			CP_XML_NODE(L"c:gapWidth")
+			{
+				CP_XML_ATTR(L"val", iGapWidth.get_value_or(100)); 
+			}
 			if (is3D_)
 			{
 				CP_XML_NODE(L"c:shape")
@@ -207,6 +250,23 @@ void oox_bar_chart::oox_serialize(std::wostream & _Wostream)
 					}
 				}
 			}
+			else
+			{
+				int Overlap = 0;
+				if (grouping_.find(L"tacked") != std::wstring::npos)
+				{
+					Overlap = 100;
+				}
+				if (iOverlap)
+				{
+					Overlap = iOverlap.get();
+				}
+				CP_XML_NODE(L"c:overlap")//-100 to 100
+				{
+					CP_XML_ATTR(L"val", Overlap); 
+				}
+			}
+			oox_serialize_axIds(CP_XML_STREAM());
 		}
     }
 }
@@ -236,12 +296,10 @@ void oox_line_chart::oox_serialize(std::wostream & _Wostream)
     {
 		CP_XML_NODE(strNode)
         {
-			CP_XML_NODE(L"c:varyColors")
-			{
-				CP_XML_ATTR(L"val", varyColors_ ? L"1" : L"0");
-			}	
-			oox_serialize_common(CP_XML_STREAM());
-		
+			oox_serialize_grouping	(CP_XML_STREAM());
+			oox_serialize_varyColors(CP_XML_STREAM());
+			oox_serialize_series	(CP_XML_STREAM());
+			oox_serialize_axIds		(CP_XML_STREAM());
 		}
     }
 }
@@ -269,12 +327,10 @@ void oox_area_chart::oox_serialize(std::wostream & _Wostream)
     {
 		CP_XML_NODE(strNode)
         {
-			CP_XML_NODE(L"c:varyColors")
-			{
-				CP_XML_ATTR(L"val", varyColors_ ? L"1" : L"0");
-			}		
-			oox_serialize_common(CP_XML_STREAM());
-			
+			oox_serialize_grouping	(CP_XML_STREAM());
+			oox_serialize_varyColors(CP_XML_STREAM());
+			oox_serialize_series	(CP_XML_STREAM());
+			oox_serialize_axIds		(CP_XML_STREAM());
 		}
     }
 }
@@ -336,12 +392,10 @@ void oox_doughnut_chart::oox_serialize(std::wostream & _Wostream)
     {
 		CP_XML_NODE(L"c:doughnutChart")
         {
-			CP_XML_NODE(L"c:varyColors")
-			{
-				CP_XML_ATTR(L"val", varyColors_ ? L"1" : L"0");
-			}	
-			oox_serialize_common(CP_XML_STREAM());
-				
+			oox_serialize_varyColors(CP_XML_STREAM());
+			//no axes
+			oox_serialize_series	(CP_XML_STREAM());
+
 			CP_XML_NODE(L"c:firstSliceAng")
 			{	
 				CP_XML_ATTR(L"val", 0);
@@ -376,11 +430,9 @@ void oox_pie_chart::oox_serialize(std::wostream & _Wostream)
     {
 		CP_XML_NODE(strNode)
         {
-			CP_XML_NODE(L"c:varyColors")
-			{
-				CP_XML_ATTR(L"val", varyColors_ ? L"1" : L"0");
-			}	
-			oox_serialize_common(CP_XML_STREAM());
+			oox_serialize_varyColors(CP_XML_STREAM());
+			//no axes
+			oox_serialize_series	(CP_XML_STREAM());
 		}
     }
 }
