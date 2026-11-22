@@ -15,3 +15,7 @@
 ## 시도 3 (run 45024680030)
 - 실패: unicodeconverter 단계의 `mv /core/UnicodeConverter.o ...: No such file`. 10.0 에서는 base.pri 덕분에 libUnicodeConverter.a 가 build/lib/linux_64 에 바로 생긴다.
 - 수정: 그 mv 줄을 지웠다. (libxml, base.pri 문제는 이번에 해결됐고 약 10분 만에 이 단계까지 도달)
+
+## 시도 4 (run 45025616217)
+- 실패: `OOXML/Projects/Linux/DocxFormatLib` 단계에서 make 가 2로 종료됐는데, 경고가 너무 많아 로그가 2MiB 제한으로 잘려서 실제 오류 줄이 안 보였다.
+- 수정: embuild.sh 의 CFLAGS 에 `-w` 를 넣어 경고를 끄고 다시 돌린다. (이 시도에서 UnicodeConverter, common, graphics, pdffile 등 여러 단계는 통과)
