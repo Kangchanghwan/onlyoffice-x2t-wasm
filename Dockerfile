@@ -57,6 +57,16 @@ RUN python fetch.py
 
 
 
+FROM base AS libxml
+COPY core/Common/3dParty/libxml /core/Common/3dParty/libxml
+COPY --from=build-tools /build_tools/scripts/base.py /build_tools/scripts/
+COPY --from=build-tools /build_tools/scripts/config.py /build_tools/scripts/
+WORKDIR /core/Common/3dParty/libxml
+RUN python fetch.py
+# Outputs: /core/Common/3dParty/libxml (libxml2 is not in core/ anymore since 10.0)
+
+
+
 FROM base AS md
 COPY core/Common/3dParty/md /core/Common/3dParty/md
 COPY --from=build-tools /build_tools/scripts/base.py /build_tools/scripts/
@@ -135,6 +145,7 @@ RUN . /emsdk/emsdk_env.sh \
 FROM base AS ooxmlsignature
 COPY core/Common /core/Common
 COPY core/DesktopEditor /core/DesktopEditor
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 COPY core/OfficeUtils /core/OfficeUtils
 COPY --from=openssl /core/Common/3dParty/openssl/ /core/Common/3dParty/openssl/
 WORKDIR /core
@@ -168,8 +179,10 @@ RUN  cp /emsdk/upstream/emscripten/cache/sysroot/lib/libboost* /usr/local/lib/
 
 
 FROM base AS unicodeconverter
+COPY core/Common /core/Common
 COPY core/UnicodeConverter /core/UnicodeConverter
 COPY core/DesktopEditor/common /core/DesktopEditor/common
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 WORKDIR /core
 RUN --mount=type=cache,sharing=locked,target=/emsdk/upstream/emscripten/cache/ \
     embuild.sh -q DEFINES+=DISABLE_ICU UnicodeConverter
@@ -181,8 +194,11 @@ RUN mv /core/UnicodeConverter.o /core/build/lib/linux_64/libUnicodeConverter.a
 FROM base AS common
 COPY core/Common /core/Common
 COPY core/DesktopEditor/common /core/DesktopEditor/common
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 COPY core/DesktopEditor/graphics /core/DesktopEditor/graphics
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 COPY core/DesktopEditor/xml /core/DesktopEditor/xml
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 COPY core/UnicodeConverter /core/UnicodeConverter
 COPY core/OfficeUtils /core/OfficeUtils
 COPY core/OdfFile /core/OdfFile
@@ -197,6 +213,7 @@ RUN --mount=type=cache,sharing=locked,target=/emsdk/upstream/emscripten/cache/ \
 FROM base AS graphics
 COPY core/Common /core/Common
 COPY core/DesktopEditor/ /core/DesktopEditor/
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 COPY core/OfficeUtils/ /core/OfficeUtils/
 COPY core/UnicodeConverter /core/UnicodeConverter
 COPY core/Common/3dParty/harfbuzz /core/Common/3dParty/harfbuzz
@@ -219,6 +236,7 @@ RUN --mount=type=cache,sharing=locked,target=/emsdk/upstream/emscripten/cache/ \
 FROM base AS txtfile
 COPY core/Common /core/Common
 COPY core/DesktopEditor/ /core/DesktopEditor/
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 COPY core/TxtFile /core/TxtFile
 COPY core/UnicodeConverter /core/UnicodeConverter
 COPY core/OOXML /core/OOXML
@@ -236,6 +254,7 @@ RUN --mount=type=cache,sharing=locked,target=/emsdk/upstream/emscripten/cache/ \
 FROM base AS bindocument
 COPY core/OOXML /core/OOXML
 COPY core/DesktopEditor/ /core/DesktopEditor/
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 COPY core/Common /core/Common
 COPY core/MsBinaryFile /core/MsBinaryFile
 COPY core/OfficeUtils /core/OfficeUtils
@@ -256,6 +275,7 @@ RUN --mount=type=cache,sharing=locked,target=/emsdk/upstream/emscripten/cache/ \
 FROM base AS docxformatlib
 COPY core/OOXML /core/OOXML
 COPY core/DesktopEditor/ /core/DesktopEditor/
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 COPY core/Common /core/Common
 COPY core/MsBinaryFile /core/MsBinaryFile
 COPY core/OfficeCryptReader /core/OfficeCryptReader
@@ -273,6 +293,7 @@ RUN mkdir -p /core/build/lib/linux_64/
 FROM base AS pptxformatlib
 COPY core/OOXML /core/OOXML
 COPY core/DesktopEditor/ /core/DesktopEditor/
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 COPY core/Common /core/Common
 COPY core/MsBinaryFile /core/MsBinaryFile
 COPY core/OfficeUtils /core/OfficeUtils
@@ -289,6 +310,7 @@ RUN --mount=type=cache,sharing=locked,target=/emsdk/upstream/emscripten/cache/ \
 FROM base AS xlsbformatlib
 COPY core/OOXML /core/OOXML
 COPY core/DesktopEditor/ /core/DesktopEditor/
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 COPY core/Common /core/Common
 COPY core/MsBinaryFile /core/MsBinaryFile
 COPY core/OfficeCryptReader /core/OfficeCryptReader
@@ -307,6 +329,7 @@ COPY core/MsBinaryFile /core/MsBinaryFile
 COPY core/Common /core/Common
 COPY core/OOXML /core/OOXML
 COPY core/DesktopEditor/ /core/DesktopEditor/
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 COPY core/OfficeCryptReader /core/OfficeCryptReader
 COPY core/UnicodeConverter /core/UnicodeConverter
 COPY core/OdfFile /core/OdfFile
@@ -323,6 +346,7 @@ COPY core/MsBinaryFile /core/MsBinaryFile
 COPY core/Common /core/Common
 COPY core/OOXML /core/OOXML
 COPY core/DesktopEditor/ /core/DesktopEditor/
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 COPY core/OfficeCryptReader /core/OfficeCryptReader
 COPY core/UnicodeConverter /core/UnicodeConverter
 COPY core/OfficeUtils /core/OfficeUtils
@@ -340,6 +364,7 @@ COPY core/MsBinaryFile /core/MsBinaryFile
 COPY core/Common /core/Common
 COPY core/OOXML /core/OOXML
 COPY core/DesktopEditor/ /core/DesktopEditor/
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 COPY core/OfficeCryptReader /core/OfficeCryptReader
 COPY core/UnicodeConverter /core/UnicodeConverter
 COPY core/OfficeUtils /core/OfficeUtils
@@ -357,6 +382,7 @@ COPY core/MsBinaryFile /core/MsBinaryFile
 COPY core/Common /core/Common
 COPY core/OOXML /core/OOXML
 COPY core/DesktopEditor/ /core/DesktopEditor/
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 COPY core/OfficeCryptReader /core/OfficeCryptReader
 COPY core/UnicodeConverter /core/UnicodeConverter
 COPY core/OfficeUtils /core/OfficeUtils
@@ -374,6 +400,7 @@ COPY core/OdfFile /core/OdfFile
 COPY core/Common /core/Common
 COPY core/OOXML /core/OOXML
 COPY core/DesktopEditor/ /core/DesktopEditor/
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 COPY core/OfficeCryptReader /core/OfficeCryptReader
 COPY core/UnicodeConverter /core/UnicodeConverter
 COPY core/OfficeUtils /core/OfficeUtils
@@ -396,6 +423,7 @@ COPY core/Common /core/Common
 COPY core/OdfFile /core/OdfFile
 COPY core/OOXML /core/OOXML
 COPY core/DesktopEditor/ /core/DesktopEditor/
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 COPY core/OfficeCryptReader /core/OfficeCryptReader
 COPY core/UnicodeConverter /core/UnicodeConverter
 COPY core/OfficeUtils /core/OfficeUtils
@@ -412,6 +440,7 @@ FROM base AS cfcpp
 COPY core/Common /core/Common
 COPY core/OOXML /core/OOXML
 COPY core/DesktopEditor/ /core/DesktopEditor/
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 WORKDIR /core
 RUN --mount=type=cache,sharing=locked,target=/emsdk/upstream/emscripten/cache/ \
     embuild.sh Common/cfcpp
@@ -423,6 +452,7 @@ FROM base AS cryptopp
 COPY core/Common /core/Common
 COPY core/OOXML /core/OOXML
 COPY core/DesktopEditor/ /core/DesktopEditor/
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 COPY core/OfficeCryptReader/ /core/OfficeCryptReader/
 COPY core/MsBinaryFile /core/MsBinaryFile
 COPY core/UnicodeConverter /core/UnicodeConverter
@@ -437,6 +467,7 @@ RUN --mount=type=cache,sharing=locked,target=/emsdk/upstream/emscripten/cache/ \
 FROM base AS network
 COPY core/Common /core/Common
 COPY core/DesktopEditor/ /core/DesktopEditor/
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 COPY --from=common /core/build/lib/linux_64/libkernel.a /core/build/lib/linux_64/libkernel.a
 WORKDIR /core
 RUN --mount=type=cache,sharing=locked,target=/emsdk/upstream/emscripten/cache/ \
@@ -449,6 +480,7 @@ FROM base AS pdffile
 COPY core/Common /core/Common
 COPY core/PdfFile /core/PdfFile
 COPY core/DesktopEditor/ /core/DesktopEditor/
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 COPY core/OfficeUtils /core/OfficeUtils
 COPY core/UnicodeConverter /core/UnicodeConverter
 COPY core/OOXML /core/OOXML
@@ -467,6 +499,7 @@ RUN --mount=type=cache,sharing=locked,target=/emsdk/upstream/emscripten/cache/ \
 
 FROM base AS doctrenderer
 COPY core/DesktopEditor/ /core/DesktopEditor/
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 RUN cp /core/DesktopEditor/doctrenderer/doctrenderer_empty.cpp /core/DesktopEditor/doctrenderer/doctrenderer.cpp
 RUN cp /core/DesktopEditor/doctrenderer/docbuilder_empty.cpp /core/DesktopEditor/doctrenderer/docbuilder.cpp
 RUN cp /core/DesktopEditor/doctrenderer/docbuilder_p_empty.cpp /core/DesktopEditor/doctrenderer/docbuilder_p.cpp
@@ -485,6 +518,7 @@ FROM base AS fb2file
 COPY core/Fb2File/ /core/Fb2File/
 COPY core/Common /core/Common
 COPY core/DesktopEditor /core/DesktopEditor
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 COPY core/HtmlFile2 /core/HtmlFile2
 COPY core/OfficeUtils /core/OfficeUtils
 COPY core/UnicodeConverter /core/UnicodeConverter
@@ -502,6 +536,7 @@ RUN --mount=type=cache,sharing=locked,target=/emsdk/upstream/emscripten/cache/ \
 FROM base AS htmlfile2
 COPY core/Common /core/Common
 COPY core/DesktopEditor /core/DesktopEditor
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 COPY core/HtmlFile2 /core/HtmlFile2
 COPY core/UnicodeConverter /core/UnicodeConverter
 COPY core/OdfFile /core/OdfFile
@@ -525,6 +560,7 @@ FROM base AS epubfile
 COPY core/EpubFile /core/EpubFile
 COPY core/Common /core/Common
 COPY core/DesktopEditor /core/DesktopEditor
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 COPY core/OfficeUtils /core/OfficeUtils
 COPY core/HtmlFile2 /core/HtmlFile2
 COPY --from=common /core/build/lib/linux_64/libkernel.a /core/build/lib/linux_64/
@@ -541,6 +577,7 @@ FROM base AS xpsfile
 COPY core/XpsFile /core/XpsFile
 COPY core/Common /core/Common
 COPY core/DesktopEditor /core/DesktopEditor
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 COPY core/OfficeUtils /core/OfficeUtils
 COPY core/PdfFile /core/PdfFile
 COPY --from=common /core/build/lib/linux_64/libkernel.a /core/build/lib/linux_64/
@@ -558,6 +595,7 @@ FROM base AS djvufile
 COPY core/DjVuFile /core/DjVuFile
 COPY core/Common /core/Common
 COPY core/DesktopEditor /core/DesktopEditor
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 COPY core/PdfFile /core/PdfFile
 COPY --from=common /core/build/lib/linux_64/libkernel.a /core/build/lib/linux_64/
 COPY --from=graphics /core/build/lib/linux_64/libgraphics.a /core/build/lib/linux_64/
@@ -574,6 +612,7 @@ FROM base AS apple
 COPY core/Apple /core/Apple
 COPY core/Common /core/Common
 COPY core/DesktopEditor /core/DesktopEditor
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 COPY core/OfficeUtils /core/OfficeUtils
 COPY --from=apple3rdparty /core/Common/3dParty/apple /core/Common/3dParty/apple
 COPY --from=boost /boost/libs/serialization/include/boost/archive/iterators/ /boost/libs/functional/include/boost/archive/iterators/
@@ -592,6 +631,7 @@ FROM base AS hwpfile
 COPY core/HwpFile /core/HwpFile
 COPY core/Common /core/Common
 COPY core/DesktopEditor /core/DesktopEditor
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 COPY core/OfficeUtils /core/OfficeUtils
 COPY core/OdfFile /core/OdfFile
 COPY --from=common /core/build/lib/linux_64/libkernel.a /core/build/lib/linux_64/
@@ -609,6 +649,7 @@ FROM base AS ofdfile
 COPY core/OFDFile /core/OFDFile
 COPY core/Common /core/Common
 COPY core/DesktopEditor /core/DesktopEditor
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 COPY core/OfficeUtils /core/OfficeUtils
 COPY core/PdfFile /core/PdfFile
 COPY --from=boost /usr/local/include/boost /boost/libs/functional/include/boost
@@ -627,6 +668,7 @@ FROM base AS starmath
 COPY core/OdfFile /core/OdfFile
 COPY core/Common /core/Common
 COPY core/DesktopEditor /core/DesktopEditor
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 COPY core/OOXML /core/OOXML
 COPY core/OfficeUtils /core/OfficeUtils
 COPY --from=boost /usr/local/include/boost /boost/libs/functional/include/boost
@@ -641,6 +683,7 @@ FROM base AS docxrenderer
 COPY core/DocxRenderer /core/DocxRenderer
 COPY core/Common /core/Common
 COPY core/DesktopEditor /core/DesktopEditor
+COPY --from=libxml /core/Common/3dParty/libxml /core/Common/3dParty/libxml
 COPY core/OfficeUtils /core/OfficeUtils
 COPY core/OdfFile /core/OdfFile
 COPY --from=common /core/build/lib/linux_64/libkernel.a /core/build/lib/linux_64/
