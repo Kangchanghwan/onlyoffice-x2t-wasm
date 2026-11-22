@@ -765,7 +765,7 @@ RUN rm /tests/Example.docx \
 
  
 
-FROM base AS build
+FROM base AS build-libs
 COPY core /core
 WORKDIR /core
 
@@ -804,6 +804,8 @@ COPY --from=ofdfile /core/build/lib/linux_64/libOFDFile.a /core/build/lib/linux_
 COPY --from=starmath /core/build/lib/linux_64/libStarMathConverter.a /core/build/lib/linux_64/
 COPY --from=ooxmlsignature /core/build/lib/linux_64/libooxmlsignature.a /core/build/lib/linux_64/
 
+# [cs] split so the library layers can be cached even when the final link fails
+FROM build-libs AS build
 RUN cat /wrap-main.cpp >> /core/X2tConverter/src/main.cpp
 # ENV DEV_MODE=1
 RUN --mount=type=cache,sharing=locked,target=/emsdk/upstream/emscripten/cache/ \

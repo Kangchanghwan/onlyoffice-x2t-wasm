@@ -64,6 +64,7 @@ HEADERS += \
 
 SOURCES += \
 	$$PWD_CUR/editors.cpp \
+	$$PWD_CUR/drawingfile.cpp \
 	$$PWD_CUR/nativecontrol.cpp \
 	$$PWD_CUR/doctrenderer.cpp \
 	$$PWD_CUR/docbuilder.cpp \

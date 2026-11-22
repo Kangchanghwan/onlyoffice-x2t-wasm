@@ -26,6 +26,10 @@ jobs:
       - uses: docker/setup-buildx-action@v3
       - uses: crazy-max/ghaction-github-runtime@v3
 
+      - name: Warm layer cache (all libraries)
+        run: |
+          docker buildx build --target build-libs --cache-from type=gha,scope=cs-x2t --cache-to type=gha,mode=max,scope=cs-x2t .
+
       - name: Build (test target, then output target)
         env:
           DOCKER_BUILD_EXTRA: --cache-from type=gha,scope=cs-x2t --cache-to type=gha,mode=max,scope=cs-x2t

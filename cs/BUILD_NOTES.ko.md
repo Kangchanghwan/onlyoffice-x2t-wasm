@@ -35,3 +35,8 @@
 ## 시도 8 (run 45030632230)
 - 모든 라이브러리 단계(doctrenderer, OFDFile, StarMath 포함) 통과. 마지막 x2t 링크에서 실패: `wasm-ld: error: unknown argument: --exclude-libs`. 10.0 의 base.pri 가 app 링크에 `-Wl,--exclude-libs,ALL` 을 붙인다.
 - 수정: base.pri 에서 `CONFIG += clang_no_exclude_libs` 로 그 옵션을 끈다. 이 시도는 약 40분 걸렸다(캐시 없이 전체 빌드).
+
+## 시도 9 (run 45034274400)
+- 링크 단계 도달. 실패: `undefined symbol: CDrawingFile::m_sCMapFolder` (libdoctrenderer.a(editors.o)). drawingfile.cpp 가 주석 처리된 목록에 있어서 정적 멤버 정의가 빠졌다.
+- 수정: doctrenderer.pri 의 SOURCES 에 drawingfile.cpp 를 다시 넣었다.
+- 속도 개선: build 단계를 build-libs(라이브러리 복사까지)와 build(링크)로 나누고, 워크플로에서 build-libs 를 먼저 빌드해 gha 캐시에 올린다. 링크만 고칠 때 40분이 아니라 몇 분이면 되도록 했다.
