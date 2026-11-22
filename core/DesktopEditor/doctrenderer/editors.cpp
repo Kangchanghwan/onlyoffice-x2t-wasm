@@ -115,7 +115,9 @@ namespace NSDoctRenderer
 #endif
 
 			std::wstring sCachePath = L"";
+#ifndef __EMSCRIPTEN__ // CryptPad/cs: WASM x2t does not use drawingfile
 			CDrawingFile::SetCMapFolder(config->m_strSdkPath + L"/pdf/src/engine");
+#endif
 
 			switch (type)
 			{

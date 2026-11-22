@@ -64,7 +64,7 @@ HEADERS += \
 
 SOURCES += \
 	$$PWD_CUR/editors.cpp \
-	$$PWD_CUR/drawingfile.cpp \
+	# CryptPad/cs: drawingfile.cpp 제외(PDF/XPS/DjVu 렌더러 전체가 딸려 와 링크가 끝나지 않음). editors.cpp 의 한 줄만 막는다.
 	$$PWD_CUR/nativecontrol.cpp \
 	$$PWD_CUR/doctrenderer.cpp \
 	$$PWD_CUR/docbuilder.cpp \
