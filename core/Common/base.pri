@@ -593,6 +593,8 @@ config_hidden_symbols {
 
 	core_mac:CONFIG += clang_no_exclude_libs
 	core_ios:CONFIG += clang_no_exclude_libs
+	# CryptPad: wasm-ld does not know --exclude-libs
+	CONFIG += clang_no_exclude_libs
 
 	!clang_no_exclude_libs {
 		plugin:QMAKE_LFLAGS += -Wl,--exclude-libs,ALL

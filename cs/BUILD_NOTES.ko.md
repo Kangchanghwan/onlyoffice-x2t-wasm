@@ -31,3 +31,7 @@
 ## 시도 7 (run 45028654309)
 - Network 통과. 실패: doctrenderer 단계 `drawingfile.h:42: fatal error: '../../PdfFile/PdfFile.h' file not found`. 10.0 의 drawingfile.h 가 PdfFile, XpsFile, DjVuFile, DocxRenderer, OFDFile 헤더를 include 한다.
 - 수정: doctrenderer 단계에 그 모듈 디렉터리를 복사했다.
+
+## 시도 8 (run 45030632230)
+- 모든 라이브러리 단계(doctrenderer, OFDFile, StarMath 포함) 통과. 마지막 x2t 링크에서 실패: `wasm-ld: error: unknown argument: --exclude-libs`. 10.0 의 base.pri 가 app 링크에 `-Wl,--exclude-libs,ALL` 을 붙인다.
+- 수정: base.pri 에서 `CONFIG += clang_no_exclude_libs` 로 그 옵션을 끈다. 이 시도는 약 40분 걸렸다(캐시 없이 전체 빌드).
