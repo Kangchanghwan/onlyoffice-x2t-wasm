@@ -19,3 +19,7 @@
 ## 시도 4 (run 45025616217)
 - 실패: `OOXML/Projects/Linux/DocxFormatLib` 단계에서 make 가 2로 종료됐는데, 경고가 너무 많아 로그가 2MiB 제한으로 잘려서 실제 오류 줄이 안 보였다.
 - 수정: embuild.sh 의 CFLAGS 에 `-w` 를 넣어 경고를 끄고 다시 돌린다. (이 시도에서 UnicodeConverter, common, graphics, pdffile 등 여러 단계는 통과)
+
+## 시도 5 (run 45026847930)
+- 실패: `SheetData.cpp:2306: error: use of undeclared identifier 'DBL_MAX'` (DocxFormatLib). 10.0 소스가 float.h 를 직접 include 하지 않는데 gcc 에서는 다른 헤더를 통해 들어오고 emscripten(libc++)에서는 안 들어온다.
+- 수정: embuild.sh 의 CFLAGS 에 `-include float.h` 를 넣어 모든 모듈에서 DBL_MAX 가 보이게 했다.
